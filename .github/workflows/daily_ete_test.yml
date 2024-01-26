@@ -61,6 +61,8 @@ jobs:
               libgoogle-glog-dev libgl1 openjdk-8-jre-headless
           dpkg -i /root/packages/allure_2.24.1-1_all.deb
           rm -rf /var/lib/apt/lists/*
+      - name: check env
+        run: lmdeploy check_env
 
 
 
