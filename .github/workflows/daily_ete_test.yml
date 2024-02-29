@@ -83,6 +83,9 @@ jobs:
         uses: actions/download-artifact@v4
         with: 
           name: my-artifact-${{ github.run_id }}
+      - name: Download Artifacts4
+        continue-on-error: true
+        uses: actions/download-artifact@v4
       - name: Clone repository
         uses: actions/checkout@v2
       - name: Clear workfile
