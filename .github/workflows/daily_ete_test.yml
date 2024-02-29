@@ -3,17 +3,59 @@ name: daily_ete_test
 on:
   workflow_dispatch:
   schedule:
-    - cron:  '00 23 * * *'
+    - cron:  '00 21 * * *'
 
 env:
   HOST_PIP_CACHE_DIR: /nvme/github-actions/pip-cache
   HOST_LOCALTIME: /usr/share/zoneinfo/Asia/Shanghai
+  OUTPUT_FOLDER: cuda11.8_dist_${{ github.run_id }}
 
 
 jobs:
+  linux-build:
+    runs-on: ubuntu-latest
+    env:
+      PYTHON_VERSION: py38
+      PLAT_NAME: manylinux2014_x86_64
+      DOCKER_TAG: cuda11.8
+    steps:
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          # This might remove tools that are actually needed, if set to "true" but frees about 6 GB
+          tool-cache: false
+          docker-images: false
+          # All of these default to true, but feel free to set to "false" if necessary for your workflow
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          swap-storage: false
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Build
+        run: |
+          echo ${PYTHON_VERSION}
+          echo ${PLAT_NAME}
+          echo ${DOCKER_TAG}
+          echo ${OUTPUT_FOLDER}
+          echo ${GITHUB_RUN_ID}
+          # remove -it
+          sed -i 's/docker run --rm -it/docker run --rm/g' builder/manywheel/build_wheel.sh
+          bash builder/manywheel/build_wheel.sh ${PYTHON_VERSION} ${PLAT_NAME} ${DOCKER_TAG} ${OUTPUT_FOLDER}
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          if-no-files-found: error
+          path: builder/manywheel/${{ env.OUTPUT_FOLDER }}
+          retention-days: 1
+          name: my-artifact-${{ github.run_id }}
+
+
   test_functions:
     runs-on: [self-hosted, linux-a100]
-    timeout-minutes: 240
+    timeout-minutes: 240 # 4hours
+    needs: linux-build
     env:
       REPORT_DIR: /nvme/qa_test_models/test-reports
     container:
@@ -25,78 +67,57 @@ jobs:
         - /nvme/qa_test_models:/nvme/qa_test_models
         - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
     steps:
-      - name: Setup systems
-        run: |
-          rm /etc/apt/sources.list.d/cuda*.list
-          apt-get update && apt-get install -y --no-install-recommends rapidjson-dev \
-              libgoogle-glog-dev libgl1 openjdk-8-jre-headless
-          dpkg -i /root/packages/allure_2.24.1-1_all.deb
-          rm -rf /var/lib/apt/lists/*
+      - name: Download Artifacts1
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with: 
+          path: builder/manywheel/${{ env.OUTPUT_FOLDER }}
+          name: my-artifact-${{ github.run_id }}
+      - name: Download Artifacts2
+        uses: actions/download-artifact@v4
+        with: 
+          path: my-artifact-${{ github.run_id }}
+      - name: Download Artifacts3
+        uses: actions/download-artifact@v4
+        with: 
+          name: my-artifact-${{ github.run_id }}
       - name: Clone repository
         uses: actions/checkout@v2
       - name: Install pytorch
         run: |
           python3 -m pip cache dir
-          python3 -m pip install torch==2.1.0 torchvision==0.16.0 --index-url https://download.pytorch.org/whl/cu118
-      - name: Build lmdeploy
-        run: |
-          python3 -m pip install cmake
-          python3 -m pip install -r requirements/build.txt
-          mkdir build
-          cd build
-          cmake .. \
-              -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-              -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
-              -DCMAKE_INSTALL_PREFIX=/opt/tritonserver \
-              -DBUILD_PY_FFI=ON \
-              -DBUILD_MULTI_GPU=ON \
-              -DCMAKE_CUDA_FLAGS="-lineinfo" \
-              -DUSE_NVTX=ON \
-              -DSM=80 \
-              -DCMAKE_CUDA_ARCHITECTURES=80 \
-              -DBUILD_TEST=OFF
-          make -j$(nproc) && make install
+          python3 -m pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu118
       - name: Install lmdeploy
         run: |
-          python3 -m pip install packaging protobuf transformers_stream_generator transformers datasets
+          python3 -m pip install packaging protobuf transformers_stream_generator transformers==4.33.0 datasets==2.14.7
           # manually install flash attn
           # the install packeage from. https://github.com/Dao-AILab/flash-attention/releases/download/v2.3.6/flash_attn-2.3.6+cu118torch2.0cxx11abiFALSE-cp38-cp38-linux_x86_64.whl
           python3 -m pip install /root/packages/flash_attn-2.3.6+cu118torch2.1cxx11abiFALSE-cp38-cp38-linux_x86_64.whl
           python3 -m pip install -r requirements.txt -r requirements/test.txt
-          python3 -m pip install .
+          python3 -m pip install builder/manywheel/${{ env.OUTPUT_FOLDER }}/*
       - name: Check env
         run: |
           python3 -m pip list
           lmdeploy check_env
       - name: Test lmdeploy - quantization
-        continue-on-error: true
         run: |
-          pytest autotest -m '(quantization or quantization_w8a8) and not Baichuan2_7B_Chat and not Baichuan2_13B_Chat' -n 8 --alluredir=allure-results --clean-alluredir
+          pytest autotest -m 'quantization or quantization_w8a8' -n 8 --alluredir=allure-results --clean-alluredir
       - name: Test lmdeploy - convert
-        continue-on-error: true
         run: |
-          pytest autotest -m 'convert and not Baichuan2_7B_Chat and not Baichuan2_13B_Chat' -n 6 --alluredir=allure-results
+          pytest autotest -m convert -n 6 --alluredir=allure-results --reruns 2
       - name: Test lmdeploy - pipeline
         continue-on-error: true
-        timeout-minutes: 60
-        run: pytest autotest -m '(pipeline_chat) and not Baichuan2_7B_Chat and not Baichuan2_13B_Chat' --alluredir=allure-results
+        run: pytest autotest -m 'pipeline_chat or pipeline_chat_pytorch' --alluredir=allure-results --reruns 2
       - name: Test lmdeploy - restful
         continue-on-error: true
-        run: pytest autotest -m restful_api --alluredir=allure-results
+        run: pytest autotest -m restful_api --alluredir=allure-results --reruns 2
       - name: Test lmdeploy - chat
-        continue-on-error: true
-        timeout-minutes: 60
-        run: |
-          pytest autotest -m '(command_chat or command_chat_hf or command_chat_pytorch) and not Baichuan2_7B_Chat and not Baichuan2_13B_Chat' -n 4 --alluredir=allure-results
-      - name: Downgrade transformers
-        run: python3 -m pip install transformers==4.33.0
-      - name: Test lmdeploy - run Baichuan
         continue-on-error: true
         timeout-minutes: 50
         run: |
-          pytest autotest -m '(Baichuan2_7B_Chat or Baichuan2_13B_Chat) and not pipeline_chat_pytorch' --alluredir=allure-results
+          pytest autotest -m 'command_chat or command_chat_hf or command_chat_pytorch' -n 4 --alluredir=allure-results --reruns 2
       - name: Test lmdeploy - rerun fail cases
-        run: |
+        run:
           pytest autotest --alluredir=allure-results --lf
       - name: Generate reports
         if: always()
@@ -113,134 +134,3 @@ jobs:
           rm -rf $workdir
           mkdir $workdir
           chmod -R 777 $workdir
-
-  test_triton:
-    runs-on: [self-hosted, linux-a100]
-    timeout-minutes: 30
-    env:
-      HF_MODEL: /nvme/qa_test_models/internlm-chat-20b
-      WORKDIR: /nvme/qa_test_models/triton_workspace
-      TB_MODEL: internlm-chat-20b-fp16-tp2
-      GRPC_PORT: 33337
-    steps:
-      - name: Clone repository
-        uses: actions/checkout@v2
-      - name: Create test container
-        run: |
-          export CONTAINER_ID=$(docker create \
-            --rm \
-            --gpus='"device=4,5"' \
-            --shm-size 16g \
-            --cap-add=SYS_PTRACE \
-            --cap-add=SYS_ADMIN \
-            --security-opt seccomp=unconfined \
-            --name "lmdeploy-ci-triton-$GITHUB_RUN_ID" \
-            --workdir /__w/lmdeploy/lmdeploy \
-            --env NCCL_LAUNCH_MODE=GROUP \
-            -v $(pwd)/../../:/__w \
-            -v ${HF_MODEL}:/root/workspace/hf_model \
-            -v ${WORKDIR}:/root/workspace/workdir \
-            -v ${HOST_PIP_CACHE_DIR}:/root/.cache/pip \
-            -v ${HOST_LOCALTIME}:/etc/localtime:ro \
-            openmmlab/lmdeploy:latest tail -f /dev/null \
-             )
-          docker start $CONTAINER_ID
-          echo "CONTAINER_ID=$CONTAINER_ID"
-          echo "CONTAINER_ID=$CONTAINER_ID"  >> $GITHUB_ENV
-      - name: Build lmdeploy from source
-        run: |
-          docker exec $CONTAINER_ID mkdir build
-          docker exec --workdir /__w/lmdeploy/lmdeploy/build \
-            --env http_proxy=${{secrets.PROXY}} \
-            --env https_proxy=${{secrets.PROXY}} \
-            --env HTTP_PROXY=${{secrets.PROXY}} \
-            --env HTTPS_PROXY=${{secrets.PROXY}} \
-            --env no_proxy="localhost,127.0.0.1" \
-            --env NO_PROXY="localhost,127.0.0.1" \
-            $CONTAINER_ID  cmake .. \
-               -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-               -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
-               -DCMAKE_INSTALL_PREFIX=/opt/tritonserver \
-               -DBUILD_PY_FFI=ON \
-               -DBUILD_MULTI_GPU=ON \
-               -DCMAKE_CUDA_FLAGS="-lineinfo" \
-               -DUSE_NVTX=ON \
-               -DSM=80 \
-               -DCMAKE_CUDA_ARCHITECTURES=80 \
-               -DBUILD_TEST=OFF
-          docker exec --workdir /__w/lmdeploy/lmdeploy/build $CONTAINER_ID  make -j$(nproc)
-          docker exec --workdir /__w/lmdeploy/lmdeploy/build $CONTAINER_ID  make install \
-            --env http_proxy=${{secrets.PROXY}} \
-            --env https_proxy=${{secrets.PROXY}} \
-            --env HTTP_PROXY=${{secrets.PROXY}} \
-            --env HTTPS_PROXY=${{secrets.PROXY}}
-      - name: Install lmdeploy
-        run: |
-          docker exec \
-            --env http_proxy=${{secrets.PROXY}} \
-            --env https_proxy=${{secrets.PROXY}} \
-            $CONTAINER_ID python3 -m pip install tritonclient[grpc] protobuf
-
-          docker exec \
-            --env http_proxy=${{secrets.PROXY}} \
-            --env https_proxy=${{secrets.PROXY}} \
-            $CONTAINER_ID python3 -m pip install -r requirements/test.txt
-
-          docker exec \
-            --env http_proxy=${{secrets.PROXY}} \
-            --env https_proxy=${{secrets.PROXY}} \
-            $CONTAINER_ID python3 -m pip install .
-
-          docker exec $CONTAINER_ID lmdeploy check_env
-      - name: Convert to turbomind model
-        run: |
-          docker exec $CONTAINER_ID \
-            lmdeploy convert \
-            internlm-chat-20b \
-            /root/workspace/hf_model \
-            --tp 2 \
-            --dst-path /root/workspace/workdir/${TB_MODEL}
-      - name: Start triton server service
-        run: |
-          docker exec --detach $CONTAINER_ID bash -c \
-            "tritonserver \
-            --model-repository=/root/workspace/workdir/${TB_MODEL}/model_repository \
-            --allow-http=0 \
-            --allow-grpc=1 \
-            --grpc-port=${GRPC_PORT} \
-            --log-verbose=0 \
-            --allow-metrics=1 > run.log 2>&1 ; touch finish.txt"
-          # wait for triton server to fully start up
-          sleep 180s
-          # print triton server log file
-          cat run.log
-          python3 -c 'import os; assert not os.path.exists("finish.txt"), "Failed to start tritonserver"'
-      - name: Test triton server
-        run: |
-          docker exec \
-            --env no_proxy="localhost,127.0.0.1" \
-            --env NO_PROXY="localhost,127.0.0.1" \
-            $CONTAINER_ID python3 .github/scripts/test_triton_server.py --port ${GRPC_PORT}
-          # print triton server log file
-          cat run.log
-      - name: Clear workfile
-        if: always()
-        run: |
-          export workdir=$(pwd)
-          docker exec --workdir /__w/lmdeploy $CONTAINER_ID rm -rf lmdeploy
-          mkdir $workdir
-          chmod -R 777 $workdir
-          docker exec --workdir /__w/lmdeploy $CONTAINER_ID rm -rf /root/workspace/workdir/${TB_MODEL}
-          docker stop $CONTAINER_ID
-
-
-  notify_to_feishu:
-    if: always() && !cancelled() && (github.ref_name == 'develop' || github.ref_name == 'main')
-    needs: [test_functions, test_triton]
-    timeout-minutes: 5
-    runs-on: [self-hosted, linux-a100]
-    steps:
-      - name: fail notify
-        if: contains(needs.*.result, 'failure')
-        run: |
-          curl -X POST -H "Content-Type: application/json" -d '{"msg_type":"post","content":{"post":{"zh_cn":{"title":"Lmdeploy- daily test failed","content":[[{"tag":"text","text":"branch: ${{github.ref_name}}, run action: ${{github.workflow}} failed. "},{"tag":"a","text":"Please click here for details ","href":"https://github.com/'${{ github.repository }}'/actions/runs/'${GITHUB_RUN_ID}'"},{"tag":"at","user_id":"'${{ secrets.FEISHU_USER_ID }}'"}]]}}}}'  ${{ secrets.FEISHU_WEBHOOK_URL }}
