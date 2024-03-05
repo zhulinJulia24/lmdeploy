@@ -17,12 +17,12 @@ on:
         required: true
         description: 'Set backend testcase filter: turbomind or pytorch or turbomind, pytorch. Default is "["turbomind", "pytorch"]"'
         type: string
-        default: "['turbomind', 'pytorch']"
+        default: '["turbomind", "pytorch"]'
       model:
         required: true
         description: 'Set testcase module filter: chat, restful, pipeline, quantization. Default contains all models'
         type: string
-        default: "['quantization','convert','pipeline','restful','chat','interface-pipeline']"
+        default: '["quantization","convert","pipeline","restful","chat","interface-pipeline"]'
   schedule:
     - cron:  '00 18 * * *'
 
