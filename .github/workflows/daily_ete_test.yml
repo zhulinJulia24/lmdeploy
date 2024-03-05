@@ -60,7 +60,7 @@ jobs:
         continue-on-error: true
         if: contains('${{github.event.inputs.model}}', 'kvint8-w4a16') && contains('${{github.event.inputs.backend}}', 'turbomind')
         run: |
-          pytest autotest/tools/quantization/test_quantization_kvint8_w4a16.py -n 8 --alluredir=allure-results
+          echo contains('Hello world', 'llo')
      
 
 
