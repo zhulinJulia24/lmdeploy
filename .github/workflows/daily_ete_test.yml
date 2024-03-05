@@ -61,6 +61,17 @@ jobs:
         if: contains('${{github.event.inputs.model}}', 'kvint8-w4a16') && contains('${{github.event.inputs.backend}}', 'turbomind')
         run: |
           echo contains('Hello world', 'llo')
+      - name: Test lmdeploy - no skip
+        continue-on-error: true
+        if: contains('Hello world', 'llo')
+        run: |
+          echo 'no skip'
+      - name: Test lmdeploy - skip
+        continue-on-error: true
+        if: contains('Hello world', 'llodddd')
+        run: |
+          echo 'skip'
+     
      
 
 
