@@ -71,7 +71,9 @@ jobs:
         if: contains('Hello world', 'llodddd') && contains('Hello world', 'llo')
         run: |
           echo 'skip'
-     
-     
-
+      - name: Test lmdeploy - json
+        continue-on-error: true
+        if: contains(fromJSON('["push", "pull_request"]'), 'push')
+        run: |
+          echo 'no skip'
 
