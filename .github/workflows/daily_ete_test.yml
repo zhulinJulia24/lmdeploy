@@ -63,12 +63,12 @@ jobs:
           echo contains('Hello world', 'llo')
       - name: Test lmdeploy - no skip
         continue-on-error: true
-        if: contains('Hello world', 'llo')
+        if: contains('Hello world', 'llo') && contains('Hello world', 'llo')
         run: |
           echo 'no skip'
       - name: Test lmdeploy - skip
         continue-on-error: true
-        if: contains('Hello world', 'llodddd')
+        if: contains('Hello world', 'llodddd') && contains('Hello world', 'llo')
         run: |
           echo 'skip'
      
