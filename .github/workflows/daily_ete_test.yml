@@ -15,14 +15,14 @@ on:
         default: 'main'
       backend:
         required: true
-        description: 'Set backend testcase filter: turbomind or pytorch or turbomind, pytorch. Default is "turbomind, pytorch"'
+        description: 'Set backend testcase filter: turbomind or pytorch or turbomind, pytorch. Default is "["turbomind", "pytorch"]"'
         type: string
         default: "['turbomind', 'pytorch']"
       model:
         required: true
         description: 'Set testcase module filter: chat, restful, pipeline, quantization. Default contains all models'
         type: string
-        default: "['w4a16','kvint8','w8a8','kvint8-w4a16','convert','pipeline','restful','chat-workspace','chat-hf']"
+        default: "['quantization','convert','pipeline','restful','chat','interface-pipeline']"
   schedule:
     - cron:  '00 18 * * *'
 
@@ -37,43 +37,93 @@ jobs:
     timeout-minutes: 240
     env:
       REPORT_DIR: /nvme/qa_test_models/test-reports
+    container:
+      image: nvcr.io/nvidia/tritonserver:22.12-py3
+      options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip"
+      volumes:
+        - /nvme/github-actions/pip-cache:/root/.cache/pip
+        - /nvme/github-actions/packages:/root/packages
+        - /nvme/qa_test_models:/nvme/qa_test_models
+        - /mnt/bigdisk/qa_test_models:/mnt/bigdisk/qa_test_models
+        - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
     steps:
-      - name: Check env
-        run: |
-          python3 -m pip list
       - name: Test lmdeploy - quantization w4a16
         continue-on-error: true
-        if: contains('${{github.event.inputs.model}}', 'w4a16') && contains('${{github.event.inputs.backend}}', 'turbomind')
+        if: contains(fromJSON(${{github.event.inputs.backend}}), 'turbomind') && contains(fromJSON(${{github.event.inputs.model}}), 'quantization')
         run: |
-          echo ${{github.event.inputs.model}}
+          echo 'here'
       - name: Test lmdeploy - quantization kv int8
         continue-on-error: true
-        if: contains('${{github.event.inputs.model}}', 'kvint8') && contains('${{github.event.inputs.backend}}', 'turbomind')
+        if: contains(fromJSON(${{github.event.inputs.backend}}), 'turbomind') && contains(fromJSON(${{github.event.inputs.model}}), 'quantization')
         run: |
-          echo contains('${{github.event.inputs.model}}', 'w4a16')
+          echo 'here'
       - name: Test lmdeploy - quantization w8a8
         continue-on-error: true
-        if: contains('${{github.event.inputs.model}}', 'w8a8') && contains('${{github.event.inputs.backend}}', 'pytorch')
+        if: contains(fromJSON(${{github.event.inputs.backend}}), 'pytorch') && contains(fromJSON(${{github.event.inputs.model}}), 'quantization')
         run: |
-          echo contains('${{github.event.inputs.backend}}', 'pytorch')
+          echo 'here'
       - name: Test lmdeploy - quantization kv int8 and w4a16
         continue-on-error: true
-        if: contains('${{github.event.inputs.model}}', 'kvint8-w4a16') && contains('${{github.event.inputs.backend}}', 'turbomind')
+        if: contains(fromJSON(${{github.event.inputs.backend}}), 'turbomind') && contains(fromJSON(${{github.event.inputs.model}}), 'quantization')
         run: |
-          echo contains('Hello world', 'llo')
-      - name: Test lmdeploy - no skip
+          echo 'here'
+      - name: Test lmdeploy - convert
         continue-on-error: true
-        if: contains('Hello world', 'llo') && contains('Hello world', 'llo')
+        if: contains(fromJSON(${{github.event.inputs.backend}}), 'turbomind') && contains(fromJSON(${{github.event.inputs.model}}), 'convert')
         run: |
-          echo 'no skip'
-      - name: Test lmdeploy - skip
+          echo 'here'
+      - name: Test lmdeploy - chat workspace
         continue-on-error: true
-        if: contains('Hello world', 'llodddd') && contains('Hello world', 'llo')
+        if: contains(fromJSON(${{github.event.inputs.backend}}), 'turbomind') && contains(fromJSON(${{github.event.inputs.model}}), 'chat')
+        timeout-minutes: 20
         run: |
-          echo 'skip'
-      - name: Test lmdeploy - json
+          echo 'here'
+      - name: Test lmdeploy - chat hf turbomind
         continue-on-error: true
-        if: contains(fromJSON(${{github.event.inputs.backend}}), 'pytorch') && contains(fromJSON(${{github.event.inputs.model}}), 'w8a8') 
+        if: contains(fromJSON(${{github.event.inputs.backend}}), 'turbomind') && contains(fromJSON(${{github.event.inputs.model}}), 'chat')
+        timeout-minutes: 20
         run: |
-          echo 'no skip'
+          echo 'here'
+      - name: Test lmdeploy - chat hf torch
+        continue-on-error: true
+        if: contains(fromJSON(${{github.event.inputs.backend}}), 'pytorch') && contains(fromJSON(${{github.event.inputs.model}}), 'chat')
+        timeout-minutes: 20
+        run: |
+          echo 'here'
+      - name: Test lmdeploy - pipeline turbomind
+        continue-on-error: true
+        if: contains(fromJSON(${{github.event.inputs.backend}}), 'turbomind') && contains(fromJSON(${{github.event.inputs.model}}), 'pipeline')
+        timeout-minutes: 25
+        run: |
+          echo 'here'
+      - name: Test lmdeploy - pipeline torch
+        continue-on-error: true
+        if: contains(fromJSON(${{github.event.inputs.backend}}), 'pytorch') && contains(fromJSON(${{github.event.inputs.model}}), 'pipeline')
+        timeout-minutes: 25
+        run: |
+          echo 'here'
+      - name: Test lmdeploy - restful turbomind
+        continue-on-error: true
+        if: contains(fromJSON(${{github.event.inputs.backend}}), 'turbomind') && contains(fromJSON(${{github.event.inputs.model}}), 'restful')
+        timeout-minutes: 30
+        run: |
+          echo 'here'
+      - name: Test lmdeploy - restful torch
+        continue-on-error: true
+        if: contains(fromJSON(${{github.event.inputs.backend}}), 'pytorch') && contains(fromJSON(${{github.event.inputs.model}}), 'restful')
+        timeout-minutes: 40
+        run: |
+          echo 'here'
+      - name: Test lmdeploy - interface pipeline turbomind case
+        continue-on-error: true
+        if: contains(fromJSON(${{github.event.inputs.backend}}), 'turbomind') && contains(fromJSON(${{github.event.inputs.model}}), 'interface-pipeline')
+        timeout-minutes: 20
+        run: |
+          echo 'here'
+      - name: Test lmdeploy - rerun all fail cases
+        timeout-minutes: 30
+        run: |
+          echo 'here'
+    
+
 
