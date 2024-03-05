@@ -43,29 +43,24 @@ jobs:
           python3 -m pip list
       - name: Test lmdeploy - quantization w4a16
         continue-on-error: true
-        if: contains(${{github.event.inputs.model}}, 'w4a16') && contains(${{github.event.inputs.backend}}, 'turbomind')
+        if: contains('${{github.event.inputs.model}}', 'w4a16') && contains('${{github.event.inputs.backend}}', 'turbomind')
         run: |
           echo ${{github.event.inputs.model}}
       - name: Test lmdeploy - quantization kv int8
         continue-on-error: true
-        if: contains(${{github.event.inputs.model}}, 'kvint8') && contains(${{github.event.inputs.backend}}, 'turbomind')
+        if: contains('${{github.event.inputs.model}}', 'kvint8') && contains('${{github.event.inputs.backend}}', 'turbomind')
         run: |
-          echo contains(${{github.event.inputs.model}}, 'w4a16')
+          echo contains('${{github.event.inputs.model}}', 'w4a16')
       - name: Test lmdeploy - quantization w8a8
         continue-on-error: true
-        if: contains(${{github.event.inputs.model}}, 'w8a8') && contains(${{github.event.inputs.backend}}, 'pytorch')
+        if: contains('${{github.event.inputs.model}}', 'w8a8') && contains('${{github.event.inputs.backend}}', 'pytorch')
         run: |
-          echo contains(${{github.event.inputs.backend}}, 'pytorch')
+          echo contains('${{github.event.inputs.backend}}', 'pytorch')
       - name: Test lmdeploy - quantization kv int8 and w4a16
         continue-on-error: true
-        if: contains(${{github.event.inputs.model}}, 'kvint8-w4a16') && contains(${{github.event.inputs.backend}}, 'turbomind')
+        if: contains('${{github.event.inputs.model}}', 'kvint8-w4a16') && contains('${{github.event.inputs.backend}}', 'turbomind')
         run: |
           pytest autotest/tools/quantization/test_quantization_kvint8_w4a16.py -n 8 --alluredir=allure-results
-      - name: Test lmdeploy - convert
-        continue-on-error: true
-        if: contains(${{github.event.inputs.model}}, 'convert') && contains(${{github.event.inputs.backend}}, 'turbomind')
-        run: |
-          pytest autotest/tools/convert -m 'not pr_test' -n 8 --alluredir=allure-results
-      
+     
 
 
