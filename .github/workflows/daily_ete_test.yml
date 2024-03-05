@@ -22,7 +22,7 @@ on:
         required: true
         description: 'Set testcase module filter: chat, restful, pipeline, quantization. Default contains all models'
         type: string
-        default: 'w4a16,kvint8,w8a8,kvint8-w4a16,convert,pipeline,restful,chat-workspace,chat-hf'
+        default: "['w4a16','kvint8','w8a8','kvint8-w4a16','convert','pipeline','restful','chat-workspace','chat-hf']"
   schedule:
     - cron:  '00 18 * * *'
 
@@ -73,7 +73,7 @@ jobs:
           echo 'skip'
       - name: Test lmdeploy - json
         continue-on-error: true
-        if: contains(fromJSON('["push", "pull_request"]'), 'push')
+        if: contains(fromJSON(${{github.event.inputs.model}}), 'w8a8')
         run: |
           echo 'no skip'
 
