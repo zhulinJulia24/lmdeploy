@@ -73,6 +73,6 @@ jobs:
           echo 'skip'
       - name: Test lmdeploy - json
         continue-on-error: true
-        if: contains('${{github.event.inputs.backend}}', 'pytorch') && contains('${{github.event.inputs.backend}}', 'w8a8') 
+        if: contains(github.event.inputs.backend, 'pytorch') && contains(github.event.inputs.backend, 'w8a8') 
         run: |
           echo 'no skip'
