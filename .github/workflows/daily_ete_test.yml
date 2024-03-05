@@ -49,81 +49,95 @@ jobs:
     steps:
       - name: Test lmdeploy - quantization w4a16
         continue-on-error: true
-        if: contains(fromJSON(${{github.event.inputs.backend}}), 'turbomind') && contains(fromJSON(${{github.event.inputs.model}}), 'quantization')
+        if: (contains(fromJSON(${{github.event.inputs.backend}}), 'turbomind') && contains(fromJSON(${{github.event.inputs.model}}), 'quantization'))
         run: |
-          echo 'here'
+          echo contains(fromJSON(${{github.event.inputs.backend}}), 'turbomind')
+          echo contains(fromJSON(${{github.event.inputs.model}}), 'turbomind')
       - name: Test lmdeploy - quantization kv int8
         continue-on-error: true
         if: contains(fromJSON(${{github.event.inputs.backend}}), 'turbomind') && contains(fromJSON(${{github.event.inputs.model}}), 'quantization')
         run: |
-          echo 'here'
+          echo contains(fromJSON(${{github.event.inputs.backend}}), 'turbomind')
+          echo contains(fromJSON(${{github.event.inputs.model}}), 'turbomind')
       - name: Test lmdeploy - quantization w8a8
         continue-on-error: true
         if: contains(fromJSON(${{github.event.inputs.backend}}), 'pytorch') && contains(fromJSON(${{github.event.inputs.model}}), 'quantization')
         run: |
-          echo 'here'
+          echo contains(fromJSON(${{github.event.inputs.backend}}), 'turbomind')
+          echo contains(fromJSON(${{github.event.inputs.model}}), 'turbomind')
       - name: Test lmdeploy - quantization kv int8 and w4a16
         continue-on-error: true
         if: contains(fromJSON(${{github.event.inputs.backend}}), 'turbomind') && contains(fromJSON(${{github.event.inputs.model}}), 'quantization')
         run: |
-          echo 'here'
+          echo contains(fromJSON(${{github.event.inputs.backend}}), 'turbomind')
+          echo contains(fromJSON(${{github.event.inputs.model}}), 'turbomind')
       - name: Test lmdeploy - convert
         continue-on-error: true
         if: contains(fromJSON(${{github.event.inputs.backend}}), 'turbomind') && contains(fromJSON(${{github.event.inputs.model}}), 'convert')
         run: |
-          echo 'here'
+          echo contains(fromJSON(${{github.event.inputs.backend}}), 'turbomind')
+          echo contains(fromJSON(${{github.event.inputs.model}}), 'turbomind')
       - name: Test lmdeploy - chat workspace
         continue-on-error: true
         if: contains(fromJSON(${{github.event.inputs.backend}}), 'turbomind') && contains(fromJSON(${{github.event.inputs.model}}), 'chat')
         timeout-minutes: 20
         run: |
-          echo 'here'
+          echo contains(fromJSON(${{github.event.inputs.backend}}), 'turbomind')
+          echo contains(fromJSON(${{github.event.inputs.model}}), 'turbomind')
       - name: Test lmdeploy - chat hf turbomind
         continue-on-error: true
         if: contains(fromJSON(${{github.event.inputs.backend}}), 'turbomind') && contains(fromJSON(${{github.event.inputs.model}}), 'chat')
         timeout-minutes: 20
         run: |
-          echo 'here'
+          echo contains(fromJSON(${{github.event.inputs.backend}}), 'turbomind')
+          echo contains(fromJSON(${{github.event.inputs.model}}), 'turbomind')
       - name: Test lmdeploy - chat hf torch
         continue-on-error: true
         if: contains(fromJSON(${{github.event.inputs.backend}}), 'pytorch') && contains(fromJSON(${{github.event.inputs.model}}), 'chat')
         timeout-minutes: 20
         run: |
-          echo 'here'
+          echo contains(fromJSON(${{github.event.inputs.backend}}), 'turbomind')
+          echo contains(fromJSON(${{github.event.inputs.model}}), 'turbomind')
       - name: Test lmdeploy - pipeline turbomind
         continue-on-error: true
         if: contains(fromJSON(${{github.event.inputs.backend}}), 'turbomind') && contains(fromJSON(${{github.event.inputs.model}}), 'pipeline')
         timeout-minutes: 25
         run: |
-          echo 'here'
+          echo contains(fromJSON(${{github.event.inputs.backend}}), 'turbomind')
+          echo contains(fromJSON(${{github.event.inputs.model}}), 'turbomind')
       - name: Test lmdeploy - pipeline torch
         continue-on-error: true
         if: contains(fromJSON(${{github.event.inputs.backend}}), 'pytorch') && contains(fromJSON(${{github.event.inputs.model}}), 'pipeline')
         timeout-minutes: 25
         run: |
-          echo 'here'
+          echo contains(fromJSON(${{github.event.inputs.backend}}), 'turbomind')
+          echo contains(fromJSON(${{github.event.inputs.model}}), 'turbomind')
       - name: Test lmdeploy - restful turbomind
         continue-on-error: true
         if: contains(fromJSON(${{github.event.inputs.backend}}), 'turbomind') && contains(fromJSON(${{github.event.inputs.model}}), 'restful')
         timeout-minutes: 30
         run: |
-          echo 'here'
+          echo contains(fromJSON(${{github.event.inputs.backend}}), 'turbomind')
+          echo contains(fromJSON(${{github.event.inputs.model}}), 'turbomind')
       - name: Test lmdeploy - restful torch
         continue-on-error: true
         if: contains(fromJSON(${{github.event.inputs.backend}}), 'pytorch') && contains(fromJSON(${{github.event.inputs.model}}), 'restful')
         timeout-minutes: 40
         run: |
-          echo 'here'
+          echo contains(fromJSON(${{github.event.inputs.backend}}), 'turbomind')
+          echo contains(fromJSON(${{github.event.inputs.model}}), 'turbomind')
       - name: Test lmdeploy - interface pipeline turbomind case
         continue-on-error: true
         if: contains(fromJSON(${{github.event.inputs.backend}}), 'turbomind') && contains(fromJSON(${{github.event.inputs.model}}), 'interface-pipeline')
         timeout-minutes: 20
         run: |
-          echo 'here'
+          echo contains(fromJSON(${{github.event.inputs.backend}}), 'turbomind')
+          echo contains(fromJSON(${{github.event.inputs.model}}), 'turbomind')
       - name: Test lmdeploy - rerun all fail cases
         timeout-minutes: 30
         run: |
-          echo 'here'
+          echo contains(fromJSON(${{github.event.inputs.backend}}), 'turbomind')
+          echo contains(fromJSON(${{github.event.inputs.model}}), 'turbomind')
     
 
 
