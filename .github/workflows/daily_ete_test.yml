@@ -3,11 +3,17 @@ name: daily_ete_test
 on:
   workflow_dispatch:
     inputs:
-      model:
-        required: true
-        description: 'Set testcase module filter: chat, restful, pipeline, quantization. Default contains all models'
+      repo_org:
+        required: false
+        description: 'Tested repository organization name. Default is InternLM'
         type: string
-        default: "['w4a16','kvint8','w8a8','kvint8-w4a16','convert','pipeline','restful','chat-workspace','chat-hf']"
+        default: InternLM
+      repo_ref:
+        required: false
+        description: 'Set branch or tag or commit id. Default is "main"'
+        type: string
+        default: 'main'
+
   schedule:
     - cron:  '00 18 * * *'
 
@@ -18,15 +24,13 @@ env:
 
 jobs:
   test_functions:
-    strategy:
-      matrix:
-        pyver: ${{fromJson(github.event.inputs.model)}}
     runs-on: [self-hosted, linux-a100]
     timeout-minutes: 240
     env:
       REPORT_DIR: /nvme/qa_test_models/test-reports
     steps:
-      - name: echo
-        continue-on-error: true
-        run: |
-          echo ${{ matrix.model }}
+      - name: Clone repository
+        uses: actions/checkout@v3
+        with:
+          repository: '${{ github.event.inputs.repo_org}}/lmdeploy'
+          ref: ${{github.event.inputs.repo_ref}}
