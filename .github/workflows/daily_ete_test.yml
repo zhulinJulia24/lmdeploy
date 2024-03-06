@@ -37,6 +37,6 @@ jobs:
           ref: ${{github.event.inputs.repo_ref}}
       - name: echo
         run: |
-          echo github.event.inputs.repo_ref
-          echo github.event.inputs.repo_org
+          echo ${{github.event.inputs.repo_ref}}
+          echo ${{github.event.inputs.repo_org}}
         
