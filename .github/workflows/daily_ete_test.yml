@@ -3,21 +3,6 @@ name: daily_ete_test
 on:
   workflow_dispatch:
     inputs:
-      repo_org:
-        required: false
-        description: 'Tested repository organization name. Default is InternLM'
-        type: string
-        default: InternLM
-      repo_ref:
-        required: false
-        description: 'Set branch or tag or commit id. Default is "main"'
-        type: string
-        default: 'main'
-      backend:
-        required: true
-        description: 'Set backend testcase filter: turbomind or pytorch or turbomind, pytorch. Default is "turbomind, pytorch"'
-        type: string
-        default: "['turbomind', 'pytorch']"
       model:
         required: true
         description: 'Set testcase module filter: chat, restful, pipeline, quantization. Default contains all models'
@@ -35,49 +20,13 @@ jobs:
   test_functions:
     runs-on: [self-hosted, linux-a100]
     timeout-minutes: 240
+    strategy:
+      matrix:
+        pyver: ${{fromJson(github.event.inputs.model)}}
     env:
       REPORT_DIR: /nvme/qa_test_models/test-reports
     steps:
-      - name: Check env
-        run: |
-          python3 -m pip list
-      - name: Test lmdeploy - quantization w4a16
+      - name: echo
         continue-on-error: true
-        if: contains('${{github.event.inputs.model}}', 'w4a16') && contains('${{github.event.inputs.backend}}', 'turbomind')
         run: |
-          echo ${{github.event.inputs.model}}
-      - name: Test lmdeploy - quantization kv int8
-        continue-on-error: true
-        if: contains('${{github.event.inputs.model}}', 'kvint8') && contains('${{github.event.inputs.backend}}', 'turbomind')
-        run: |
-          echo contains('${{github.event.inputs.model}}', 'w4a16')
-      - name: Test lmdeploy - quantization w8a8
-        continue-on-error: true
-        if: contains('${{github.event.inputs.model}}', 'w8a8') && contains('${{github.event.inputs.backend}}', 'pytorch')
-        run: |
-          echo contains('${{github.event.inputs.backend}}', 'pytorch')
-      - name: Test lmdeploy - quantization kv int8 and w4a16
-        continue-on-error: true
-        if: contains('${{github.event.inputs.model}}', 'kvint8-w4a16') && contains('${{github.event.inputs.backend}}', 'turbomind')
-        run: |
-          echo contains('Hello world', 'llo')
-      - name: Test lmdeploy - no skip
-        continue-on-error: true
-        if: contains('Hello world', 'llo') && contains('Hello world', 'llo')
-        run: |
-          echo 'no skip'
-      - name: Test lmdeploy - skip
-        continue-on-error: true
-        if: contains('Hello world', 'llodddd') && contains('Hello world', 'llo')
-        run: |
-          echo 'skip'
-      - name: Test lmdeploy - json
-        continue-on-error: true
-        if: contains(fromJSON(github.event.inputs.backend), 'pytorch') && contains(fromJSON(github.event.inputs.backend), 'w8a8') 
-        run: |
-          echo 'no skip'
-      - name: Test lmdeploy - json2
-        continue-on-error: true
-        if: contains(fromJSON(github.event.inputs.backend), 'pytorch') && contains(fromJSON(github.event.inputs.backend), 'turbomind') && contains(fromJSON(github.event.inputs.model), 'w8a8') 
-        run: |
-          echo 'no skip'
+          echo ${{ matrix.model }}
