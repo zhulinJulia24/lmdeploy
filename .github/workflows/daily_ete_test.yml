@@ -58,6 +58,15 @@ jobs:
     needs: linux-build
     env:
       REPORT_DIR: /nvme/qa_test_models/test-reports
+    container:
+      image: nvcr.io/nvidia/tritonserver:22.12-py3
+      options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip"
+      volumes:
+        - /nvme/github-actions/pip-cache:/root/.cache/pip
+        - /nvme/github-actions/packages:/root/packages
+        - /nvme/qa_test_models:/nvme/qa_test_models
+        - /mnt/bigdisk/qa_test_models:/mnt/bigdisk/qa_test_models
+        - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
     steps:
       - name: Download Artifacts1
         continue-on-error: true
