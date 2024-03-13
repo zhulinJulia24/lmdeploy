@@ -1,4 +1,5 @@
-name: daily_ete_test
+name: test_matrix
+
 
 on:
   workflow_dispatch:
@@ -13,30 +14,57 @@ on:
         description: 'Set branch or tag or commit id. Default is "main"'
         type: string
         default: 'main'
-
-  schedule:
-    - cron:  '00 18 * * *'
+      need_build:
+        required: true
+        description: 'Whether do build according to the input repo info. Default is false, which means use the latest docker image'
+        type: boolean
+        default: false
+      model:
+        required: true
+        description: 'Set benchmark models, once a time'
+        type: string
+        default: 'internlm/internlm2-chat-20b'
+      cover_type:        
+        required: true
+        description: 'Set benchmark models, once a time'
+        type: string
+        default: 'internlm/internlm2-chat-20b'
+      devices:
+        required: true
+        description: 'CUDA_VISIBLE_DEVICES.'
+        type: string
+        default: '6,7'
 
 env:
   HOST_PIP_CACHE_DIR: /nvme/github-actions/pip-cache
   HOST_LOCALTIME: /usr/share/zoneinfo/Asia/Shanghai
 
 
+
 jobs:
-  test_functions:
+  test_matrix:
     runs-on: [self-hosted, linux-a100]
     timeout-minutes: 240
+    strategy:
+      matrix:
+        include:
+          - interface: "restful"
+            docker: "nvcr.io/nvidia/tritonserver:22.12-py3"
+          - interface: "triton"
+            docker: "openmmlab/lmdeploy:latest"
     env:
-      REPORT_DIR: /nvme/qa_test_models/test-reports
+      MODEL_PATH: /mnt/bigdisk/qa_test_models
+      WORK_DIR: /nvme/qa_test_models
+      GRPC_PORT: 33337
+    container:
+      image: ${{ matrix.docker }}
+      options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip"
+      volumes:
+        - /nvme/github-actions/pip-cache:/root/.cache/pip
+        - /nvme/github-actions/packages:/root/packages
+        - /nvme/qa_test_models:/nvme/qa_test_models
+        - /mnt/bigdisk/qa_test_models:/mnt/bigdisk/qa_test_models
+        - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
     steps:
-      - name: Clone repository
-        uses: actions/checkout@v3
-        continue-on-error: true
-        with:
-          repository: '${{ github.event.inputs.repo_org}}/lmdeploy'
-          ref: ${{github.event.inputs.repo_ref}}
       - name: echo
-        run: |
-          echo ${{github.event.inputs.repo_ref}}
-          echo ${{github.event.inputs.repo_org}}
-        
+        run: echo ${{ matrix.interface }}
