@@ -23,12 +23,7 @@ on:
         required: true
         description: 'Set benchmark models, once a time'
         type: string
-        default: 'internlm/internlm2-chat-20b'
-      cover_type:        
-        required: true
-        description: 'Set benchmark models, once a time'
-        type: string
-        default: 'internlm/internlm2-chat-20b'
+        default: "['internlm/internlm2-chat-20b', 'internlm/internlm2-chat-20b-inner-w4a16']"
       devices:
         required: true
         description: 'CUDA_VISIBLE_DEVICES.'
