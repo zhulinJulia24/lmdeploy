@@ -19,7 +19,7 @@ on:
         description: 'Whether do build according to the input repo info. Default is false, which means use the latest docker image'
         type: boolean
         default: false
-      model:
+      model_name:
         required: true
         description: 'Set benchmark models, once a time'
         type: string
@@ -47,24 +47,22 @@ jobs:
     timeout-minutes: 240
     strategy:
       matrix:
+        model_name: ${{fromJSON(github.event.inputs.model_name)}}
         include:
-          - interface: "restful"
-            docker: "nvcr.io/nvidia/tritonserver:22.12-py3"
-          - interface: "triton"
-            docker: "openmmlab/lmdeploy:latest"
+          - model_name: internlm/internlm2-chat-20b
+            args: --tp 2  --concurrency 256 --cache-max-entry-count 0.9
+          - model_name: internlm/internlm2-chat-20b-inner-w4a16
+            args: --tp 2 --model-format awq  --concurrency 256 --cache-max-entry-count 0.9
+          - model_name: meta-llama/Llama-2-7b-chat-hf
+            args: --tp 1 --concurrency 256 --cache-max-entry-count 0.95
+          - model_name: meta-llama/Llama-2-7b-chat-hf-inner-w4a16
+            args: --tp 1 --model-format awq  --concurrency 256 --cache-max-entry-count 0.95
     env:
       MODEL_PATH: /mnt/bigdisk/qa_test_models
       WORK_DIR: /nvme/qa_test_models
       GRPC_PORT: 33337
-    container:
-      image: ${{ matrix.docker }}
-      options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip"
-      volumes:
-        - /nvme/github-actions/pip-cache:/root/.cache/pip
-        - /nvme/github-actions/packages:/root/packages
-        - /nvme/qa_test_models:/nvme/qa_test_models
-        - /mnt/bigdisk/qa_test_models:/mnt/bigdisk/qa_test_models
-        - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
     steps:
       - name: echo
-        run: echo ${{ matrix.interface }}
+        run: |
+          echo ${{ matrix.model_name }}
+          echo ${{ matrix.args }}
