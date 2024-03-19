@@ -52,7 +52,7 @@ on:
     - cron:  '00 21 * * *'
 
 env:
-  HOST_PIP_CACHE_DIR: /nvme/github-actions/pip-cache
+  HOST_PIP_CACHE_DIR: /home/zhulin1/.cache/pip
   HOST_LOCALTIME: /usr/share/zoneinfo/Asia/Shanghai
   OUTPUT_FOLDER: cuda11.8_dist_${{ github.run_id }}
 
@@ -104,7 +104,7 @@ jobs:
       image: pytorch/pytorch:2.1.2-cuda11.8-cudnn8-runtime
       options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip"
       volumes:
-        - /nvme/github-actions/pip-cache:/root/.cache/pip
+        - /home/zhulin1/.cache/pip:/root/.cache/pip
         - /nvme/github-actions/packages:/root/packages
         - /nvme/qa_test_models:/nvme/qa_test_models
         - /mnt/bigdisk/qa_test_models:/mnt/bigdisk/qa_test_models
@@ -379,7 +379,7 @@ jobs:
       image: pytorch/pytorch:2.1.2-cuda11.8-cudnn8-runtime
       options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip"
       volumes:
-        - /nvme/github-actions/pip-cache:/root/.cache/pip
+        - /home/zhulin1/.cache/pip:/root/.cache/pip
         - /nvme/github-actions/packages:/root/packages
         - /nvme/qa_test_models:/nvme/qa_test_models
         - /mnt/bigdisk/qa_test_models:/mnt/bigdisk/qa_test_models
