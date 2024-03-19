@@ -23,6 +23,11 @@ on:
         description: 'Set testcase module filter: chat, restful, pipeline, quantization. Default contains all models'
         type: string
         default: "['quantization','convert','pipeline','restful','chat','interface-pipeline']"
+      offline_mode:
+        required: true
+        description: 'Whether start a offline mode, if true, you should prepare code and whl package by yourself'
+        type: boolean
+        default: false
       tools_regression:
         required: true
         description: 'Whether start a tool regression'
@@ -49,27 +54,16 @@ env:
 
 jobs:
   linux-build:
+    if: ${{github.event_name == 'schedule' || (!cancelled() && !inputs.offline_mode)}}
     strategy:
       matrix:
-        pyver: [py38, py310]
+        pyver: [py310]
     runs-on: ubuntu-latest
     env:
       PYTHON_VERSION: ${{ matrix.pyver }}
       PLAT_NAME: manylinux2014_x86_64
       DOCKER_TAG: cuda11.8
     steps:
-      - name: Free disk space
-        uses: jlumbroso/free-disk-space@main
-        with:
-          # This might remove tools that are actually needed, if set to "true" but frees about 6 GB
-          tool-cache: false
-          docker-images: false
-          # All of these default to true, but feel free to set to "false" if necessary for your workflow
-          android: true
-          dotnet: true
-          haskell: true
-          large-packages: true
-          swap-storage: false
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
@@ -96,13 +90,13 @@ jobs:
 
   test_tools:
     needs: linux-build
-    if: ${{github.event_name == 'schedule' || inputs.tools_regression}}
+    if: ${{github.event_name == 'schedule' || (!cancelled() && inputs.tools_regression)}}
     runs-on: [self-hosted, linux-a100]
     timeout-minutes: 300
     env:
       REPORT_DIR: /nvme/qa_test_models/test-reports
     container:
-      image: nvcr.io/nvidia/tritonserver:22.12-py3
+      image: pytorch/pytorch:2.1.2-cuda11.8-cudnn8-runtime
       options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip"
       volumes:
         - /nvme/github-actions/pip-cache:/root/.cache/pip
@@ -111,31 +105,35 @@ jobs:
         - /mnt/bigdisk/qa_test_models:/mnt/bigdisk/qa_test_models
         - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
     steps:
-      - name: Setup systems
-        run: |
-          rm /etc/apt/sources.list.d/cuda*.list
-          apt-get update && apt-get install -y --no-install-recommends rapidjson-dev \
-              libgoogle-glog-dev libgl1 openjdk-8-jre-headless
-          dpkg -i /root/packages/allure_2.24.1-1_all.deb
-          rm -rf /var/lib/apt/lists/*
       - name: Clone repository
         uses: actions/checkout@v3
+        if: ${{github.event_name == 'schedule' || !inputs.offline_mode}}
         with:
           repository: ${{ github.event.inputs.repo_org || 'InternLM/lmdeploy' }}
           ref: ${{github.event.inputs.repo_ref || 'main'}}
+      - name: Copy repository
+        if: ${{inputs.offline_mode}}
+        run: cp -r /nvme/qa_test_models/offline_pkg/lmdeploy/* .
       - name: Download Artifacts
+        if: ${{github.event_name == 'schedule' || !inputs.offline_mode}}
         uses: actions/download-artifact@v4
-      - name: Install pytorch
-        run: |
-          python3 -m pip cache dir
-          python3 -m pip install torch==2.1.0 torchvision==0.16.0 --index-url https://download.pytorch.org/whl/cu118
-      - name: Install lmdeploy
+      - name: Install lmdeploy - dependency
         run: |
           python3 -m pip install packaging protobuf transformers_stream_generator transformers datasets matplotlib
           # manually install flash attn
           # the install packeage from. https://github.com/Dao-AILab/flash-attention/releases/download/v2.3.6/flash_attn-2.3.6+cu118torch2.0cxx11abiFALSE-cp38-cp38-linux_x86_64.whl
           python3 -m pip install /root/packages/flash_attn-2.3.6+cu118torch2.1cxx11abiFALSE-cp38-cp38-linux_x86_64.whl
           python3 -m pip install my-artifact-${{ github.run_id }}-py38/lmdeploy-*.whl
+          python3 -m pip install -r requirements/test.txt
+      - name: Install lmdeploy
+        if: ${{github.event_name == 'schedule' || !inputs.offline_mode}}
+        run: |
+          python3 -m pip install my-artifact-${{ github.run_id }}-py38/lmdeploy-*.whl
+          python3 -m pip install -r requirements/test.txt
+      - name: Install lmdeploy - offline
+        if: ${{inputs.offline_mode}}
+        run: |
+          python3 -m pip install /nvme/qa_test_models/offline_pkg/lmdeploy-*.whl
           python3 -m pip install -r requirements/test.txt
       - name: Check env
         run: |
@@ -233,7 +231,7 @@ jobs:
           export date_today="$(date +'%Y%m%d-%H%M%S')"
           export report_dir="$REPORT_DIR/$date_today"
           echo "Save report to $ALLURE_DIR"
-          allure generate -c -o $report_dir
+          mv allure-results $report_dir
       - name: Clear workfile
         if: always()
         run: |
@@ -245,7 +243,7 @@ jobs:
 
 
   test_triton:
-    if: ${{github.event_name == 'schedule' || !cancelled() && inputs.triton_regression}}
+    if: ${{github.event_name == 'schedule' || (!cancelled() && inputs.triton_regression)}}
     runs-on: [self-hosted, linux-a100-2]
     needs: test_tools
     timeout-minutes: 30
@@ -371,7 +369,7 @@ jobs:
 
 
   test_restful:
-    if: ${{github.event_name == 'schedule' || !cancelled() && inputs.restful_regression}}
+    if: ${{github.event_name == 'schedule' || (!cancelled() && inputs.restful_regression)}}
     runs-on: [self-hosted, linux-a100]
     needs: test_tools
     strategy:
@@ -381,7 +379,7 @@ jobs:
     env:
       REPORT_DIR: /nvme/qa_test_models/test-reports
     container:
-      image: nvcr.io/nvidia/tritonserver:22.12-py3
+      image: pytorch/pytorch:2.1.2-cuda11.8-cudnn8-runtime
       options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip"
       volumes:
         - /nvme/github-actions/pip-cache:/root/.cache/pip
@@ -390,18 +388,15 @@ jobs:
         - /mnt/bigdisk/qa_test_models:/mnt/bigdisk/qa_test_models
         - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
     steps:
-      - name: Setup systems
-        run: |
-          rm /etc/apt/sources.list.d/cuda*.list
-          apt-get update && apt-get install -y --no-install-recommends rapidjson-dev \
-              libgoogle-glog-dev libgl1 openjdk-8-jre-headless
-          dpkg -i /root/packages/allure_2.24.1-1_all.deb
-          rm -rf /var/lib/apt/lists/*
       - name: Clone repository
         uses: actions/checkout@v3
+        if: ${{github.event_name == 'schedule' || !inputs.offline_mode}}
         with:
           repository: ${{ github.event.inputs.repo_org || 'InternLM/lmdeploy' }}
           ref: ${{github.event.inputs.repo_ref || 'main'}}
+      - name: Copy repository
+        if: ${{inputs.offline_mode}}
+        run: cp -r /nvme/qa_test_models/offline_pkg/lmdeploy/* .
       - name: Download Artifacts
         uses: actions/download-artifact@v4
       - name: Install pytorch
