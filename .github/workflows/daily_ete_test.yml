@@ -62,7 +62,7 @@ jobs:
     if: ${{github.event_name == 'schedule' || (!cancelled() && !inputs.offline_mode)}}
     strategy:
       matrix:
-        pyver: [py310]
+        pyver: [py38, py310]
     runs-on: ubuntu-latest
     env:
       PYTHON_VERSION: ${{ matrix.pyver }}
@@ -296,7 +296,7 @@ jobs:
         if: ${{github.event_name == 'schedule' || !inputs.offline_mode}}
         run: |
           docker exec --workdir /__w/lmdeploy/lmdeploy $CONTAINER_ID \
-            python3 -m pip install my-artifact-${{ github.run_id }}-py310/lmdeploy-*.whl \
+            python3 -m pip install my-artifact-${{ github.run_id }}-py38/lmdeploy-*.whl \
             --env http_proxy=${{secrets.PROXY}} \
             --env https_proxy=${{secrets.PROXY}} \
             --env HTTP_PROXY=${{secrets.PROXY}} \
@@ -305,7 +305,7 @@ jobs:
         if: ${{inputs.offline_mode}}
         run: |
           docker exec $CONTAINER_ID \
-            python3 -m pip install /nvme/qa_test_models/offline_pkg/lmdeploy-*.whl \
+            python3 -m pip install /nvme/qa_test_models/offline_pkg/lmdeploy-*cp318-manylinux2014_x86_64.whl \
             --env http_proxy=${{secrets.PROXY}} \
             --env https_proxy=${{secrets.PROXY}} \
             --env HTTP_PROXY=${{secrets.PROXY}} \
