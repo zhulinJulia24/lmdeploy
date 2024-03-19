@@ -305,7 +305,7 @@ jobs:
         if: ${{inputs.offline_mode}}
         run: |
           docker exec $CONTAINER_ID \
-            python3 -m pip install /nvme/qa_test_models/offline_pkg/lmdeploy-*cp318-manylinux2014_x86_64.whl \
+            python3 -m pip install /root/workspace/offline_pkg/lmdeploy-*cp38-manylinux2014_x86_64.whl \
             --env http_proxy=${{secrets.PROXY}} \
             --env https_proxy=${{secrets.PROXY}} \
             --env HTTP_PROXY=${{secrets.PROXY}} \
