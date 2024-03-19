@@ -128,8 +128,6 @@ jobs:
           # manually install flash attn
           # the install packeage from. https://github.com/Dao-AILab/flash-attention/releases/download/v2.3.6/flash_attn-2.3.6+cu118torch2.1cxx11abiFALSE-cp310-cp310-linux_x86_64.whl
           python3 -m pip install /root/packages/flash_attn-2.3.6+cu118torch2.1cxx11abiFALSE-cp310-cp310-linux_x86_64.whl
-          python3 -m pip install my-artifact-${{ github.run_id }}-py38/lmdeploy-*.whl
-          python3 -m pip install -r requirements/test.txt
       - name: Install lmdeploy
         if: ${{github.event_name == 'schedule' || !inputs.offline_mode}}
         run: |
