@@ -133,7 +133,7 @@ jobs:
       - name: Install lmdeploy
         if: ${{github.event_name == 'schedule' || !inputs.offline_mode}}
         run: |
-          python3 -m pip install my-artifact-${{ github.run_id }}-py38/lmdeploy-*.whl
+          python3 -m pip install my-artifact-${{ github.run_id }}-py310/lmdeploy-*.whl
           python3 -m pip install -r requirements/test.txt
       - name: Install lmdeploy - offline
         if: ${{inputs.offline_mode}}
