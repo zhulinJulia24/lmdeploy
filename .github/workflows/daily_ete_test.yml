@@ -42,7 +42,7 @@ on:
         required: true
         description: 'Whether start a restful api regression'
         type: boolean
-        default: false
+        default: true
       triton_regression:
         required: true
         description: 'Whether start a triton server api regression'
@@ -295,7 +295,7 @@ jobs:
       - name: Install lmdeploy
         if: ${{github.event_name == 'schedule' || !inputs.offline_mode}}
         run: |
-          docker exec --workdir /__w/lmdeploy/lmdeploy/build $CONTAINER_ID \
+          docker exec --workdir /__w/lmdeploy/lmdeploy $CONTAINER_ID \
             python3 -m pip install my-artifact-${{ github.run_id }}-py310/lmdeploy-*.whl \
             --env http_proxy=${{secrets.PROXY}} \
             --env https_proxy=${{secrets.PROXY}} \
@@ -304,8 +304,8 @@ jobs:
       - name: Install lmdeploy - offline
         if: ${{inputs.offline_mode}}
         run: |
-          docker exec --workdir /__w/lmdeploy/lmdeploy/build $CONTAINER_ID \
-          python3 -m pip install /nvme/qa_test_models/offline_pkg/lmdeploy-*.whl \
+          docker exec $CONTAINER_ID \
+            python3 -m pip install /nvme/qa_test_models/offline_pkg/lmdeploy-*.whl \
             --env http_proxy=${{secrets.PROXY}} \
             --env https_proxy=${{secrets.PROXY}} \
             --env HTTP_PROXY=${{secrets.PROXY}} \
