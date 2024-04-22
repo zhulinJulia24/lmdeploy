@@ -24,7 +24,7 @@ with read_base():
 
 datasets = sum(
     (v
-     for k, v in locals().items() if str(k) in ['gsm8k_datasets', 'race_datasets', 'triviaqa_datasets']),
+     for k, v in locals().copy().items() if k in ['gsm8k_datasets', 'race_datasets', 'triviaqa_datasets']),
     [])
 
 internlm_meta_template = dict(round=[
