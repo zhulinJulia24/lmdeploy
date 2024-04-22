@@ -22,10 +22,7 @@ with read_base():
         triviaqa_datasets  # noqa: F401, E501
     from .summarizers.medium import summarizer  # noqa: F401, E501
 
-datasets = sum(
-    (v
-     for k, v in locals().copy().items() if k in ['gsm8k_datasets', 'race_datasets', 'triviaqa_datasets']),
-    [])
+datasets = [*gsm8k_datasets]
 
 internlm_meta_template = dict(round=[
     dict(role='HUMAN', begin='<|User|>:', end='\n'),
