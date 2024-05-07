@@ -9,6 +9,7 @@ tp_config:
     Baichuan2-13B-Chat: 2
     Mixtral-8x7B-Instruct-v0.1: 2
     internlm2-20b: 2
+    Qwen1.5-32B-Chat: 2
     Qwen-VL-Chat: 2
     llava-v1.5-13b: 2
 
@@ -25,6 +26,7 @@ turbomind_chat_model:
     - Qwen/Qwen-7B-Chat
     - Qwen/Qwen-14B-Chat
     - Qwen/Qwen1.5-7B-Chat
+    - Qwen/Qwen1.5-32B-Chat
     - lmdeploy/llama2-chat-7b-w4
     - baichuan-inc/Baichuan2-7B-Chat
     - 01-ai/Yi-6B-Chat
@@ -73,6 +75,7 @@ vl_model:
     - liuhaotian/llava-v1.6-vicuna-7b
     - 01-ai/Yi-VL-6B
     - deepseek-ai/deepseek-vl-1.3b-chat
+    - OpenGVLab/InternVL-Chat-V1-5
 
 quatization_case_config:
     w4a16:
