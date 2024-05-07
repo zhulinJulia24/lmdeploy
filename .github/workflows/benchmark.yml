@@ -543,10 +543,14 @@ jobs:
         with:
           repository: ${{ github.event.inputs.repo_org || 'InternLM/lmdeploy' }}
           ref: ${{github.event.inputs.repo_ref || 'main'}}
-      - name: Set params
-        if: (contains( matrix.model, 'internlm2-chat-20b'))
+      - name: Set params - cuda
+        if: (contains( matrix.model, 'internlm2-chat-20b') || contains( matrix.model, 'Qwen1.5-32B-Chat'))
         run: |
           echo 'DEVICE="device=4,5"' >> "$GITHUB_ENV"
+      - name: Set params
+        run: |
+          chmod +x .github/scripts/set_benchmark_param.sh
+          .github/scripts/set_benchmark_param.sh ${{matrix.model}}
       - name: Create test container
         run: |
           export date_today="$(date +'%H%M%S')"
