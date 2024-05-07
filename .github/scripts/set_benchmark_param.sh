@@ -21,7 +21,6 @@ else
     echo "BATCHES=(128,256)" >> "$GITHUB_ENV"
 fi
 
-
 if [[ $1 == *"internlm2-chat-20b"* ]] || [[ $1 == *"Qwen1.5-32B-Chat"* ]]
 then
   echo "TP_INFO=--tp 2" >> "$GITHUB_ENV"
