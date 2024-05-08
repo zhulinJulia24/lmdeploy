@@ -163,7 +163,7 @@ jobs:
       - name: Set params
         run: |
           chmod +x .github/scripts/set_benchmark_param.sh
-          .github/scripts/set_benchmark_param.sh ${{matrix.model}}
+          .github/scripts/set_benchmark_param.sh ${{matrix.model}} generate
       - name: Run generation benchmark
         if: contains(fromJSON(github.event.inputs.backend), 'turbomind')
         env:
@@ -268,8 +268,8 @@ jobs:
         run: |
           rm -rf ${result_dir}
           mkdir ${result_dir}
-          batches=$BATCHES
-          for batch in "${batches[@]}"
+          batches=($BATCHES)
+          for batch in ${batches[@]}
           do
             for ((i=1; i<=$LOOP_NUM; i++))
               do
@@ -283,8 +283,8 @@ jobs:
         run: |
           rm -rf ${result_dir}
           mkdir ${result_dir}
-          batches=$BATCHES
-          for batch in "${batches[@]}"
+          batches=($BATCHES)
+          for batch in ${batches[@]}
           do
             for ((i=1; i<=$LOOP_NUM; i++))
               do
@@ -298,8 +298,8 @@ jobs:
         run: |
           rm -rf ${result_dir}
           mkdir ${result_dir}
-          batches=$BATCHES
-          for batch in "${batches[@]}"
+          batches=($BATCHES)
+          for batch in ${batches[@]}
           do
             for ((i=1; i<=$LOOP_NUM; i++))
               do
@@ -313,8 +313,8 @@ jobs:
         run: |
           rm -rf ${result_dir}
           mkdir ${result_dir}
-          batches=$BATCHES
-          for batch in "${batches[@]}"
+          batches=($BATCHES)
+          for batch in ${batches[@]}
           do
             for ((i=1; i<=$LOOP_NUM; i++))
               do
@@ -415,8 +415,8 @@ jobs:
         run: |
           rm -rf ${result_dir}
           mkdir ${result_dir}
-          batches=$BATCHES
-          for batch in "${batches[@]}"
+          batches=($BATCHES)
+          for batch in ${batches[@]}
           do
             for ((i=1; i<=$LOOP_NUM; i++))
               do
@@ -441,7 +441,7 @@ jobs:
         run: |
           rm -rf ${result_dir}
           mkdir ${result_dir}
-          batches=$BATCHES
+          batches=($BATCHES)
           for batch in "${batches[@]}"
           do
             for ((i=1; i<=$LOOP_NUM; i++))
@@ -466,7 +466,7 @@ jobs:
         run: |
           rm -rf ${result_dir}
           mkdir ${result_dir}
-          batches=$BATCHES
+          batches=($BATCHES)
           for batch in "${batches[@]}"
           do
             for ((i=1; i<=$LOOP_NUM; i++))
@@ -491,7 +491,7 @@ jobs:
         run: |
           rm -rf ${result_dir}
           mkdir ${result_dir}
-          batches=$BATCHES
+          batches=($BATCHES)
           for batch in "${batches[@]}"
           do
             for ((i=1; i<=$LOOP_NUM; i++))
@@ -668,7 +668,7 @@ jobs:
         run: |
           rm -rf ${result_dir}
           mkdir ${result_dir} -p
-          batches=$BATCHES
+          batches=($BATCHES)
           for batch in "${batches[@]}"
           do
             for ((i=1; i<=$LOOP_NUM; i++))

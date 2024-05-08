@@ -15,15 +15,15 @@ fi
 if [[ $1 == *"llama2"* ]] || [[ $1 == *"Llama-2"* ]]
 then
     echo "MAX_ENTRY_COUNT=--cache-max-entry-count 0.95" >> "$GITHUB_ENV"
-    echo "BATCHES=(128)" >> "$GITHUB_ENV"
+    echo "BATCHES=128" >> "$GITHUB_ENV"
 else
     if [[ $2 == *"generate"* ]]
     then
         echo "MAX_ENTRY_COUNT=--cache-max-entry-count 0.90" >> "$GITHUB_ENV"
-        echo "BATCHES=(128)" >> "$GITHUB_ENV"
+        echo "BATCHES=128" >> "$GITHUB_ENV"
     else
         echo "MAX_ENTRY_COUNT=--cache-max-entry-count 0.90 --max-batch-size 256" >> "$GITHUB_ENV"
-        echo "BATCHES=(128,256)" >> "$GITHUB_ENV"
+        echo "BATCHES=128 256" >> "$GITHUB_ENV"
     fi
 fi
 
