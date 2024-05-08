@@ -260,7 +260,7 @@ jobs:
       - name: Set params
         run: |
           chmod +x .github/scripts/set_benchmark_param.sh
-          .github/scripts/set_benchmark_param.sh ${{matrix.model}}
+          .github/scripts/set_benchmark_param.sh ${{matrix.model}} throughput
       - name: Run throughput benchmark
         if: contains(fromJSON(github.event.inputs.backend), 'turbomind')
         env:
@@ -401,7 +401,7 @@ jobs:
       - name: Set params
         run: |
           chmod +x .github/scripts/set_benchmark_param.sh
-          .github/scripts/set_benchmark_param.sh ${{matrix.model}}
+          .github/scripts/set_benchmark_param.sh ${{matrix.model}} restful
       - name: Start restful api turbomind
         if: contains(fromJSON(github.event.inputs.backend), 'turbomind')
         run: |
