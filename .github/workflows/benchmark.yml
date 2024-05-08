@@ -163,7 +163,7 @@ jobs:
       - name: Set params
         run: |
           chmod +x .github/scripts/set_benchmark_param.sh
-          .github/scripts/set_benchmark_param.sh ${{matrix.model}} generate
+          .github/scripts/set_benchmark_param.sh ${{matrix.model}}
       - name: Run generation benchmark
         if: contains(fromJSON(github.event.inputs.backend), 'turbomind')
         env:
@@ -260,7 +260,7 @@ jobs:
       - name: Set params
         run: |
           chmod +x .github/scripts/set_benchmark_param.sh
-          .github/scripts/set_benchmark_param.sh ${{matrix.model}} throughput
+          .github/scripts/set_benchmark_param.sh ${{matrix.model}}
       - name: Run throughput benchmark
         if: contains(fromJSON(github.event.inputs.backend), 'turbomind')
         env:
@@ -401,11 +401,11 @@ jobs:
       - name: Set params
         run: |
           chmod +x .github/scripts/set_benchmark_param.sh
-          .github/scripts/set_benchmark_param.sh ${{matrix.model}} restful
+          .github/scripts/set_benchmark_param.sh ${{matrix.model}}
       - name: Start restful api turbomind
         if: contains(fromJSON(github.event.inputs.backend), 'turbomind')
         run: |
-          lmdeploy serve api_server $MODEL_PATH $MAX_ENTRY_COUNT $MODEL_FORMAT $TP_INFO --log-level ${{inputs.log_level}} > turbomind_run.log 2>&1 &
+          lmdeploy serve api_server $MODEL_PATH $MAX_ENTRY_COUNT $MAX_BATCH_SIZE $MODEL_FORMAT $TP_INFO --log-level ${{inputs.log_level}} > turbomind_run.log 2>&1 &
           echo "restful_pid=$!" >> "$GITHUB_ENV"
           sleep 180s
       - name: Run restful benchmark
