@@ -896,6 +896,7 @@ tb_codellama_7b_chat = dict(
     max_seq_len=MAX_SESSION_LEN,
     batch_size=128,
     concurrency=128,
+    meta_template=llama2_meta_template,
     run_cfg=dict(num_gpus=1, num_procs=1),
     end_str='</s>'
 )
@@ -911,6 +912,7 @@ tb_codellama_7b_chat_w4a16 = dict(
     max_seq_len=MAX_SESSION_LEN,
     batch_size=128,
     concurrency=128,
+    meta_template=llama2_meta_template,
     run_cfg=dict(num_gpus=1, num_procs=1),
     end_str='</s>'
 )
@@ -926,6 +928,7 @@ pt_codellama_7b_chat = dict(
     max_seq_len=MAX_SESSION_LEN,
     batch_size=128,
     concurrency=128,
+    meta_template=llama2_meta_template,
     run_cfg=dict(num_gpus=1, num_procs=1),
     end_str='</s>'
 )
