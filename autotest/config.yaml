@@ -7,10 +7,14 @@ tp_config:
     internlm-chat-20b: 2
     internlm2-chat-20b: 2
     Baichuan2-13B-Chat: 2
-    Mixtral-8x7B-Instruct-v0.1: 2
     internlm2-20b: 2
+    InternVL-Chat-V1-5: 2
+    internlm-xcomposer2-4khd-7b: 2
+    Mixtral-8x7B-Instruct-v0.1: 2
     Qwen-VL-Chat: 2
+    Qwen1.5-32B-Chat: 2
     llava-v1.5-13b: 2
+    deepseek-moe-16b-chat: 2
 
 turbomind_chat_model:
     - meta-llama/Llama-2-7b-chat-hf
@@ -21,22 +25,25 @@ turbomind_chat_model:
     - internlm/internlm2-chat-20b
     - internlm/internlm2-chat-7b-4bits
     - internlm/internlm2-chat-20b-4bits
-    - Qwen/Qwen-7B-Chat
-    - Qwen/Qwen1.5-7B-Chat
+    - internlm/internlm-xcomposer2-vl-7b
+    - internlm/internlm-xcomposer2-7b
+    - internlm/internlm-xcomposer2-4khd-7b
+    - OpenGVLab/InternVL-Chat-V1-5
     - lmdeploy/llama2-chat-7b-w4
+    - Qwen/Qwen-7B-Chat
+    - Qwen/Qwen-VL-Chat
+    - Qwen/Qwen1.5-7B-Chat
+    - Qwen/Qwen1.5-32B-Chat
+    - Qwen/Qwen1.5-4B-Chat-AWQ
     - baichuan-inc/Baichuan2-7B-Chat
     - 01-ai/Yi-6B-Chat
-    - Qwen/Qwen-VL-Chat
+    - 01-ai/Yi-VL-6B
     - liuhaotian/llava-v1.5-7b
     - liuhaotian/llava-v1.5-13b
     - liuhaotian/llava-v1.6-vicuna-7b
-    - 01-ai/Yi-VL-6B
     - deepseek-ai/deepseek-vl-1.3b-chat
     - deepseek-ai/deepseek-coder-1.3b-instruct
     - codellama/CodeLlama-7b-Instruct-hf
-    - Qwen/Qwen1.5-4B-Chat-AWQ
-    - OpenGVLab/InternVL-Chat-V1-5
-    - internlm/internlm-xcomposer2-vl-7b
 
 pytorch_chat_model:
     - meta-llama/Llama-2-7b-chat-hf
@@ -47,14 +54,18 @@ pytorch_chat_model:
     - baichuan-inc/Baichuan2-7B-Chat
     - baichuan-inc/Baichuan2-13B-Chat
     - 01-ai/Yi-6B-Chat
+    - Qwen/Qwen-7B-Chat
     - Qwen/Qwen1.5-7B-Chat
+    - Qwen/Qwen1.5-32B-Chat
     - Qwen/Qwen1.5-MoE-A2.7B-Chat
     - deepseek-ai/deepseek-moe-16b-chat
+    - deepseek-ai/deepseek-coder-6.7b-instruct
     - mistralai/Mistral-7B-Instruct-v0.1
     - mistralai/Mixtral-8x7B-Instruct-v0.1
     - google/gemma-7b-it
-    - deepseek-ai/deepseek-coder-6.7b-instruct
     - THUDM/chatglm2-6b
+    - bigcode/starcoder2-3b
+    - microsoft/Phi-3-mini-4k-instruct
 
 turbomind_base_model:
     - internlm/internlm2-1_8b
@@ -73,42 +84,54 @@ vl_model:
     - liuhaotian/llava-v1.6-vicuna-7b
     - 01-ai/Yi-VL-6B
     - deepseek-ai/deepseek-vl-1.3b-chat
-    - OpenGVLab/InternVL-Chat-V1-5
     - internlm/internlm-xcomposer2-vl-7b
+    - internlm/internlm-xcomposer2-7b
+    - internlm/internlm-xcomposer2-4khd-7b
+    - OpenGVLab/InternVL-Chat-V1-5
 
 quatization_case_config:
     w4a16:
         - meta-llama/Llama-2-7b-chat-hf
-        - internlm/internlm-chat-20b
-        - Qwen/Qwen-7B-Chat
-        - internlm/internlm2-chat-20b
-        - baichuan-inc/Baichuan2-7B-Chat
-        - internlm/internlm2-20b
-        - Qwen/Qwen1.5-7B-Chat
         - meta-llama/Meta-Llama-3-8B-Instruct
-        - Qwen/Qwen-VL-Chat
-        - liuhaotian/llava-v1.5-7b
-        - liuhaotian/llava-v1.5-13b
-        - liuhaotian/llava-v1.6-vicuna-7b
-        - 01-ai/Yi-VL-6B
-        - deepseek-ai/deepseek-vl-1.3b-chat
-        - OpenGVLab/InternVL-Chat-V1-5
-        - internlm/internlm-xcomposer2-vl-7b
-    kvint:
-        - meta-llama/Llama-2-7b-chat-hf
-        - meta-llama/Meta-Llama-3-8B-Instruct
-        - internlm/internlm2-chat-1_8b
         - internlm/internlm-chat-20b
         - internlm/internlm2-chat-7b
         - internlm/internlm2-chat-20b
-        - internlm/internlm2-chat-7b-4bits
-        - internlm/internlm2-chat-20b-4bits
+        - internlm/internlm2-20b
+        - internlm/internlm-xcomposer2-vl-7b
+        - internlm/internlm-xcomposer2-7b
+        - internlm/internlm-xcomposer2-4khd-7b
+        - OpenGVLab/InternVL-Chat-V1-5
+        - Qwen/Qwen-7B-Chat
+        - Qwen/Qwen-VL-Chat
+        - Qwen/Qwen1.5-7B-Chat
+        - Qwen/Qwen1.5-32B-Chat
+        - baichuan-inc/Baichuan2-7B-Chat
+        - 01-ai/Yi-6B-Chat
+        - 01-ai/Yi-VL-6B
+        - liuhaotian/llava-v1.5-7b
+        - liuhaotian/llava-v1.5-13b
+        - liuhaotian/llava-v1.6-vicuna-7b
+        - deepseek-ai/deepseek-vl-1.3b-chat
+        - deepseek-ai/deepseek-coder-1.3b-instruct
+    kvint:
+        - meta-llama/Llama-2-7b-chat-hf
+        - meta-llama/Meta-Llama-3-8B-Instruct
+        - internlm/internlm-chat-20b
+        - internlm/internlm2-chat-7b
+        - internlm/internlm2-chat-20b
+        - internlm/internlm2-20b
+        - internlm/internlm2-chat-7b-inner-4bits
+        - internlm/internlm2-chat-20b-inner-4bits
+        - internlm/internlm2-20b-inner-4bits
+        - lmdeploy/llama2-chat-7b-w4
         - Qwen/Qwen-7B-Chat
         - Qwen/Qwen1.5-7B-Chat
-        - lmdeploy/llama2-chat-7b-w4
+        - Qwen/Qwen1.5-32B-Chat
+        - Qwen/Qwen-7B-Chat-inner-4bits
+        - Qwen/Qwen1.5-7B-Chat-inner-4bits
+        - Qwen/Qwen1.5-32B-Chat-inner-4bits
         - baichuan-inc/Baichuan2-7B-Chat
-        - internlm/internlm2-1_8b
-        - internlm/internlm2-20b
+        - baichuan-inc/Baichuan2-7B-Chat-inner-4bits
         - 01-ai/Yi-6B-Chat
         - codellama/CodeLlama-7b-Instruct-hf
     w8a8:
@@ -117,5 +140,5 @@ quatization_case_config:
         - internlm/internlm-chat-20b
         - internlm/internlm2-chat-20b
         - internlm/internlm2-chat-7b
-        - 01-ai/Yi-6B-Chat
         - internlm/internlm2-20b
+        - 01-ai/Yi-6B-Chat

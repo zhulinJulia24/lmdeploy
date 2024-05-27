@@ -439,7 +439,7 @@ hf_internlm2_chat_20b = dict(type=HuggingFaceCausalLM,
                              tokenizer_kwargs=tokenizer_kwargs_template,
                              max_out_len=MAX_NEW_TOKENS,
                              max_seq_len=MAX_SESSION_LEN,
-                             batch_size=8,
+                             batch_size=128,
                              batch_padding=False,
                              meta_template=internlm2_meta_template,
                              run_cfg=run_cfg_tp2_template,
@@ -544,7 +544,7 @@ hf_qwen_chat_7b = dict(
     pad_token_id=151643,
     max_out_len=MAX_NEW_TOKENS,
     max_seq_len=MAX_SESSION_LEN,
-    batch_size=16,
+    batch_size=128,
     batch_padding=False,
     meta_template=qwen_meta_template,
     run_cfg=run_cfg_tp1_template,
@@ -605,7 +605,7 @@ hf_llama2_chat_7b = dict(type=HuggingFaceCausalLM,
                          meta_template=llama2_meta_template,
                          max_out_len=MAX_NEW_TOKENS,
                          max_seq_len=MAX_SESSION_LEN,
-                         batch_size=16,
+                         batch_size=128,
                          batch_padding=False,
                          run_cfg=run_cfg_tp1_template,
                          end_str='[INST]')
@@ -677,7 +677,7 @@ hf_mistral_chat_7b = dict(abbr='mistral-7b-instruct-v0.1-hf',
                           meta_template=mistral_meta_template,
                           max_out_len=MAX_NEW_TOKENS,
                           max_seq_len=MAX_SESSION_LEN,
-                          batch_size=16,
+                          batch_size=128,
                           batch_padding=False,
                           run_cfg=run_cfg_tp1_template,
                           end_str='</s>')
@@ -826,6 +826,21 @@ pt_gemma_chat_7b = dict(type=LmdeployPytorchModel,
                         end_str='<end_of_turn>')
 
 # ===== Configs for meta-llama/Meta-Llama-3-8B-Instruct =====
+hf_llama_3_8b_instruct = dict(
+    type=HuggingFaceCausalLM,
+    abbr='llama-3-8b-instruct-hf',
+    path='meta-llama/Meta-Llama-3-8B-Instruct',
+    tokenizer_path='meta-llama/Meta-Llama-3-8B-Instruct',
+    model_kwargs=model_kwargs_template,
+    tokenizer_kwargs=tokenizer_kwargs_template,
+    meta_template=llama3_meta_template,
+    max_out_len=MAX_NEW_TOKENS,
+    max_seq_len=MAX_SESSION_LEN,
+    batch_size=128,
+    batch_padding=False,
+    run_cfg=run_cfg_tp1_template,
+    end_str='[INST]')
+
 # config for llama-3-8b-instruct turbomind
 tb_llama_3_8b_instruct = dict(
     type=TurboMindModel,
