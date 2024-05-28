@@ -143,12 +143,17 @@ def evaluate(models: List[str], datasets: List[str], workspace: str):
             logging.error(
                 f'Model {target_model} not found in configuration file')
             continue
-        model_cfg = cfg[target_model]
-        hf_model_path = model_cfg['path']
-        if not os.path.exists(hf_model_path):
-            logging.error(f'Model path not exists: {hf_model_path}')
-            continue
-        logging.info(f'Start evaluating {target_model} ...\\nn{model_cfg}\n\n')
+        if engine_type != 'hf':
+            model_cfg = cfg[target_model]
+            hf_model_path = model_cfg['path']
+            if not os.path.exists(hf_model_path):
+                logging.error(f'Model path not exists: {hf_model_path}')
+                continue
+            logging.info(
+                f'Start evaluating {target_model} ...\\nn{model_cfg}\n\n')
+        else:
+            hf_model_path = target_model
+
         with open(config_path_new, 'a') as f:
             f.write(f'\ndatasets = {datasets}\n')
             f.write(f'\nmodels = [ {target_model} ]\n')
