@@ -27,8 +27,9 @@ def test_return_with_prompt(config, model, backend, worker_id):
         model_path = '/'.join([config.get('model_path'), model])
         backend_config = backend(tp=2)
         pipe = pipeline(model_path, backend_config=backend_config)
-        response = pipe('Hi, pls intro yourself')
-        result, msg = assert_pipeline_single_return(response)
+        gen_config = GenerationConfig(logprobs=5, top_k=40)
+        response = pipe('Hi, pls intro yourself', gen_config=gen_config)
+        result, msg = assert_pipeline_single_return(response, 5)
         save_pipeline_common_log(config, file_name, result, response, msg)
         del pipe
         torch.cuda.empty_cache()
@@ -57,10 +58,12 @@ def test_return_with_prompt_stream(config, model, backend, worker_id):
         model_path = '/'.join([config.get('model_path'), model])
         backend_config = backend(tp=2)
         pipe = pipeline(model_path, backend_config=backend_config)
+        gen_config = GenerationConfig(logprobs=5, top_k=40)
         response = []
-        for item in pipe.stream_infer('Hi, pls intro yourself'):
+        for item in pipe.stream_infer('Hi, pls intro yourself',
+                                      gen_config=gen_config):
             response.append(item)
-        result, msg = assert_pipeline_single_stream_return(response)
+        result, msg = assert_pipeline_single_stream_return(response, 5)
         save_pipeline_common_log(config, file_name, result, response, msg)
         del pipe
         torch.cuda.empty_cache()
@@ -89,8 +92,10 @@ def test_return_with_multi_prompt(config, model, backend, worker_id):
         model_path = '/'.join([config.get('model_path'), model])
         backend_config = backend(tp=2)
         pipe = pipeline(model_path, backend_config=backend_config)
-        response = pipe(['Hi, pls intro yourself', 'Shanghai is'])
-        result, msg = assert_pipeline_batch_return(response, 2)
+        gen_config = GenerationConfig(logprobs=5, top_k=40)
+        response = pipe(['Hi, pls intro yourself', 'Shanghai is'],
+                        gen_config=gen_config)
+        result, msg = assert_pipeline_batch_return(response, 5, 2)
         save_pipeline_common_log(config, file_name, result, response, msg)
         del pipe
         torch.cuda.empty_cache()
@@ -120,9 +125,11 @@ def test_return_with_multi_prompt_stream(config, model, backend, worker_id):
         backend_config = backend(tp=2)
         pipe = pipeline(model_path, backend_config=backend_config)
         response = []
-        for item in pipe.stream_infer(['Pls intro yourself', 'Shanghai is']):
+        gen_config = GenerationConfig(logprobs=5, top_k=40)
+        for item in pipe.stream_infer(['Pls intro yourself', 'Shanghai is'],
+                                      gen_config=gen_config):
             response.append(item)
-        result, msg = assert_pipeline_batch_stream_return(response, 2)
+        result, msg = assert_pipeline_batch_stream_return(response, 5, 2)
         save_pipeline_common_log(config, file_name, result, response, msg)
         del pipe
         torch.cuda.empty_cache()
@@ -151,9 +158,9 @@ def test_return_with_message(config, model, backend, worker_id):
         backend_config = backend(tp=2)
         pipe = pipeline(model_path, backend_config=backend_config)
         prompts = [[{'role': 'user', 'content': 'Hi, pls intro yourself'}]]
-        response = pipe(prompts)
-        print(response)
-        result, msg = assert_pipeline_batch_return(response)
+        gen_config = GenerationConfig(logprobs=5, top_k=40)
+        response = pipe(prompts, gen_config=gen_config)
+        result, msg = assert_pipeline_batch_return(response, 5)
         save_pipeline_common_log(config, file_name, result, response, msg)
         del pipe
         torch.cuda.empty_cache()
@@ -183,9 +190,10 @@ def test_return_with_message_stream(config, model, backend, worker_id):
         pipe = pipeline(model_path, backend_config=backend_config)
         prompts = [[{'role': 'user', 'content': 'Hi, pls intro yourself'}]]
         response = []
-        for item in pipe.stream_infer(prompts):
+        gen_config = GenerationConfig(logprobs=5, top_k=40)
+        for item in pipe.stream_infer(prompts, gen_config=gen_config):
             response.append(item)
-        result, msg = assert_pipeline_single_stream_return(response)
+        result, msg = assert_pipeline_single_stream_return(response, 5)
         save_pipeline_common_log(config, file_name, result, response, msg)
         del pipe
         torch.cuda.empty_cache()
@@ -220,9 +228,9 @@ def test_return_with_message_batch(config, model, backend, worker_id):
             'role': 'user',
             'content': 'Shanghai is'
         }]]
-        response = pipe(prompts)
-        print(response)
-        result, msg = assert_pipeline_batch_return(response, 2)
+        gen_config = GenerationConfig(logprobs=5, top_k=40)
+        response = pipe(prompts, gen_config=gen_config)
+        result, msg = assert_pipeline_batch_return(response, 5)
         save_pipeline_common_log(config, file_name, result, response, msg)
         del pipe
         torch.cuda.empty_cache()
@@ -258,9 +266,10 @@ def test_return_with_message_batch_stream(config, model, backend, worker_id):
             'content': 'Shanghai is'
         }]]
         response = []
-        for item in pipe.stream_infer(prompts):
+        gen_config = GenerationConfig(logprobs=5, top_k=40)
+        for item in pipe.stream_infer(prompts, gen_config=gen_config):
             response.append(item)
-        result, msg = assert_pipeline_batch_stream_return(response, 2)
+        result, msg = assert_pipeline_batch_stream_return(response, 5, 2)
         save_pipeline_common_log(config, file_name, result, response, msg)
         del pipe
         torch.cuda.empty_cache()

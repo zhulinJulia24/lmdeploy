@@ -199,8 +199,10 @@ def assert_pipeline_common_log(config, log_name):
     assert result, msg
 
 
-def assert_pipeline_single_return(output):
-    result = assert_pipeline_single_element(output, is_last=True)
+def assert_pipeline_single_return(output, logprobs: int = 0):
+    result = assert_pipeline_single_element(output,
+                                            is_last=True,
+                                            logprobs=logprobs)
     if not result:
         return result, 'single_stream_element is wrong'
     return result & (len(output.token_ids) == output.generate_token_len
@@ -208,31 +210,37 @@ def assert_pipeline_single_return(output):
                      1), 'token_is len is not correct'
 
 
-def assert_pipeline_batch_return(output, size: int = 1):
+def assert_pipeline_batch_return(output, logprobs: int = 0, size: int = 1):
     if len(output) != size:
         return False, 'length is not correct'
     for single_output in output:
-        result, msg = assert_pipeline_single_return(single_output)
+        result, msg = assert_pipeline_single_return(single_output,
+                                                    logprobs=logprobs)
         if result is False:
             return result, msg
     return True, ''
 
 
-def assert_pipeline_single_stream_return(output):
+def assert_pipeline_single_stream_return(output, logprobs: int = 0):
     print(output)
     for i in range(0, len(output) - 1):
-        if assert_pipeline_single_element(output[i], is_stream=True) is False:
+        if assert_pipeline_single_element(
+                output[i], is_stream=True, logprobs=logprobs) is False:
             return False, f'single_stream_element is false, index is {i}'
-    if assert_pipeline_single_element(output[-1], is_stream=True,
-                                      is_last=True) is False:
+    if assert_pipeline_single_element(
+            output[-1], is_stream=True, is_last=True,
+            logprobs=logprobs) is False:
         return False, 'last single_stream_element is false'
     return True, ''
 
 
-def assert_pipeline_batch_stream_return(output, size: int = 1):
+def assert_pipeline_batch_stream_return(output,
+                                        logprobs: int = 0,
+                                        size: int = 1):
     for i in range(size):
         output_list = [item for item in output if item.session_id == i]
-        result, msg = assert_pipeline_single_stream_return(output_list)
+        result, msg = assert_pipeline_single_stream_return(
+            output_list, logprobs)
         if result is False:
             return result, msg
     return True, ''
@@ -240,7 +248,8 @@ def assert_pipeline_batch_stream_return(output, size: int = 1):
 
 def assert_pipeline_single_element(output,
                                    is_stream: bool = False,
-                                   is_last: bool = False):
+                                   is_last: bool = False,
+                                   logprobs: int = 0):
     result = True
     result &= output.generate_token_len > 0
     result &= output.input_token_len > 0
@@ -256,7 +265,13 @@ def assert_pipeline_single_element(output,
         result &= len(output.text) > 0
         result &= output.finish_reason is None
         result &= len(output.token_ids) > 0
-    result &= output.logprobs is None
+    if logprobs == 0:
+        result &= output.logprobs is None
+    else:
+        for probs in output.logprobs:
+            result &= len(probs.keys()) >= 1 and len(
+                probs.keys()) <= logprobs + 1
+        result &= len(output.logprobs) == len(output.token_ids)
     return result
 
 
