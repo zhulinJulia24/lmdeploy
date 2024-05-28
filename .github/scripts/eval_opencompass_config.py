@@ -1,6 +1,7 @@
 from mmengine.config import read_base
-from opencompass.models import (HuggingFaceCausalLM, LmdeployPytorchModel,
-                                TurboMindModel)
+from opencompass.models import (HuggingFaceCausalLM,
+                                HuggingFacewithChatTemplate,
+                                LmdeployPytorchModel, TurboMindModel)
 
 with read_base():
     # choose a list of datasets
@@ -102,6 +103,7 @@ gemma_meta_template = dict(round=[
 
 MAX_SESSION_LEN = 2048
 MAX_NEW_TOKENS = 100
+BIG_MAX_NEW_TOKENS = 1024
 
 tb_engine_config_template_max_bs_8 = dict(session_len=MAX_SESSION_LEN,
                                           max_batch_size=8,
@@ -431,19 +433,15 @@ tb_internlm2_chat_20b = dict(
     end_str='<|im_end|>')
 
 # config for internlm2-chat-20b
-hf_internlm2_chat_20b = dict(type=HuggingFaceCausalLM,
-                             abbr='internlm2-chat-20b-hf',
-                             path='internlm/internlm2-chat-20b',
-                             tokenizer_path='internlm/internlm2-chat-20b',
-                             model_kwargs=model_kwargs_template,
-                             tokenizer_kwargs=tokenizer_kwargs_template,
-                             max_out_len=MAX_NEW_TOKENS,
-                             max_seq_len=MAX_SESSION_LEN,
-                             batch_size=128,
-                             batch_padding=False,
-                             meta_template=internlm2_meta_template,
-                             run_cfg=run_cfg_tp2_template,
-                             end_str='<|im_end|>')
+hf_internlm2_chat_20b = dict(
+    type=HuggingFacewithChatTemplate,
+    abbr='internlm2-chat-20b-hf',
+    path='internlm/internlm2-chat-20b',
+    max_out_len=BIG_MAX_NEW_TOKENS,
+    batch_size=128,
+    run_cfg=run_cfg_tp2_template,
+    stop_words=['</s>', '<|im_end|>'],
+)
 
 # config for internlm2-chat-20b-w4 model
 tb_internlm2_chat_20b_w4a16 = dict(
@@ -827,19 +825,14 @@ pt_gemma_chat_7b = dict(type=LmdeployPytorchModel,
 
 # ===== Configs for meta-llama/Meta-Llama-3-8B-Instruct =====
 hf_llama_3_8b_instruct = dict(
-    type=HuggingFaceCausalLM,
+    type=HuggingFacewithChatTemplate,
     abbr='llama-3-8b-instruct-hf',
     path='meta-llama/Meta-Llama-3-8B-Instruct',
-    tokenizer_path='meta-llama/Meta-Llama-3-8B-Instruct',
-    model_kwargs=model_kwargs_template,
-    tokenizer_kwargs=tokenizer_kwargs_template,
-    meta_template=llama3_meta_template,
-    max_out_len=MAX_NEW_TOKENS,
-    max_seq_len=MAX_SESSION_LEN,
-    batch_size=128,
-    batch_padding=False,
+    max_out_len=BIG_MAX_NEW_TOKENS,
+    batch_size=32,
     run_cfg=run_cfg_tp1_template,
-    end_str='[INST]')
+    stop_words=['<|end_of_text|>', '<|eot_id|>'],
+)
 
 # config for llama-3-8b-instruct turbomind
 tb_llama_3_8b_instruct = dict(
@@ -849,7 +842,7 @@ tb_llama_3_8b_instruct = dict(
     engine_config=tb_engine_config_template_max_bs_128,
     gen_config=gen_config_template,
     max_out_len=MAX_NEW_TOKENS,
-    max_seq_len=MAX_SESSION_LEN,
+    max_seq_len=BIG_MAX_NEW_TOKENS,
     batch_size=128,
     concurrency=128,
     meta_template=llama3_meta_template,
@@ -863,7 +856,7 @@ tb_llama_3_8b_instruct_w4a16 = dict(
     engine_config=tb_awq_engine_config_template_max_bs_128,
     gen_config=gen_config_template,
     max_out_len=MAX_NEW_TOKENS,
-    max_seq_len=MAX_SESSION_LEN,
+    max_seq_len=BIG_MAX_NEW_TOKENS,
     batch_size=128,
     concurrency=128,
     meta_template=llama3_meta_template,
@@ -877,7 +870,7 @@ tb_llama_3_8b_instruct_kvint4 = dict(
     engine_config=tb_kvint4_engine_config_template_max_bs_128,
     gen_config=gen_config_template,
     max_out_len=MAX_NEW_TOKENS,
-    max_seq_len=MAX_SESSION_LEN,
+    max_seq_len=BIG_MAX_NEW_TOKENS,
     batch_size=128,
     concurrency=128,
     meta_template=llama3_meta_template,
@@ -892,7 +885,7 @@ pt_llama_3_8b_instruct = dict(
     engine_config=pt_engine_config_template_max_bs_128,
     gen_config=gen_config_template,
     max_out_len=MAX_NEW_TOKENS,
-    max_seq_len=MAX_SESSION_LEN,
+    max_seq_len=BIG_MAX_NEW_TOKENS,
     batch_size=128,
     concurrency=128,
     meta_template=llama3_meta_template,
