@@ -125,8 +125,7 @@ gemma_meta_template = dict(round=[
                            eos_token_id=1)
 
 MAX_SESSION_LEN = 2048
-MAX_NEW_TOKENS = 100
-BIG_MAX_NEW_TOKENS = 1024
+MAX_NEW_TOKENS = 1024
 
 tb_engine_config_template_max_bs_8 = dict(session_len=MAX_SESSION_LEN,
                                           max_batch_size=8,
@@ -693,7 +692,7 @@ tb_llama_3_8b_instruct = dict(
     engine_config=tb_engine_config_template_max_bs_128,
     gen_config=gen_config_template,
     max_out_len=MAX_NEW_TOKENS,
-    max_seq_len=BIG_MAX_NEW_TOKENS,
+    max_seq_len=MAX_NEW_TOKENS,
     batch_size=128,
     concurrency=128,
     meta_template=llama3_meta_template,
@@ -707,7 +706,7 @@ tb_llama_3_8b_instruct_w4a16 = dict(
     engine_config=tb_awq_engine_config_template_max_bs_128,
     gen_config=gen_config_template,
     max_out_len=MAX_NEW_TOKENS,
-    max_seq_len=BIG_MAX_NEW_TOKENS,
+    max_seq_len=MAX_NEW_TOKENS,
     batch_size=128,
     concurrency=128,
     meta_template=llama3_meta_template,
@@ -721,7 +720,7 @@ tb_llama_3_8b_instruct_kvint4 = dict(
     engine_config=tb_kvint4_engine_config_template_max_bs_128,
     gen_config=gen_config_template,
     max_out_len=MAX_NEW_TOKENS,
-    max_seq_len=BIG_MAX_NEW_TOKENS,
+    max_seq_len=MAX_NEW_TOKENS,
     batch_size=128,
     concurrency=128,
     meta_template=llama3_meta_template,
@@ -736,7 +735,7 @@ pt_llama_3_8b_instruct = dict(
     engine_config=pt_engine_config_template_max_bs_128,
     gen_config=gen_config_template,
     max_out_len=MAX_NEW_TOKENS,
-    max_seq_len=BIG_MAX_NEW_TOKENS,
+    max_seq_len=MAX_NEW_TOKENS,
     batch_size=128,
     concurrency=128,
     meta_template=llama3_meta_template,
