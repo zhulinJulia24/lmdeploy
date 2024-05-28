@@ -1,5 +1,5 @@
 from mmengine.config import read_base
-from opencompass.models import (LmdeployPytorchModel,
+from opencompass.models import (LmdeployPytorchModel, TurboMindModel,
                                 TurboMindModelwithChatTemplate)
 
 with read_base():
@@ -71,10 +71,10 @@ llama2_meta_template = dict(round=[
 
 llama3_meta_template = dict(round=[
     dict(role='HUMAN',
-         begin='<|start_header_id|>user<|end_header_id|>\n\n',
+         begin='<|begin_of_text|>user<|end_header_id|>\n\n',
          end='<|eot_id|>'),
     dict(role='BOT',
-         begin='<|start_header_id|>assistant<|end_header_id|>\n\n',
+         begin='<|begin_of_text|>assistant<|end_header_id|>\n\n',
          end='<|eot_id|>',
          generate=True),
 ],
@@ -250,7 +250,7 @@ run_cfg_tp2_template = dict(num_gpus=2, num_procs=1)
 
 # ===== Configs for internlm/internlm-chat-7b =====
 # config for internlm-chat-7b
-tb_internlm_chat_7b = dict(type=TurboMindModelwithChatTemplate,
+tb_internlm_chat_7b = dict(type=TurboMindModel,
                            abbr='internlm-chat-7b-turbomind',
                            path='internlm/internlm-chat-7b',
                            engine_config=tb_engine_config_template_max_bs_32,
@@ -278,7 +278,7 @@ pt_internlm_chat_7b = dict(type=LmdeployPytorchModel,
                            end_str='<eoa>')
 
 tb_internlm_chat_7b_w4a16 = dict(
-    type=TurboMindModelwithChatTemplate,
+    type=TurboMindModel,
     abbr='internlm-chat-7b-4bits-turbomind',
     path='internlm/internlm-chat-7b-inner-4bits',
     engine_config=tb_awq_engine_config_template_max_bs_32,
@@ -293,7 +293,7 @@ tb_internlm_chat_7b_w4a16 = dict(
 
 # ===== Configs for internlm/internlm-chat-20b =====
 # config for internlm-chat-20b
-tb_internlm_chat_20b = dict(type=TurboMindModelwithChatTemplate,
+tb_internlm_chat_20b = dict(type=TurboMindModel,
                             abbr='internlm-chat-20b-turbomind',
                             path='internlm/internlm-chat-20b',
                             engine_config=tb_engine_config_template_max_bs_8,
@@ -308,7 +308,7 @@ tb_internlm_chat_20b = dict(type=TurboMindModelwithChatTemplate,
 
 # config for internlm-chat-20b-w4 model
 tb_internlm_chat_20b_w4a16 = dict(
-    type=TurboMindModelwithChatTemplate,
+    type=TurboMindModel,
     abbr='internlm-chat-20b-4bits-turbomind',
     path='internlm/internlm-chat-20b-inner-4bits',
     engine_config=tb_awq_engine_config_template_max_bs_8,
@@ -338,18 +338,20 @@ pt_internlm_chat_20b = dict(
 
 # ===== Configs for internlm/internlm2-chat-7b =====
 # config for internlm2-chat-7b
-tb_internlm2_chat_7b = dict(type=TurboMindModelwithChatTemplate,
-                            abbr='internlm2-chat-7b-turbomind',
-                            path='internlm/internlm2-chat-7b',
-                            engine_config=tb_engine_config_template_max_bs_128,
-                            gen_config=gen_config_template,
-                            max_out_len=MAX_NEW_TOKENS,
-                            max_seq_len=MAX_SESSION_LEN,
-                            batch_size=128,
-                            concurrency=128,
-                            meta_template=internlm2_meta_template,
-                            run_cfg=run_cfg_tp1_template,
-                            end_str='<|im_end|>')
+tb_internlm2_chat_7b = dict(
+    type=TurboMindModelwithChatTemplate,
+    abbr='internlm2-chat-7b-turbomind',
+    path='internlm/internlm2-chat-7b',
+    engine_config=tb_engine_config_template_max_bs_128,
+    gen_config=gen_config_template,
+    max_out_len=MAX_NEW_TOKENS,
+    max_seq_len=MAX_SESSION_LEN,
+    batch_size=128,
+    concurrency=128,
+    meta_template=internlm2_meta_template,
+    run_cfg=run_cfg_tp1_template,
+    stop_words=['</s>', '<|im_end|>'],
+)
 
 # config for internlm2-chat-7b-w4
 tb_internlm2_chat_7b_w4a16 = dict(
@@ -364,7 +366,8 @@ tb_internlm2_chat_7b_w4a16 = dict(
     concurrency=128,
     meta_template=internlm2_meta_template,
     run_cfg=run_cfg_tp1_template,
-    end_str='<|im_end|>')
+    stop_words=['</s>', '<|im_end|>'],
+)
 
 tb_internlm2_chat_7b_kvint4 = dict(
     type=TurboMindModelwithChatTemplate,
@@ -378,7 +381,8 @@ tb_internlm2_chat_7b_kvint4 = dict(
     concurrency=128,
     meta_template=internlm2_meta_template,
     run_cfg=run_cfg_tp1_template,
-    end_str='<|im_end|>')
+    stop_words=['</s>', '<|im_end|>'],
+)
 
 # config for pt internlm-chat-7b
 pt_internlm2_chat_7b = dict(type=LmdeployPytorchModel,
@@ -408,7 +412,8 @@ tb_internlm2_chat_20b = dict(
     concurrency=128,
     meta_template=internlm2_meta_template,
     run_cfg=run_cfg_tp2_template,
-    end_str='<|im_end|>')
+    stop_words=['</s>', '<|im_end|>'],
+)
 
 # config for internlm2-chat-20b-w4 model
 tb_internlm2_chat_20b_w4a16 = dict(
@@ -423,7 +428,8 @@ tb_internlm2_chat_20b_w4a16 = dict(
     concurrency=128,
     meta_template=internlm2_meta_template,
     run_cfg=run_cfg_tp2_template,
-    end_str='<|im_end|>')
+    stop_words=['</s>', '<|im_end|>'],
+)
 
 # config for internlm2-chat-20b-w4 model
 tb_internlm2_chat_20b_kvint4 = dict(
@@ -438,7 +444,8 @@ tb_internlm2_chat_20b_kvint4 = dict(
     concurrency=128,
     meta_template=internlm2_meta_template,
     run_cfg=run_cfg_tp2_template,
-    end_str='<|im_end|>')
+    stop_words=['</s>', '<|im_end|>'],
+)
 
 # config for pt internlm-chat-20b
 pt_internlm2_chat_20b = dict(
@@ -453,11 +460,12 @@ pt_internlm2_chat_20b = dict(
     concurrency=64,
     meta_template=internlm2_meta_template,
     run_cfg=run_cfg_tp1_template,
-    end_str='<|im_end|>')
+    stop_words=['</s>', '<|im_end|>'],
+)
 
 # ===== Configs for Qwen/Qwen-7B-Chat =====
 # config for qwen-chat-7b turbomind
-tb_qwen_chat_7b = dict(type=TurboMindModelwithChatTemplate,
+tb_qwen_chat_7b = dict(type=TurboMindModel,
                        abbr='qwen-7b-chat-turbomind',
                        path='Qwen/Qwen-7B-Chat',
                        engine_config=tb_engine_config_template_max_bs_128,
@@ -471,7 +479,7 @@ tb_qwen_chat_7b = dict(type=TurboMindModelwithChatTemplate,
                        end_str='<|im_end|>')
 
 tb_qwen_chat_7b_w4a16 = dict(
-    type=TurboMindModelwithChatTemplate,
+    type=TurboMindModel,
     abbr='qwen-7b-chat-4bits-turbomind',
     path='Qwen/Qwen-7B-Chat-inner-4bits',
     engine_config=tb_awq_engine_config_template_max_bs_128,
@@ -500,7 +508,7 @@ pt_qwen_chat_7b = dict(type=LmdeployPytorchModel,
 
 # ===== Configs for meta-llama/Llama-2-7b-chat-hf =====
 # config for llama2-chat-7b turbomind
-tb_llama2_chat_7b = dict(type=TurboMindModelwithChatTemplate,
+tb_llama2_chat_7b = dict(type=TurboMindModel,
                          abbr='llama-2-7b-chat-turbomind',
                          path='meta-llama/Llama-2-7b-chat-hf',
                          engine_config=tb_engine_config_template_max_bs_128,
@@ -515,7 +523,7 @@ tb_llama2_chat_7b = dict(type=TurboMindModelwithChatTemplate,
 
 # config for llama2-chat-7b-w4a16 turbomind
 tb_llama2_chat_7b_wa416 = dict(
-    type=TurboMindModelwithChatTemplate,
+    type=TurboMindModel,
     abbr='llama-2-7b-chat-4bits-turbomind',
     path='meta-llama/Llama-2-7b-chat-hf-inner-4bits',
     engine_config=tb_awq_engine_config_template_max_bs_128,
@@ -544,7 +552,7 @@ pt_llama2_chat_7b = dict(type=LmdeployPytorchModel,
 
 # ===== Configs for baichuan-inc/Baichuan2-7B-Chat =====
 # config for baichuan2-chat-7b turbomind
-tb_baichuan2_chat_7b = dict(type=TurboMindModelwithChatTemplate,
+tb_baichuan2_chat_7b = dict(type=TurboMindModel,
                             abbr='Baichuan2-7B-Chat-turbomind',
                             path='baichuan-inc/Baichuan2-7B-Chat',
                             engine_config=tb_engine_config_template_max_bs_16,
@@ -602,7 +610,7 @@ pt_mixtral_chat_8x7b = dict(
     end_str='</s>')
 
 # ===== Configs for Qwen/Qwen1.5-7B-Chat =====
-tb_qwen1_5_chat_7b = dict(type=TurboMindModelwithChatTemplate,
+tb_qwen1_5_chat_7b = dict(type=TurboMindModel,
                           abbr='qwen1.5-7b-chat-turbomind',
                           path='Qwen/Qwen1.5-7B-Chat',
                           engine_config=tb_engine_config_template_max_bs_128,
@@ -616,7 +624,7 @@ tb_qwen1_5_chat_7b = dict(type=TurboMindModelwithChatTemplate,
                           end_str='<|im_end|>')
 
 tb_qwen1_5_chat_7b_w4a16 = dict(
-    type=TurboMindModelwithChatTemplate,
+    type=TurboMindModel,
     abbr='qwen1.5-7b-chat-4bits-turbomind',
     path='Qwen/Qwen1.5-7B-Chat-inner-4bits',
     engine_config=tb_awq_engine_config_template_max_bs_128,
@@ -630,7 +638,7 @@ tb_qwen1_5_chat_7b_w4a16 = dict(
     end_str='<|im_end|>')
 
 tb_qwen1_5_chat_7b_kvint4 = dict(
-    type=TurboMindModelwithChatTemplate,
+    type=TurboMindModel,
     abbr='qwen1.5-7b-chat-turbomind-kvint4',
     path='Qwen/Qwen1.5-7B-Chat',
     engine_config=tb_kvint4_engine_config_template_max_bs_128,
@@ -687,7 +695,7 @@ pt_gemma_chat_7b = dict(type=LmdeployPytorchModel,
 # ===== Configs for meta-llama/Meta-Llama-3-8B-Instruct =====
 # config for llama-3-8b-instruct turbomind
 tb_llama_3_8b_instruct = dict(
-    type=TurboMindModelwithChatTemplate,
+    type=TurboMindModel,
     abbr='llama-3-8b-instruct-turbomind',
     path='meta-llama/Meta-Llama-3-8B-Instruct',
     engine_config=tb_engine_config_template_max_bs_128,
@@ -701,7 +709,7 @@ tb_llama_3_8b_instruct = dict(
     end_str='[INST]')
 
 tb_llama_3_8b_instruct_w4a16 = dict(
-    type=TurboMindModelwithChatTemplate,
+    type=TurboMindModel,
     abbr='llama-3-8b-instruct-4bits-turbomind',
     path='meta-llama/Meta-Llama-3-8B-Instruct-inner-4bits',
     engine_config=tb_awq_engine_config_template_max_bs_128,
@@ -715,7 +723,7 @@ tb_llama_3_8b_instruct_w4a16 = dict(
     end_str='[INST]')
 
 tb_llama_3_8b_instruct_kvint4 = dict(
-    type=TurboMindModelwithChatTemplate,
+    type=TurboMindModel,
     abbr='llama-3-8b-instruct-turbomind-kvint4',
     path='meta-llama/Meta-Llama-3-8B-Instruct',
     engine_config=tb_kvint4_engine_config_template_max_bs_128,
@@ -744,7 +752,7 @@ pt_llama_3_8b_instruct = dict(
     end_str='[INST]')
 
 # config for code llama
-tb_codellama_7b_chat = dict(type=TurboMindModelwithChatTemplate,
+tb_codellama_7b_chat = dict(type=TurboMindModel,
                             abbr='codellama-7b-chat-turbomind',
                             path='codellama/CodeLlama-7b-Instruct-hf',
                             engine_config=tb_engine_config_template_max_bs_128,
@@ -757,7 +765,7 @@ tb_codellama_7b_chat = dict(type=TurboMindModelwithChatTemplate,
                             end_str='</s>')
 
 tb_codellama_7b_chat_w4a16 = dict(
-    type=TurboMindModelwithChatTemplate,
+    type=TurboMindModel,
     abbr='codellama-7b-chat-4bits-turbomind',
     path='codellama/CodeLlama-7b-Instruct-hf-inner-4bits',
     engine_config=tb_awq_engine_config_template_max_bs_128,
