@@ -137,7 +137,6 @@ quatization_case_config:
     w8a8:
         - meta-llama/Llama-2-7b-chat-hf
         - meta-llama/Meta-Llama-3-8B-Instruct
-        - internlm/internlm-chat-20b
         - internlm/internlm2-chat-20b
         - internlm/internlm2-chat-7b
         - internlm/internlm2-20b
