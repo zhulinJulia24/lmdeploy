@@ -539,10 +539,6 @@ jobs:
     if: ${{!cancelled() && (github.event_name == 'schedule' || inputs.pipeline_regression)}}
     runs-on: [self-hosted, linux-a100]
     needs: test_tools
-    strategy:
-      fail-fast: false
-      matrix:
-        backend: ['turbomind', 'pytorch']
     timeout-minutes: 300
     env:
       REPORT_DIR: /nvme/qa_test_models/test-reports
