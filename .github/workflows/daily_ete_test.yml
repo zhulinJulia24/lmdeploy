@@ -106,7 +106,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        backend: ${{fromJSON(github.event.inputs.backend) || ['turbomind', 'pytorch', 'turbomind-vl']}}
+        backend: ${{fromJSON(github.event.inputs.backend) || fromJSON("['turbomind', 'pytorch', 'turbomind-vl']")}}
     timeout-minutes: 300
     env:
       REPORT_DIR: /nvme/qa_test_models/test-reports
