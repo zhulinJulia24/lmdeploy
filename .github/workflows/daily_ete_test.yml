@@ -107,7 +107,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        backend: ${{github.event.inputs.backend}}
+        backend: ${{github.event.inputs.backend || '[turbomind, pytorch, turbomind-vl]'}}
     env:
       REPORT_DIR: /nvme/qa_test_models/test-reports
       PYTHONPATH: /nvme/qa_test_models/offline_pkg/LLaVA
@@ -172,81 +172,81 @@ jobs:
           rm -rf /nvme/qa_test_models/autotest_model/log/*
       - name: Test lmdeploy - quantization w4a16
         continue-on-error: true
-        if: github.event_name == 'schedule' || (matrix.backend == 'turbomind') && contains(fromJSON(github.event.inputs.model), 'quantization'))
+        if: matrix.backend == 'turbomind' && contains(fromJSON(github.event.inputs.model), 'quantization')
         run: |
           pytest autotest/tools/quantization/test_quantization_w4a16.py -m 'not pr_test' -n 8 --alluredir=allure-results --clean-alluredir
       - name: Test lmdeploy - quantization w8a8
         continue-on-error: true
-        if: github.event_name == 'schedule' || (matrix.backend == 'pytorch') && contains(fromJSON(github.event.inputs.model), 'quantization'))
+        if: matrix.backend == 'pytorch' && contains(fromJSON(github.event.inputs.model), 'quantization')
         run: |
           pytest autotest/tools/quantization/test_quantization_w8a8.py -n 8 --alluredir=allure-results
       - name: Test lmdeploy - convert
         continue-on-error: true
-        if: github.event_name == 'schedule' || (matrix.backend == 'turbomind') && contains(fromJSON(github.event.inputs.model), 'convert'))
+        if: matrix.backend == 'turbomind' && contains(fromJSON(github.event.inputs.model), 'convert')
         run: |
           pytest autotest/tools/convert -m 'not pr_test' -n 8 --alluredir=allure-results
       - name: Test lmdeploy - chat workspace
         continue-on-error: true
-        if: github.event_name == 'schedule' || (matrix.backend == 'turbomind') && contains(fromJSON(github.event.inputs.model), 'chat'))
+        if: matrix.backend == 'turbomind' && contains(fromJSON(github.event.inputs.model), 'chat')
         run: |
           pytest autotest/tools/chat/test_command_chat_workspace.py -m 'gpu_num_1 and not pr_test' -n 8 --alluredir=allure-results || true
           pytest autotest/tools/chat/test_command_chat_workspace.py -m 'gpu_num_2 and not pr_test' -n 4 --alluredir=allure-results
       - name: Test lmdeploy - chat hf turbomind
         continue-on-error: true
-        if: github.event_name == 'schedule' || (matrix.backend == 'turbomind' && contains(fromJSON(github.event.inputs.model), 'chat'))
+        if: matrix.backend == 'turbomind' && contains(fromJSON(github.event.inputs.model), 'chat')
         run: |
           pytest autotest/tools/chat/test_command_chat_hf_turbomind.py -m 'gpu_num_1 and not pr_test' -n 8 --alluredir=allure-results || true
           pytest autotest/tools/chat/test_command_chat_hf_turbomind.py -m 'gpu_num_2 and not pr_test' -n 4 --alluredir=allure-results
       - name: Test lmdeploy - chat hf torch
         continue-on-error: true
-        if: github.event_name == 'schedule' || (matrix.backend == 'pytorch' && contains(fromJSON(github.event.inputs.model), 'chat'))
+        if: matrix.backend == 'pytorch' && contains(fromJSON(github.event.inputs.model), 'chat')
         run: |
           pytest autotest/tools/chat/test_command_chat_hf_pytorch.py -m 'gpu_num_1 and not pr_test' -n 8 --alluredir=allure-results || true
           pytest autotest/tools/chat/test_command_chat_hf_pytorch.py -m 'gpu_num_2 and not pr_test' -n 4 --alluredir=allure-results
       - name: Test lmdeploy - pipeline turbomind
         continue-on-error: true
-        if: github.event_name == 'schedule' || (matrix.backend == 'turbomind' && contains(fromJSON(github.event.inputs.model), 'pipeline'))
+        if: matrix.backend == 'turbomind' && contains(fromJSON(github.event.inputs.model), 'pipeline')
         run: |
           pytest autotest/tools/pipeline/test_pipeline_chat_turbomind.py -m 'gpu_num_1 and not pr_test' -n 8 --alluredir=allure-results || true
           pytest autotest/tools/pipeline/test_pipeline_chat_turbomind.py -m 'gpu_num_2 and not pr_test' -n 4 --alluredir=allure-results
       - name: Test lmdeploy - pipeline torch
         continue-on-error: true
-        if: github.event_name == 'schedule' || (matrix.backend == 'pytorch' && contains(fromJSON(github.event.inputs.model), 'pipeline'))
+        if: matrix.backend == 'pytorch' && contains(fromJSON(github.event.inputs.model), 'pipeline')
         run: |
           pytest autotest/tools/pipeline/test_pipeline_chat_pytorch.py -m 'gpu_num_1 and not pr_test' -n 8 --alluredir=allure-results || true
           pytest autotest/tools/pipeline/test_pipeline_chat_pytorch.py -m 'gpu_num_2 and not pr_test' -n 4 --alluredir=allure-results
       - name: Test lmdeploy - pipeline turbomind vl
         continue-on-error: true
-        if: github.event_name == 'schedule' || (matrix.backend == 'turbomind-vl' && contains(fromJSON(github.event.inputs.model), 'pipeline'))
+        if: matrix.backend == 'turbomind-vl' && contains(fromJSON(github.event.inputs.model), 'pipeline')
         run: |
           pytest autotest/tools/pipeline/test_pipeline_chat_turbomind_vl.py -m 'gpu_num_1 and not pr_test' -n 8 --alluredir=allure-results || true
           pytest autotest/tools/pipeline/test_pipeline_chat_turbomind_vl.py -m 'gpu_num_2 and not pr_test' -n 4 --alluredir=allure-results
       - name: Test lmdeploy - restful turbomind
         continue-on-error: true
-        if: github.event_name == 'schedule' || (matrix.backend == 'turbomind' && contains(fromJSON(github.event.inputs.model), 'restful'))
+        if: matrix.backend == 'turbomind' && contains(fromJSON(github.event.inputs.model), 'restful')
         run: |
           pytest autotest/tools/restful/test_restful_chat_hf_turbomind.py -m 'gpu_num_1 and not pr_test' -n 8 --alluredir=allure-results || true
           pytest autotest/tools/restful/test_restful_chat_hf_turbomind.py -m 'gpu_num_2 and not pr_test' -n 4 --alluredir=allure-results
       - name: Test lmdeploy - restful turbomind vl
         continue-on-error: true
-        if: github.event_name == 'schedule' || (matrix.backend == 'turbomind-vl' && contains(fromJSON(github.event.inputs.model), 'restful'))
+        if: matrix.backend == 'turbomind-vl' && contains(fromJSON(github.event.inputs.model), 'restful')
         run: |
           pytest autotest/tools/restful/test_restful_chat_hf_turbomind_vl.py -m 'gpu_num_1 and not pr_test' -n 8 --alluredir=allure-results || true
           pytest autotest/tools/restful/test_restful_chat_hf_turbomind_vl.py -m 'gpu_num_2 and not pr_test' -n 4 --alluredir=allure-results
       - name: Test lmdeploy - restful workspace
         continue-on-error: true
-        if: github.event_name == 'schedule' || (matrix.backend == 'turbomind' && contains(fromJSON(github.event.inputs.model), 'restful'))
+        if: matrix.backend == 'turbomind' && contains(fromJSON(github.event.inputs.model), 'restful')
         run: |
           pytest autotest/tools/restful/test_restful_chat_workspace.py -m 'gpu_num_1 and not pr_test' -n 8 --alluredir=allure-results || true
           pytest autotest/tools/restful/test_restful_chat_workspace.py -m 'gpu_num_2 and not pr_test' -n 4 --alluredir=allure-results
       - name: Test lmdeploy - restful torch
         continue-on-error: true
-        if: github.event_name == 'schedule' || (matrix.backend == 'pytorch' && contains(fromJSON(github.event.inputs.model), 'restful'))
+        if: matrix.backend == 'pytorch' && contains(fromJSON(github.event.inputs.model), 'restful')
         run: |
           pytest autotest/tools/restful/test_restful_chat_hf_pytorch.py -m 'gpu_num_1 and not pr_test' -n 8 --alluredir=allure-results || true
           pytest autotest/tools/restful/test_restful_chat_hf_pytorch.py -m 'gpu_num_2 and not pr_test' -n 4 --alluredir=allure-results
       - name: Test lmdeploy - local testcase
-        if: github.event_name == 'schedule' || contains(fromJSON(github.event.inputs.model), 'local_case')
+        if: contains(fromJSON(github.event.inputs.model), 'local_case')
         run: |
           pytest /local_case/issue_regression --alluredir=allure-results
       - name: Generate reports
