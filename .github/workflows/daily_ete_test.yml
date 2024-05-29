@@ -61,6 +61,7 @@ env:
   HOST_LOCALTIME: /usr/share/zoneinfo/Asia/Shanghai
   OUTPUT_FOLDER: cuda11.8_dist_${{ github.run_id }}
   TRITON_PTXAS_PATH: /usr/local/cuda/bin/ptxas
+  INPUT_BACKEND: input.backend == 'schedule' || "['turbomind', 'pytorch', 'turbomind-vl']"
 
 
 jobs:
@@ -106,7 +107,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        backend: ${{fromJSON(github.event.inputs.backend) || fromJSON("['turbomind', 'pytorch', 'turbomind-vl']")}}
+        backend: ${{fromJSON(env.INPUT_BACKEND)}}
     timeout-minutes: 300
     env:
       REPORT_DIR: /nvme/qa_test_models/test-reports
