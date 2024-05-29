@@ -101,13 +101,13 @@ jobs:
 
   test_tools:
     needs: linux-build
-    if: ${{!cancelled() && (github.event_name == 'schedule' || inputs.tools_regression)}}
-    runs-on: [self-hosted, linux-a100]
-    timeout-minutes: 300
     strategy:
       fail-fast: false
       matrix:
         backend: ${{github.event.inputs.backend || '[turbomind, pytorch, turbomind-vl]'}}
+    if: ${{!cancelled() && (github.event_name == 'schedule' || inputs.tools_regression)}}
+    runs-on: [self-hosted, linux-a100]
+    timeout-minutes: 300
     env:
       REPORT_DIR: /nvme/qa_test_models/test-reports
       PYTHONPATH: /nvme/qa_test_models/offline_pkg/LLaVA
