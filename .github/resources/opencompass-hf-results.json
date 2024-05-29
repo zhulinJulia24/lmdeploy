@@ -88,14 +88,14 @@
         "crows_pairs": "-"
     },
     "meta-llama/Meta-Llama-3-8B-Instruct": {
-        "ceval": "-",
-        "mmlu": "-",
-        "wic": "-",
-        "wsc": "-",
-        "triviaqa": "-",
-        "gsm8k": "-",
-        "race-middle": "-",
-        "race-high": "-",
-        "crows_pairs": "-"
+        "ceval": "52.32",
+        "mmlu": "67.60",
+        "wic": "36.99",
+        "wsc": "32.69",
+        "triviaqa": "64.80",
+        "gsm8k": "79.53",
+        "race-middle": "86.63",
+        "race-high": "81.22",
+        "crows_pairs": "86.07"
     }
 }

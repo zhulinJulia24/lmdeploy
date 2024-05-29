@@ -1,6 +1,6 @@
 from mmengine.config import read_base
-from opencompass.models import (HuggingFacewithChatTemplate,
-                                LmdeployPytorchModel, TurboMindModel)
+from opencompass.models import (  # noqa: F401, E501
+    HuggingFacewithChatTemplate, LmdeployPytorchModel, TurboMindModel)
 
 with read_base():
     # choose a list of datasets
@@ -35,8 +35,8 @@ with read_base():
         models as hf_internlm_chat_20b  # noqa: F401, E501
     from .models.hf_llama.hf_llama2_7b_chat import \
         models as hf_llama2_chat_7b  # noqa: F401, E501
-    # from .models.hf_llama.hf_llama3_8b_instruct import \
-    #    models as hf_llama_3_8b_instruct  # noqa: F401, E501
+    from .models.hf_llama.hf_llama3_8b_instruct import \
+        models as hf_llama_3_8b_instruct  # noqa: F401, E501
     from .models.mistral.hf_mistral_7b_instruct_v0_1 import \
         models as hf_mistral_chat_7b  # noqa: F401, E501
     from .models.mistral.hf_mixtral_8x7b_instruct_v0_1 import \
@@ -686,15 +686,7 @@ pt_gemma_chat_7b = dict(type=LmdeployPytorchModel,
 
 # ===== Configs for meta-llama/Meta-Llama-3-8B-Instruct =====
 # config for llama-3-8b-instruct turbomind
-hf_llama_3_8b_instruct = dict(
-    type=HuggingFacewithChatTemplate,
-    abbr='llama-3-8b-instruct-hf',
-    path='meta-llama/Meta-Llama-3-8B-Instruct',
-    max_out_len=1024,
-    batch_size=8,
-    run_cfg=dict(num_gpus=1),
-    stop_words=['<|end_of_text|>', '<|eot_id|>'],
-)
+
 tb_llama_3_8b_instruct = dict(
     type=TurboMindModel,
     abbr='llama-3-8b-instruct-turbomind',

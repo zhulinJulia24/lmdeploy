@@ -19,7 +19,6 @@ tp_config:
 turbomind_chat_model:
     - meta-llama/Llama-2-7b-chat-hf
     - meta-llama/Meta-Llama-3-8B-Instruct
-    - internlm/internlm2-chat-1_8b
     - internlm/internlm-chat-20b
     - internlm/internlm2-chat-7b
     - internlm/internlm2-chat-20b
@@ -29,7 +28,6 @@ turbomind_chat_model:
     - internlm/internlm-xcomposer2-7b
     - internlm/internlm-xcomposer2-4khd-7b
     - OpenGVLab/InternVL-Chat-V1-5
-    - lmdeploy/llama2-chat-7b-w4
     - Qwen/Qwen-7B-Chat
     - Qwen/Qwen-VL-Chat
     - Qwen/Qwen1.5-7B-Chat
@@ -63,18 +61,18 @@ pytorch_chat_model:
     - mistralai/Mistral-7B-Instruct-v0.1
     - mistralai/Mixtral-8x7B-Instruct-v0.1
     - google/gemma-7b-it
-    - THUDM/chatglm2-6b
     - bigcode/starcoder2-7b
     - microsoft/Phi-3-mini-4k-instruct
+    - THUDM/chatglm2-6b
+    - THUDM/cogvlm2-llama3-chat-19B
+    - THUDM/cogvlm-chat-hf
 
 turbomind_base_model:
-    - internlm/internlm2-1_8b
     - internlm/internlm2-20b
     - codellama/CodeLlama-7b-hf
 
 pytorch_base_model:
     - tiiuae/falcon-7b
-    - internlm/internlm2-1_8b
     - internlm/internlm2-20b
 
 vl_model:
@@ -88,6 +86,8 @@ vl_model:
     - internlm/internlm-xcomposer2-7b
     - internlm/internlm-xcomposer2-4khd-7b
     - OpenGVLab/InternVL-Chat-V1-5
+    - THUDM/cogvlm2-llama3-chat-19B
+    - THUDM/cogvlm-chat-hf
 
 quatization_case_config:
     w4a16:
