@@ -123,7 +123,7 @@ jobs:
         - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
     steps:
       - name: Clone repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v2
         if: ${{github.event_name == 'schedule' || !inputs.offline_mode}}
         with:
           repository: ${{ github.event.inputs.repo_org || 'InternLM/lmdeploy' }}
@@ -272,7 +272,7 @@ jobs:
       GRPC_PORT: 33337
     steps:
       - name: Clone repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v2
         if: ${{github.event_name == 'schedule' || !inputs.offline_mode}}
         with:
           repository: ${{ github.event.inputs.repo_org || 'InternLM/lmdeploy' }}
@@ -435,7 +435,7 @@ jobs:
         - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
     steps:
       - name: Clone repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v2
         if: ${{github.event_name == 'schedule' || !inputs.offline_mode}}
         with:
           repository: ${{ github.event.inputs.repo_org || 'InternLM/lmdeploy' }}
@@ -543,7 +543,7 @@ jobs:
         - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
     steps:
       - name: Clone repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v2
         if: ${{github.event_name == 'schedule' || !inputs.offline_mode}}
         with:
           repository: ${{ github.event.inputs.repo_org || 'InternLM/lmdeploy' }}
