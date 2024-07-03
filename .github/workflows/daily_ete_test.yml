@@ -146,15 +146,15 @@ jobs:
       - name: Install lmdeploy
         if: ${{github.event_name == 'schedule' || !inputs.offline_mode}}
         run: |
-          python3 -m pip install lmdeploy-*.whl --index-url https://download.pytorch.org/whl/cu118
-          python3 -m pip install -r requirements/test.txt --index-url https://download.pytorch.org/whl/cu118
-          pip install /nvme/qa_test_models/offline_pkg/DeepSeek-VL --no-deps --index-url https://download.pytorch.org/whl/cu118
+          python3 -m pip install lmdeploy-*.whl
+          python3 -m pip install -r requirements/test.txt
+          pip install /nvme/qa_test_models/offline_pkg/DeepSeek-VL --no-deps
       - name: Install lmdeploy - offline
         if: ${{inputs.offline_mode}}
         run: |
-          python3 -m pip install /nvme/qa_test_models/offline_pkg/py310/lmdeploy-*.whl --index-url https://download.pytorch.org/whl/cu118
-          python3 -m pip install -r requirements/test.txt --index-url https://download.pytorch.org/whl/cu118
-          pip install /nvme/qa_test_models/offline_pkg/DeepSeek-VL --no-deps --index-url https://download.pytorch.org/whl/cu118
+          python3 -m pip install /nvme/qa_test_models/offline_pkg/py310/lmdeploy-*.whl
+          python3 -m pip install -r requirements/test.txt
+          pip install /nvme/qa_test_models/offline_pkg/DeepSeek-VL --no-deps
       - name: Check env
         run: |
           python3 -m pip list
@@ -457,13 +457,13 @@ jobs:
       - name: Install lmdeploy
         if: ${{github.event_name == 'schedule' || !inputs.offline_mode}}
         run: |
-          python3 -m pip install lmdeploy-*.whl --index-url https://download.pytorch.org/whl/cu118
-          python3 -m pip install -r requirements/test.txt --index-url https://download.pytorch.org/whl/cu118
+          python3 -m pip install lmdeploy-*.whl
+          python3 -m pip install -r requirements/test.txt
       - name: Install lmdeploy - offline
         if: ${{inputs.offline_mode}}
         run: |
-          python3 -m pip install /nvme/qa_test_models/offline_pkg/py310/lmdeploy-*.whl --index-url https://download.pytorch.org/whl/cu118
-          python3 -m pip install -r requirements/test.txt --index-url https://download.pytorch.org/whl/cu118
+          python3 -m pip install /nvme/qa_test_models/offline_pkg/py310/lmdeploy-*.whl
+          python3 -m pip install -r requirements/test.txt
       - name: Check env
         run: |
           python3 -m pip list
@@ -565,13 +565,13 @@ jobs:
       - name: Install lmdeploy
         if: ${{github.event_name == 'schedule' || !inputs.offline_mode}}
         run: |
-          python3 -m pip install lmdeploy-*.whl --index-url https://download.pytorch.org/whl/cu118
-          python3 -m pip install -r requirements/test.txt --index-url https://download.pytorch.org/whl/cu118
+          python3 -m pip install lmdeploy-*.whl
+          python3 -m pip install -r requirements/test.txt
       - name: Install lmdeploy - offline
         if: ${{inputs.offline_mode}}
         run: |
-          python3 -m pip install /nvme/qa_test_models/offline_pkg/py310/lmdeploy-*.whl --index-url https://download.pytorch.org/whl/cu118
-          python3 -m pip install -r requirements/test.txt --index-url https://download.pytorch.org/whl/cu118
+          python3 -m pip install /nvme/qa_test_models/offline_pkg/py310/lmdeploy-*.whl
+          python3 -m pip install -r requirements/test.txt
       - name: Check env
         run: |
           python3 -m pip list
