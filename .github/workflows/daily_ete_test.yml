@@ -68,7 +68,7 @@ jobs:
     if: ${{!cancelled() && (github.event_name == 'schedule' || !inputs.offline_mode)}}
     strategy:
       matrix:
-        pyver: [py38, py310]
+        pyver: [py310]
     runs-on: ubuntu-latest
     env:
       PYTHON_VERSION: ${{ matrix.pyver }}
@@ -76,7 +76,7 @@ jobs:
       DOCKER_TAG: cuda11.8
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: ${{ github.event.inputs.repo_org || 'InternLM/lmdeploy' }}
           ref: ${{github.event.inputs.repo_ref || 'main'}}
@@ -110,7 +110,7 @@ jobs:
       MODELSCOPE_CACHE: /root/modelscope_hub
       MODELSCOPE_MODULES_CACHE: /root/modelscope_modules
     container:
-      image: nvcr.io/nvidia/tritonserver:22.12-py3
+      image: pytorch/pytorch:2.2.2-cuda11.8-cudnn8-runtime
       options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip --pull never"
       volumes:
         - /nvme/github-actions/pip-cache:/root/.cache/pip
@@ -123,7 +123,7 @@ jobs:
         - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
     steps:
       - name: Clone repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         if: ${{github.event_name == 'schedule' || !inputs.offline_mode}}
         with:
           repository: ${{ github.event.inputs.repo_org || 'InternLM/lmdeploy' }}
@@ -135,7 +135,7 @@ jobs:
         if: ${{github.event_name == 'schedule' || !inputs.offline_mode}}
         uses: actions/download-artifact@v4
         with:
-          name: my-artifact-${{ github.run_id }}-py38
+          name: my-artifact-${{ github.run_id }}-py310
       - name: Install pytorch
         run: |
           python3 -m pip cache dir
@@ -156,7 +156,7 @@ jobs:
       - name: Install lmdeploy - offline
         if: ${{inputs.offline_mode}}
         run: |
-          python3 -m pip install /nvme/qa_test_models/offline_pkg/py38/lmdeploy-*.whl
+          python3 -m pip install /nvme/qa_test_models/offline_pkg/py310/lmdeploy-*.whl
           python3 -m pip install -r requirements/test.txt
           pip install /nvme/qa_test_models/offline_pkg/DeepSeek-VL --no-deps
       - name: Check env
@@ -276,7 +276,7 @@ jobs:
       GRPC_PORT: 33337
     steps:
       - name: Clone repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         if: ${{github.event_name == 'schedule' || !inputs.offline_mode}}
         with:
           repository: ${{ github.event.inputs.repo_org || 'InternLM/lmdeploy' }}
@@ -430,7 +430,7 @@ jobs:
     env:
       REPORT_DIR: /nvme/qa_test_models/test-reports
     container:
-      image: nvcr.io/nvidia/tritonserver:22.12-py3
+      image: pytorch/pytorch:2.2.2-cuda11.8-cudnn8-runtime
       options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip --pull never"
       volumes:
         - /nvme/github-actions/pip-cache:/root/.cache/pip
@@ -439,7 +439,7 @@ jobs:
         - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
     steps:
       - name: Clone repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         if: ${{github.event_name == 'schedule' || !inputs.offline_mode}}
         with:
           repository: ${{ github.event.inputs.repo_org || 'InternLM/lmdeploy' }}
@@ -451,7 +451,7 @@ jobs:
         if: ${{github.event_name == 'schedule' || !inputs.offline_mode}}
         uses: actions/download-artifact@v4
         with:
-          name: my-artifact-${{ github.run_id }}-py38
+          name: my-artifact-${{ github.run_id }}-py310
       - name: Install pytorch
         run: |
           python3 -m pip cache dir
@@ -470,7 +470,7 @@ jobs:
       - name: Install lmdeploy - offline
         if: ${{inputs.offline_mode}}
         run: |
-          python3 -m pip install /nvme/qa_test_models/offline_pkg/py38/lmdeploy-*.whl
+          python3 -m pip install /nvme/qa_test_models/offline_pkg/py310/lmdeploy-*.whl
           python3 -m pip install -r requirements/test.txt
       - name: Check env
         run: |
@@ -542,7 +542,7 @@ jobs:
     env:
       REPORT_DIR: /nvme/qa_test_models/test-reports
     container:
-      image: nvcr.io/nvidia/tritonserver:22.12-py3
+      image: pytorch/pytorch:2.2.2-cuda11.8-cudnn8-runtime
       options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip --pull never"
       volumes:
         - /nvme/github-actions/pip-cache:/root/.cache/pip
@@ -551,7 +551,7 @@ jobs:
         - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
     steps:
       - name: Clone repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         if: ${{github.event_name == 'schedule' || !inputs.offline_mode}}
         with:
           repository: ${{ github.event.inputs.repo_org || 'InternLM/lmdeploy' }}
@@ -563,7 +563,7 @@ jobs:
         if: ${{github.event_name == 'schedule' || !inputs.offline_mode}}
         uses: actions/download-artifact@v4
         with:
-          name: my-artifact-${{ github.run_id }}-py38
+          name: my-artifact-${{ github.run_id }}-py310
       - name: Install pytorch
         run: |
           python3 -m pip cache dir
@@ -582,7 +582,7 @@ jobs:
       - name: Install lmdeploy - offline
         if: ${{inputs.offline_mode}}
         run: |
-          python3 -m pip install /nvme/qa_test_models/offline_pkg/py38/lmdeploy-*.whl
+          python3 -m pip install /nvme/qa_test_models/offline_pkg/py310/lmdeploy-*.whl
           python3 -m pip install -r requirements/test.txt
       - name: Check env
         run: |
