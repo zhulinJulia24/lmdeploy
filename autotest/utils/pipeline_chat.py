@@ -287,7 +287,7 @@ def run_pipeline_vl_chat_test(config, model_case):
 
     image = load_image(PIC1)
 
-    if model_case.contains('deepseek'):
+    if 'deepseek' in model_case:
         prompt = f'describe this image{IMAGE_TOKEN}'
     else:
         prompt = 'describe this image'
