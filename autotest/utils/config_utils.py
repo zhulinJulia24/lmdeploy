@@ -137,11 +137,24 @@ def get_cuda_id_by_workerid(worker_id, tp_num: int = 1):
             ])
 
 
+def get_new_benchmark_config(tp_num: int = None):
+    benchmark_config = get_benchmark_config()
+
+    return benchmark_config, tp_num
+
+
 def get_config():
     config_path = os.path.join('autotest/config.yaml')
     with open(config_path) as f:
         config = yaml.load(f.read(), Loader=yaml.SafeLoader)
     return config
+
+
+def get_benchmark_config():
+    config_path = os.path.join('autotest/benchmark_config.yaml')
+    with open(config_path) as f:
+        benchmark_config = yaml.load(f.read(), Loader=yaml.SafeLoader)
+    return benchmark_config
 
 
 def get_workerid(worker_id):

@@ -126,4 +126,5 @@ def _simple_model_name(model):
         model_name = model
     model_name = model_name.replace('-inner-4bits', '')
     model_name = model_name.replace('-inner-w8a8', '')
+    model_name = model_name.replace('-4bits', '')
     return model_name
