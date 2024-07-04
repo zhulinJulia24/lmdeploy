@@ -89,7 +89,7 @@ def get_model_name(model):
         return 'yi-vl'
     if ('qwen' in model_name):
         return 'qwen'
-    if ('mini-internvl' in model_name and '4b' in model_name):
+    if ('mini-internvl' in model_name):
         return 'internvl-phi3'
     if ('internvl') in model_name:
         return 'internvl-internlm2'
