@@ -89,6 +89,8 @@ def get_model_name(model):
         return 'yi-vl'
     if ('qwen' in model_name):
         return 'qwen'
+    if ('mini-internvl' in model_name and '4b' in model_name):
+        return 'internvl-phi3'
     if ('internvl') in model_name:
         return 'internvl-internlm2'
     if ('internlm2') in model_name:
@@ -97,6 +99,8 @@ def get_model_name(model):
         return 'internlm-xcomposer2-4khd'
     if ('internlm-xcomposer2') in model_name:
         return 'internlm-xcomposer2'
+    if ('glm-4') in model_name:
+        return 'glm4'
     if len(model_name.split('-')) > 2 and '-'.join(
             model_name.split('-')[0:2]) in model_names:
         return '-'.join(model_name.split('-')[0:2])
