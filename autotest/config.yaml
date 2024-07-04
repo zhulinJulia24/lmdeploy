@@ -35,6 +35,7 @@ turbomind_chat_model:
     - Qwen/Qwen1.5-4B-Chat-AWQ
     - Qwen/Qwen-7B-Chat
     - Qwen/Qwen-VL-Chat
+    - mistralai/Mistral-7B-Instruct-v0.1
     - mistralai/Mistral-7B-Instruct-v0.2
     - mistralai/Mistral-7B-Instruct-v0.3
     - lmdeploy/llama2-chat-7b-w4
@@ -68,8 +69,8 @@ pytorch_chat_model:
     - Qwen/Qwen1.5-7B-Chat
     - Qwen/Qwen-7B-Chat
     - Qwen/Qwen1.5-MoE-A2.7B-Chat
+    - mistralai/Mistral-7B-Instruct-v0.1
     - mistralai/Mistral-7B-Instruct-v0.2
-    - mistralai/Mistral-7B-Instruct-v0.3
     - mistralai/Mixtral-8x7B-Instruct-v0.1
     - google/gemma-7b-it
     - deepseek-ai/deepseek-moe-16b-chat
