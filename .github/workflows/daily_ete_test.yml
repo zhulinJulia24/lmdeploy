@@ -48,8 +48,7 @@ on:
         description: 'Whether start an interface pipeline regression'
         type: boolean
         default: true
-  schedule:
-    - cron:  '00 19 * * 0-4'
+
 
 env:
   HOST_PIP_CACHE_DIR: /nvme/github-actions/pip-cache
