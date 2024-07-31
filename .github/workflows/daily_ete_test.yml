@@ -110,7 +110,7 @@ jobs:
       MODELSCOPE_CACHE: /root/modelscope_hub
       MODELSCOPE_MODULES_CACHE: /root/modelscope_modules
     container:
-      image: nvidia/cuda:12.4.1-devel-ubuntu22.04
+      image: nvidia/cuda:11.7.1-devel-ubuntu22.04
       options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip --pull never"
       volumes:
         - /nvme/github-actions/pip-cache:/root/.cache/pip
@@ -123,6 +123,13 @@ jobs:
         - /nvme/qa_test_models/lmdeploy/autotest:/local_case
         - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
     steps:
+      - name: Setup systems
+        run: |
+          rm /etc/apt/sources.list.d/cuda*.list && apt-get update -y && apt-get install -y software-properties-common wget vim &&\
+          add-apt-repository ppa:deadsnakes/ppa -y && apt-get update -y && apt-get install -y --no-install-recommends \
+          rapidjson-dev libgoogle-glog-dev gdb python3.10 python3.10-dev python3.10-venv \
+          && apt-get clean -y && rm -rf /var/lib/apt/lists/* && cd /opt && python3 -m venv py3
+          export PATH=/opt/py3/bin:$PATH
       - name: Clone repository
         uses: actions/checkout@v2
         if: ${{github.event_name == 'schedule' || !inputs.offline_mode}}
@@ -269,7 +276,7 @@ jobs:
         backend: ['turbomind', 'pytorch']
     timeout-minutes: 300
     container:
-      image: nvidia/cuda:12.4.1-devel-ubuntu22.04
+      image: nvidia/cuda:11.7.1-devel-ubuntu22.04
       options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip --pull never"
       volumes:
         - /nvme/github-actions/pip-cache:/root/.cache/pip
@@ -277,6 +284,13 @@ jobs:
         - /nvme/qa_test_models:/nvme/qa_test_models
         - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
     steps:
+      - name: Setup systems
+        run: |
+          rm /etc/apt/sources.list.d/cuda*.list && apt-get update -y && apt-get install -y software-properties-common wget vim &&\
+          add-apt-repository ppa:deadsnakes/ppa -y && apt-get update -y && apt-get install -y --no-install-recommends \
+          rapidjson-dev libgoogle-glog-dev gdb python3.10 python3.10-dev python3.10-venv \
+          && apt-get clean -y && rm -rf /var/lib/apt/lists/* && cd /opt && python3 -m venv py3
+          export PATH=/opt/py3/bin:$PATH
       - name: Clone repository
         uses: actions/checkout@v2
         if: ${{github.event_name == 'schedule' || !inputs.offline_mode}}
@@ -374,7 +388,7 @@ jobs:
     needs: test_tools
     timeout-minutes: 300
     container:
-      image: nvidia/cuda:12.4.1-devel-ubuntu22.04
+      image: nvidia/cuda:11.7.1-devel-ubuntu22.04
       options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip --pull never"
       volumes:
         - /nvme/github-actions/pip-cache:/root/.cache/pip
@@ -382,6 +396,13 @@ jobs:
         - /nvme/qa_test_models:/nvme/qa_test_models
         - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
     steps:
+      - name: Setup systems
+        run: |
+          rm /etc/apt/sources.list.d/cuda*.list && apt-get update -y && apt-get install -y software-properties-common wget vim &&\
+          add-apt-repository ppa:deadsnakes/ppa -y && apt-get update -y && apt-get install -y --no-install-recommends \
+          rapidjson-dev libgoogle-glog-dev gdb python3.10 python3.10-dev python3.10-venv \
+          && apt-get clean -y && rm -rf /var/lib/apt/lists/* && cd /opt && python3 -m venv py3
+          export PATH=/opt/py3/bin:$PATH
       - name: Clone repository
         uses: actions/checkout@v2
         if: ${{github.event_name == 'schedule' || !inputs.offline_mode}}
@@ -445,7 +466,7 @@ jobs:
     needs: test_tools
     timeout-minutes: 300
     container:
-      image: nvidia/cuda:12.4.1-devel-ubuntu22.04
+      image: nvidia/cuda:11.7.1-devel-ubuntu22.04
       options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip --pull never"
       volumes:
         - /nvme/github-actions/pip-cache:/root/.cache/pip
@@ -453,6 +474,13 @@ jobs:
         - /nvme/qa_test_models:/nvme/qa_test_models
         - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
     steps:
+      - name: Setup systems
+        run: |
+          rm /etc/apt/sources.list.d/cuda*.list && apt-get update -y && apt-get install -y software-properties-common wget vim &&\
+          add-apt-repository ppa:deadsnakes/ppa -y && apt-get update -y && apt-get install -y --no-install-recommends \
+          rapidjson-dev libgoogle-glog-dev gdb python3.10 python3.10-dev python3.10-venv \
+          && apt-get clean -y && rm -rf /var/lib/apt/lists/* && cd /opt && python3 -m venv py3
+          export PATH=/opt/py3/bin:$PATH
       - name: Clone repository
         uses: actions/checkout@v2
         if: ${{github.event_name == 'schedule' || !inputs.offline_mode}}
