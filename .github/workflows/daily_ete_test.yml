@@ -110,7 +110,7 @@ jobs:
       MODELSCOPE_CACHE: /root/modelscope_hub
       MODELSCOPE_MODULES_CACHE: /root/modelscope_modules
     container:
-      image: nvidia/cuda:11.7.1-devel-ubuntu22.04
+      image: openmmlab/lmdeploy:test-cu11
       options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip --pull never"
       volumes:
         - /nvme/github-actions/pip-cache:/root/.cache/pip
@@ -276,7 +276,7 @@ jobs:
         backend: ['turbomind', 'pytorch']
     timeout-minutes: 300
     container:
-      image: nvidia/cuda:11.7.1-devel-ubuntu22.04
+      image: openmmlab/lmdeploy:test-cu11
       options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip --pull never"
       volumes:
         - /nvme/github-actions/pip-cache:/root/.cache/pip
@@ -388,7 +388,7 @@ jobs:
     needs: test_tools
     timeout-minutes: 300
     container:
-      image: nvidia/cuda:11.7.1-devel-ubuntu22.04
+      image: openmmlab/lmdeploy:test-cu11
       options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip --pull never"
       volumes:
         - /nvme/github-actions/pip-cache:/root/.cache/pip
@@ -466,7 +466,7 @@ jobs:
     needs: test_tools
     timeout-minutes: 300
     container:
-      image: nvidia/cuda:11.7.1-devel-ubuntu22.04
+      image: openmmlab/lmdeploy:test-cu11
       options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip --pull never"
       volumes:
         - /nvme/github-actions/pip-cache:/root/.cache/pip
