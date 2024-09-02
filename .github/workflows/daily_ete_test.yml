@@ -527,7 +527,7 @@ jobs:
 
   test_evaluate:
     if: ${{!cancelled() && (github.event_name == 'schedule' || inputs.evaluate_regression)}}
-    needs: linux-build
+    needs: test_tools
     runs-on: [self-hosted, linux-a100]
     timeout-minutes: 300 # 5hours
     container:
