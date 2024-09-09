@@ -16,7 +16,7 @@ env:
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
   REPORT_DIR: /nvme/qa_test_models/test-reports/${{ github.run_id }}
   COV_PATH: /opt/py3/lib/python3.10/site-packages/lmdeploy
-  FAIL_CONFIG: ${{ github.event_name == 'schedule' && '--lf --lfnf none' || '--lf'}}
+  FAIL_CONFIG: ${{ github.event_name != 'schedule' && github.run_attempt != 1 && '--lf --lfnf none' || '--lf'}}
 
 jobs:
   test_tools:
