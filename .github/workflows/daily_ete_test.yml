@@ -572,6 +572,7 @@ jobs:
         - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
     env:
       TRITON_PTXAS_PATH: /usr/local/cuda/bin/ptxas
+      CUDA_VERSION: 11.8
     steps:
       - name: Setup systems
         run: |
