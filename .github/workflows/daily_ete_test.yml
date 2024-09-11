@@ -558,8 +558,8 @@ jobs:
     needs: test_tools
     timeout-minutes: 300 # 5hours
     container:
-      image: openmmlab/lmdeploy:latest-cu11
-      options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip -e NVIDIA_DISABLE_REQUIRE=1 --pull never"
+      image: nvcr.io/nvidia/tritonserver:24.03-py3
+      options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip --pull never"
       volumes:
         - /nvme/github-actions/pip-cache:/root/.cache/pip
         - /nvme/github-actions/packages:/root/packages
@@ -571,7 +571,7 @@ jobs:
         - /mnt/shared:/mnt/shared
         - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
     env:
-      COMPASS_DATA_CACHE: /root/opencompass-data
+      TRITON_PTXAS_PATH: /usr/local/cuda/bin/ptxas
     steps:
       - name: Setup systems
         run: |
@@ -591,6 +591,10 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: my-artifact-${{ github.run_id }}-py310
+      - name: Install pytorch
+        run: |
+          python3 -m pip cache dir
+          python3 -m pip install torch==2.3.0 torchvision==0.18.0 --index-url https://download.pytorch.org/whl/cu118
       - name: Install lmdeploy - dependency
         run: |
           # manually install flash attn
@@ -599,15 +603,6 @@ jobs:
           python3 -m pip install -e /root/packages/AutoAWQ_kernels
           python3 -m pip install /root/packages/autoawq-0.2.6-cp310-cp310-manylinux2014_x86_64.whl --no-deps
           python3 -m pip install /root/packages/xformers-0.0.27+cu118-cp310-cp310-manylinux2014_x86_64.whl --no-deps
-          git clone --depth=1 --branch v2.22.3-1 https://github.com/NVIDIA/nccl.git
-          cd nccl && make -j$(nproc) src.build
-          mv build/include/* /usr/local/include
-          mkdir -p /usr/local/nccl/lib
-          mv build/lib/lib* /usr/local/nccl/lib/
-          cd .. && rm -rf nccl
-          python3 -m pip uninstall -y nvidia-nccl-cu11
-          echo "LD_LIBRARY_PATH=/usr/local/nccl/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
-          
           python3 -m pip install ${{env.dependency_pkgs}}
       - name: Install lmdeploy
         if: ${{github.event_name == 'schedule' || !inputs.offline_mode}}
@@ -627,13 +622,13 @@ jobs:
           echo "OPENCOMPASS_DIR=$(pwd)" >> $GITHUB_ENV
       - name: Check env
         run: |
-          python3 -m pip uninstall -y nvidia-nccl-cu11
           python3 -m pip list
           lmdeploy check_env
           mkdir ${{env.REPORT_DIR}}/.pytest_cache -p
           ln -s ${{env.REPORT_DIR}}/.pytest_cache autotest
       - name: Setup paths for evaluation
         run: |
+          ln -s /root/opencompass-data ./data
           python3 .github/scripts/action_tools.py create_model_links /root/models .
       - name: Evaluate models
         run: |
