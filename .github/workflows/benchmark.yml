@@ -115,6 +115,15 @@ jobs:
           python3 -m pip install -e /root/packages/AutoAWQ_kernels
           python3 -m pip install /root/packages/autoawq-0.2.6-cp310-cp310-manylinux2014_x86_64.whl --no-deps
           python3 -m pip install /root/packages/xformers-0.0.27+cu118-cp310-cp310-manylinux2014_x86_64.whl --no-deps
+          git clone --depth=1 --branch v2.22.3-1 https://github.com/NVIDIA/nccl.git
+          cd nccl && make -j$(nproc) src.build
+          mv build/include/* /usr/local/include
+          mkdir -p /usr/local/nccl/lib
+          mv build/lib/lib* /usr/local/nccl/lib/
+          cd .. && rm -rf nccl
+          python3 -m pip uninstall -y nvidia-nccl-cu11
+          echo "LD_LIBRARY_PATH=/usr/local/nccl/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+          
           python3 -m pip install ${{env.dependency_pkgs}}
       - name: Install lmdeploy
         if: ${{github.event_name == 'schedule' || !inputs.offline_mode}}
@@ -128,6 +137,7 @@ jobs:
           python3 -m pip install -r requirements/test.txt
       - name: Check env
         run: |
+          python3 -m pip uninstall -y nvidia-nccl-cu11
           python3 -m pip list
           lmdeploy check_env
           mkdir ${{env.REPORT_DIR}}/allure-results/.pytest_cache -p
