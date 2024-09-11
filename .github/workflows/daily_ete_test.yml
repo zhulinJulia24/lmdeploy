@@ -565,8 +565,6 @@ jobs:
         - /nvme/qa_test_models/offline_pkg:/nvme/qa_test_models/offline_pkg
         - /mnt/shared:/mnt/shared
         - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
-    env:
-      COMPASS_DATA_CACHE: /root/opencompass-data
     steps:
       - name: Setup systems
         run: |
@@ -629,6 +627,7 @@ jobs:
           ln -s ${{env.REPORT_DIR}}/.pytest_cache autotest
       - name: Setup paths for evaluation
         run: |
+          ln -s /root/opencompass-data ./data
           python3 .github/scripts/action_tools.py create_model_links /root/models .
       - name: Evaluate models
         run: |
