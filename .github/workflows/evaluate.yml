@@ -137,7 +137,6 @@ jobs:
         run: |
           git clone https://github.com/open-compass/opencompass.git
           cd opencompass
-          git checkout oc_fix_lmdeploy_update
           python3 -m pip install -e .
           echo "OPENCOMPASS_DIR=$(pwd)" >> $GITHUB_ENV
       - name: Check env
