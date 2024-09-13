@@ -13,14 +13,24 @@ on:
         description: 'Set branch or tag or commit id. Default is "main"'
         type: string
         default: 'main'
-      models:
+      chat_models:
         required: true
         description: 'Tested TurboMind models list. eg. [internlm_chat_7b,internlm_chat_7b_w8a16]'
         type: string
         default: '[tb_internlm2_chat_7b, pt_internlm2_chat_7b, tb_internlm2_5_7b_chat, pt_internlm2_5_7b_chat, tb_internlm2_5_20b_chat, pt_internlm2_5_20b_chat, tb_qwen1_5_7b_chat, pt_qwen1_5_7b_chat, tb_llama_3_8b_instruct, pt_llama_3_8b_instruct, tb_llama_3d1_8b_instruct, pt_llama_3d1_8b_instruct, tb_qwen2_7b_instruct, pt_qwen2_7b_instruct, pt_qwen1_5_moe_2_7b_chat, pt_gemma_2_9b_it, tb_internlm2_chat_7b_4bits, tb_internlm2_chat_7b_kvint4, tb_internlm2_chat_7b_kvint8, tb_internlm2_5_7b_chat_4bits, tb_internlm2_5_7b_chat_kvint4, tb_internlm2_5_7b_chat_kvint8, tb_internlm2_5_20b_chat_4bits, tb_internlm2_5_20b_chat_kvint4, tb_internlm2_5_20b_chat_kvint8, tb_qwen1_5_7b_chat_4bits, tb_qwen1_5_7b_chat_kvint4, tb_qwen1_5_7b_chat_kvint8, tb_llama_3_8b_instruct_4bits, tb_llama_3_8b_instruct_kvint4, tb_llama_3_8b_instruct_kvint8, tb_llama_3d1_8b_instruct_4bits, tb_llama_3d1_8b_instruct_kvint4, tb_llama_3d1_8b_instruct_kvint8, tb_qwen2_7b_instruct_4bits, tb_qwen2_7b_instruct_kvint8]'
-      datasets:
+      chat_datasets:
         required: true
         description: 'Tested datasets list. eg. [*bbh_datasets,*ceval_datasets,*cmmlu_datasets,*GaokaoBench_datasets,*gpqa_datasets,*gsm8k_datasets,*hellaswag_datasets,*humaneval_datasets,*ifeval_datasets,*math_datasets,*sanitized_mbpp_datasets,*mmlu_datasets,*nq_datasets,*race_datasets,*TheoremQA_datasets,*triviaqa_datasets,*winogrande_datasets,*crowspairs_datasets]'
+        type: string
+        default: '[*mmlu_datasets, *gsm8k_datasets]'
+      base_models:
+        required: true
+        description: 'Tested TurboMind models list. eg. [tb_internlm2_5_7b, tb_qwen2_7b]'
+        type: string
+        default: '[tb_internlm2_5_7b, tb_qwen2_7b]'
+      baes_datasets:
+        required: true
+        description: 'Tested datasets list. eg. [*mmlu_datasets, *gsm8k_datasets]'
         type: string
         default: '[*mmlu_datasets, *gsm8k_datasets]'
       local_config:
@@ -28,11 +38,6 @@ on:
         description: 'Whether use local eval config'
         type: boolean
         default: false
-      devices:
-        required: true
-        description: 'CUDA_VISIBLE_DEVICES.'
-        type: string
-        default: '0,1,2,3,4,5,6,7'
       dependency_pkgs:
         required: true
         description: 'Dependency packages, you can also set a specific version'
@@ -84,6 +89,10 @@ jobs:
     needs: linux-build
     runs-on: [self-hosted, linux-a100]
     timeout-minutes: 4320 # 72hours
+    strategy:
+      fail-fast: false
+      matrix:
+        evaluate_type: ['chat', 'base']
     container:
       image: openmmlab/lmdeploy:latest-cu11
       options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip -e NVIDIA_DISABLE_REQUIRE=1 --pull never"
@@ -141,17 +150,30 @@ jobs:
       - name: Use local config
         if: ${{inputs.local_config}}
         run: cp /nvme/qa_test_models/offline_pkg/eval_config.py .github/scripts/eval_opencompass_config.py
-      - name: Evaluate models
+      - name: Evaluate chat models
+        if: matrix.evaluate_type == 'chat'
         run: |
-          echo ${{github.event.inputs.models}}
-          echo ${{github.event.inputs.devices}}
+          echo ${{github.event.inputs.chat_models}}
+          echo ${{github.event.inputs.chat_datasets}}
           export LMDEPLOY_DIR=$(pwd)
-          export CUDA_VISIBLE_DEVICES="${{github.event.inputs.devices}}"
 
           python3 .github/scripts/action_tools.py evaluate \
-            --models "${{github.event.inputs.models}}" \
-            --datasets "${{github.event.inputs.datasets}}" \
+            --models "${{github.event.inputs.chat_models}}" \
+            --datasets "${{github.event.inputs.chat_datasets}}" \
             --workspace /root/evaluation-reports/${{ github.run_id }}
+            --evaluate_type chat
+      - name: Evaluate base models
+        if: matrix.evaluate_type == 'base'
+        run: |
+          echo ${{github.event.inputs.base_models}}
+          echo ${{github.event.inputs.baes_datasets}}
+          export LMDEPLOY_DIR=$(pwd)
+
+          python3 .github/scripts/action_tools.py evaluate \
+            --models "${{github.event.inputs.base_models}}" \
+            --datasets "${{github.event.inputs.baes_datasets}}" \
+            --workspace /root/evaluation-reports/${{ github.run_id }}
+            --evaluate_type base
       - name: Clear workspace
         if: always()
         run: |
