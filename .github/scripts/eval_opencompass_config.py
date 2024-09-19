@@ -199,13 +199,12 @@ tb_awq_engine_config_template_max_bs_32 = dict(session_len=MAX_SESSION_LEN,
                                                max_batch_size=32,
                                                model_format='awq')
 
-gen_config_template = dict(top_k=1,
-                           top_p=0.8,
-                           temperature=1.0,
+gen_config_template = dict(do_sample=False,
                            max_new_tokens=MAX_NEW_TOKENS)
 qwen_gen_config_template = dict(top_k=1,
                                 top_p=0.8,
                                 temperature=1.0,
+                                do_sample=False,
                                 stop_words=[151645, 151643],
                                 max_new_tokens=MAX_NEW_TOKENS)
 
@@ -292,7 +291,7 @@ tb_internlm2_5_7b_chat = dict(
     gen_config=gen_config_template,
     max_seq_len=MAX_SESSION_LEN,
     max_out_len=MAX_NEW_TOKENS,
-    batch_size=128,
+    batch_size=1,
     run_cfg=dict(num_gpus=1),
     stop_words=['</s>', '<|im_end|>'],
 )
