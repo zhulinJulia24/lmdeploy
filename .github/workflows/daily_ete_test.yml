@@ -90,14 +90,22 @@ jobs:
   test_tools:
     needs: linux-build
     if: ${{!cancelled() && (github.event_name == 'schedule' || contains(fromJSON(github.event.inputs.regression_func), 'tools'))}}
-    runs-on: [self-hosted, linux-a100]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: "openmmlab/lmdeploy:latest-cu11"
+            runner_lable: "linux-a100"
+          - image: "openmmlab/lmdeploy:latest-cu12"
+            runner_lable: "linux-v100"
+    runs-on: ${{matrix.runner_lable}}
     timeout-minutes: 450
     env:
       PYTHONPATH: /nvme/qa_test_models/offline_pkg/LLaVA
       MODELSCOPE_CACHE: /root/modelscope_hub
       MODELSCOPE_MODULES_CACHE: /root/modelscope_modules
     container:
-      image: openmmlab/lmdeploy:latest-cu11
+      image: ${{ matrix.image }}
       options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip -e NVIDIA_DISABLE_REQUIRE=1 --pull never"
       volumes:
         - /nvme/github-actions/pip-cache:/root/.cache/pip
@@ -107,6 +115,7 @@ jobs:
         - /nvme/github-actions/resources/lora:/root/lora
         - /nvme/qa_test_models:/nvme/qa_test_models
         - /mnt/shared:/mnt/shared
+        - /mnt/187:/mnt/187
         - /nvme/qa_test_models/lmdeploy/autotest:/local_case
         - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
     steps:
@@ -156,6 +165,10 @@ jobs:
           rm -rf /nvme/qa_test_models/autotest_model/log/*
           mkdir ${{env.REPORT_DIR}}/.pytest_cache -p
           ln -s ${{env.REPORT_DIR}}/.pytest_cache autotest
+      - name: Change testconfig on v100
+        if: ${{matrix.runner_lable == 'linux-v100'}}
+        run: |
+          mv autotest/config-v100.yaml autotest/config.yaml
       - name: Test lmdeploy - quantization w4a16
         continue-on-error: true
         if: github.event_name == 'schedule' || (contains(fromJSON(github.event.inputs.backend), 'turbomind') && contains(fromJSON(github.event.inputs.model), 'quantization'))
@@ -271,15 +284,20 @@ jobs:
 
   test_restful:
     if: ${{!cancelled() && (github.event_name == 'schedule' || contains(fromJSON(github.event.inputs.regression_func), 'restful'))}}
-    runs-on: [self-hosted, linux-a100]
-    needs: test_tools
     strategy:
       fail-fast: false
       matrix:
         backend: ['turbomind', 'pytorch']
+        include:
+          - image: "openmmlab/lmdeploy:latest-cu11"
+            runner_lable: "linux-a100"
+          - image: "openmmlab/lmdeploy:latest-cu12"
+            runner_lable: "linux-v100"
+    runs-on: ${{matrix.runner_lable}}
+    needs: test_tools
     timeout-minutes: 300
     container:
-      image: openmmlab/lmdeploy:latest-cu11
+      image: ${{matrix.image}}
       options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip -e NVIDIA_DISABLE_REQUIRE=1 --pull never"
       volumes:
         - /nvme/github-actions/pip-cache:/root/.cache/pip
@@ -379,11 +397,19 @@ jobs:
 
   test_pipeline:
     if: ${{!cancelled() && (github.event_name == 'schedule' || contains(fromJSON(github.event.inputs.regression_func), 'pipeline'))}}
-    runs-on: [self-hosted, linux-a100]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: "openmmlab/lmdeploy:latest-cu11"
+            runner_lable: "linux-a100"
+          - image: "openmmlab/lmdeploy:latest-cu12"
+            runner_lable: "linux-v100"
+    runs-on: ${{matrix.runner_lable}}
     needs: test_tools
     timeout-minutes: 300
     container:
-      image: openmmlab/lmdeploy:latest-cu11
+      image: ${{matrix.image}}
       options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip -e NVIDIA_DISABLE_REQUIRE=1 --pull never"
       volumes:
         - /nvme/github-actions/pip-cache:/root/.cache/pip
@@ -452,11 +478,19 @@ jobs:
 
   test_benchmark:
     if: ${{!cancelled() && (github.event_name == 'schedule' || contains(fromJSON(github.event.inputs.regression_func), 'benchmark'))}}
-    runs-on: [self-hosted, linux-a100]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: "openmmlab/lmdeploy:latest-cu11"
+            runner_lable: "linux-a100"
+          - image: "openmmlab/lmdeploy:latest-cu12"
+            runner_lable: "linux-v100"
+    runs-on: ${{matrix.runner_lable}}
     needs: test_tools
     timeout-minutes: 300
     container:
-      image: openmmlab/lmdeploy:latest-cu11
+      image: ${{matrix.image}}
       options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip -e NVIDIA_DISABLE_REQUIRE=1 --pull never"
       volumes:
         - /nvme/github-actions/pip-cache:/root/.cache/pip
@@ -518,11 +552,19 @@ jobs:
 
   test_evaluation:
     if: ${{!cancelled() && (github.event_name == 'schedule' || contains(fromJSON(github.event.inputs.regression_func), 'evaluation'))}}
-    runs-on: [self-hosted, linux-a100]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: "openmmlab/lmdeploy:latest-cu11"
+            runner_lable: "linux-a100"
+          - image: "openmmlab/lmdeploy:latest-cu12"
+            runner_lable: "linux-v100"
+    runs-on: ${{matrix.runner_lable}}
     needs: test_tools
     timeout-minutes: 300 # 5hours
     container:
-      image: openmmlab/lmdeploy:latest-cu11
+      image: ${{matrix.image}}
       options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip -e NVIDIA_DISABLE_REQUIRE=1 --pull never"
       volumes:
         - /nvme/github-actions/pip-cache:/root/.cache/pip
@@ -606,7 +648,7 @@ jobs:
     if: ${{!cancelled() && (github.event_name == 'schedule' || contains(fromJSON(github.event.inputs.regression_func), 'benchmark'))}}
     needs: [test_benchmark]
     timeout-minutes: 5
-    runs-on: [self-hosted, linux-a100]
+    runs-on: [self-hosted, linux-a100, linux-v100]
     env:
       BENCHMARK_REPORT_DIR: /nvme/qa_test_models/benchmark-reports/${{ github.run_id }}
     steps:
@@ -623,11 +665,19 @@ jobs:
 
   get_coverage_report:
     if: ${{!cancelled()}}
-    runs-on: [self-hosted, linux-a100]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: "openmmlab/lmdeploy:latest-cu11"
+            runner_lable: "linux-a100"
+          - image: "openmmlab/lmdeploy:latest-cu12"
+            runner_lable: "linux-v100"
+    runs-on: ${{matrix.runner_lable}}
     needs: [test_tools, test_restful, test_pipeline, test_benchmark]
     timeout-minutes: 5
     container:
-      image: openmmlab/lmdeploy:latest-cu11
+      image: ${{matrix.image}}
       options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip -e NVIDIA_DISABLE_REQUIRE=1 --pull never"
       volumes:
         - /nvme/github-actions/pip-cache:/root/.cache/pip
