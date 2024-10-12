@@ -104,6 +104,7 @@ jobs:
       PYTHONPATH: /nvme/qa_test_models/offline_pkg/LLaVA
       MODELSCOPE_CACHE: /root/modelscope_hub
       MODELSCOPE_MODULES_CACHE: /root/modelscope_modules
+      TEST_RUNNER: ${{matrix.runner_lable}}
     container:
       image: ${{ matrix.image }}
       options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip -e NVIDIA_DISABLE_REQUIRE=1 --pull never"
