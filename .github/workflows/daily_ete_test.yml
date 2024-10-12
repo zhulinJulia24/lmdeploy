@@ -82,6 +82,7 @@ jobs:
 
 
   test_tools:
+    needs: linux-build
     if: ${{!cancelled() && (github.event_name == 'schedule' || contains(fromJSON(github.event.inputs.regression_func), 'tools'))}}
     strategy:
       fail-fast: false
