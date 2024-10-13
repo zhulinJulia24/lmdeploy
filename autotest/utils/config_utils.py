@@ -54,11 +54,12 @@ def get_all_model_list(tp_num: int = None, model_type: str = 'chat_model'):
             case_list.append(key)
     turbomind_quantization_config = config.get('turbomind_quatization')
     pytorch_quantization_config = config.get('pytorch_quatization')
-    for key in turbomind_quantization_config.get(
-            'awq') + pytorch_quantization_config.get(
-                'awq') + turbomind_quantization_config.get('gptq'):
-        if key in case_list and key + '-inner-4bits' not in case_list:
-            case_list.append(key + '-inner-4bits')
+    if None is not pytorch_quatization:
+      for key in turbomind_quantization_config.get(
+              'awq') + pytorch_quantization_config.get(
+                  'awq') + turbomind_quantization_config.get('gptq'):
+          if key in case_list and key + '-inner-4bits' not in case_list:
+              case_list.append(key + '-inner-4bits')
 
     if tp_num is not None:
         return [
@@ -100,9 +101,10 @@ def get_quantization_model_list(type):
     config = get_config()
     if type == 'awq':
         case_list = config.get('turbomind_quatization').get('awq')
-        for key in config.get('pytorch_quatization').get('awq'):
-            if key not in case_list:
-                case_list.append(key)
+        if None is not pytorch_quatization:
+          for key in config.get('pytorch_quatization').get('awq'):
+              if key not in case_list:
+                  case_list.append(key)
         return case_list
     if type == 'kvint':
         return config.get('turbomind_quatization').get(type)
