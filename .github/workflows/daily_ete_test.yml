@@ -115,7 +115,7 @@ jobs:
 
   test_quantization:
     needs: download_pkgs
-    if: ${{!cancelled() && (github.event_name == 'schedule' || contains(fromJSON(github.event.inputs.regression_func), 'tools'))}}
+    if: ${{!cancelled() && (github.event_name == 'schedule' || (contains(fromJSON(github.event.inputs.regression_func), 'tools') && contains(fromJSON(github.event.inputs.model), 'quantization')))}}
     runs-on: [self-hosted, linux-a100]
     timeout-minutes: 450
     env:
@@ -165,19 +165,19 @@ jobs:
           ln -s ${{env.REPORT_DIR}}/.pytest_cache autotest
       - name: Test lmdeploy - quantization w4a16
         continue-on-error: true
-        if: github.event_name == 'schedule' || (contains(fromJSON(github.event.inputs.backend), 'turbomind') && contains(fromJSON(github.event.inputs.model), 'quantization'))
+        if: github.event_name == 'schedule' || contains(fromJSON(github.event.inputs.backend), 'turbomind')
         run: |
           pytest autotest/tools/quantization/test_quantization_awq.py -m 'not pr_test' -n 8 --alluredir=${{env.REPORT_DIR}} --clean-alluredir ${{env.COV_PARAM}} || true
           mv .coverage ${{env.REPORT_DIR}}/.coverage.$(date +'%Y%m%d%H%M%S')
       - name: Test lmdeploy - quantization w8a8
         continue-on-error: true
-        if: github.event_name == 'schedule' || (contains(fromJSON(github.event.inputs.backend), 'pytorch') && contains(fromJSON(github.event.inputs.model), 'quantization'))
+        if: github.event_name == 'schedule' || contains(fromJSON(github.event.inputs.backend), 'pytorch')
         run: |
           pytest autotest/tools/quantization/test_quantization_w8a8.py -n 8 --alluredir=${{env.REPORT_DIR}} ${{env.COV_PARAM}} || true
           mv .coverage ${{env.REPORT_DIR}}/.coverage.$(date +'%Y%m%d%H%M%S')
       - name: Test lmdeploy - convert
         continue-on-error: true
-        if: github.event_name == 'schedule' || (contains(fromJSON(github.event.inputs.backend), 'turbomind') && contains(fromJSON(github.event.inputs.model), 'convert'))
+        if: github.event_name == 'schedule' || contains(fromJSON(github.event.inputs.backend), 'turbomind')
         run: |
           pytest autotest/tools/convert -m 'not pr_test' -n 8 --alluredir=${{env.REPORT_DIR}} ${{env.COV_PARAM}} || true
           mv .coverage ${{env.REPORT_DIR}}/.coverage.$(date +'%Y%m%d%H%M%S')
