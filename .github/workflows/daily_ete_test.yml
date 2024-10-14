@@ -112,15 +112,6 @@ jobs:
       - name: Copy Artifacts - offline
         if: ${{inputs.offline_mode}}
         run: rm ${{env.TEST_CODE_PATH}}/lmdeploy-*.whl && cp ${{env.OFFLINE_CODE_PATH}}/lmdeploy-*.whl ${{env.TEST_CODE_PATH}}
-      - name: Clear workfile
-        if: always()
-        run: |
-          chmod -R 777 $REPORT_DIR
-          export workdir=$(pwd)
-          cd ..
-          rm -rf $workdir
-          mkdir $workdir
-          chmod -R 777 $workdir
 
   test_quantization:
     needs: download_pkgs
@@ -146,7 +137,7 @@ jobs:
         - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
     steps:
       - name: Copy repository and Artifacts
-        run: cp -r . ${{env.TEST_CODE_PATH}}/. .
+        run: cp -r ${{env.TEST_CODE_PATH}}/. .
       - name: Install lmdeploy - dependency
         run: |
           # manually install flash attn
@@ -229,9 +220,7 @@ jobs:
         - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
     steps:
       - name: Copy repository and Artifacts
-        run: cp -r . ${{env.TEST_CODE_PATH}}/. .
-      - name: Copy Artifacts
-        run: cp . ${{env.TEST_CODE_PATH}}/py310/lmdeploy-*.whl
+        run: cp -r ${{env.TEST_CODE_PATH}}/. .
       - name: Install lmdeploy - dependency
         run: |
           # manually install flash attn
