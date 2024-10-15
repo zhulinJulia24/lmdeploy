@@ -17,12 +17,12 @@ on:
         required: true
         description: 'Set backend testcase filter: turbomind or pytorch or turbomind, pytorch. Default is "["turbomind", "pytorch"]"'
         type: string
-        default: "['turbomind', 'pytorch', 'turbomind-vl']"
+        default: "['turbomind', 'turbomind-vl']"
       model:
         required: true
         description: 'Set testcase module filter: chat, restful, pipeline, quantization. Default contains all models'
         type: string
-        default: "['quantization','convert','pipeline','restful','chat','local_case']"
+        default: "['restful','local_case']"
       offline_mode:
         required: true
         description: 'Whether start a offline mode, if true, you should prepare code and whl package by yourself'
@@ -55,8 +55,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        backend: ${{ fromJSON(inputs.backend) || fromJSON('["turbomind", "pytorch", "turbomind-vl"]')}}
-        model: ${{ fromJSON(inputs.model) || fromJSON('["pipeline","restful","chat","local_case"]')}}
+        backend: ${{ fromJSON(inputs.backend) || fromJSON('["turbomind", "turbomind-vl"]')}}
+        model: ${{ fromJSON(inputs.model) || fromJSON('["restful","local_case"]')}}
     steps:
       - name: print
         run: |
@@ -70,8 +70,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        backend: ${{ fromJSON(inputs.backend) || fromJSON('["turbomind", "pytorch", "turbomind-vl"]')}}
-        model: ${{ fromJSON(inputs.model) || fromJSON('["pipeline","restful","chat","local_case"]')}}
+        backend: ${{ fromJSON(inputs.backend) || fromJSON('["turbomind", "turbomind-vl"]')}}
+        model: ${{ fromJSON(inputs.model) || fromJSON('["restful","local_case"]')}}
         include:
           - backend: turbomind
             model: local_case
@@ -88,8 +88,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        backend: ${{ fromJSON(inputs.backend) || fromJSON('["turbomind", "pytorch", "turbomind-vl"]')}}
-        model: ${{ fromJSON(inputs.model) || fromJSON('["pipeline","restful","chat","local_case"]')}}
+        backend: ${{ fromJSON(inputs.backend) || fromJSON('["turbomind", "turbomind-vl"]')}}
+        model: ${{ fromJSON(inputs.model) || fromJSON('["restful","local_case"]')}}
         include:
           - os: 11
             os2: 22
@@ -101,4 +101,5 @@ jobs:
           echo ${{matrix.backend}}
           echo ${{matrix.model}}
           echo ${{matrix.os}}
+          echo ${{matrix.os2}}
          
