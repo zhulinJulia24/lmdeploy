@@ -17,7 +17,7 @@ on:
         required: true
         description: 'Set backend testcase filter: turbomind or pytorch or turbomind, pytorch. Default is "["turbomind", "pytorch"]"'
         type: string
-        default: "['turbomind', 'turbomind-vl']"
+        default: "['pytroch','turbomind', 'turbomind-vl']"
       model:
         required: true
         description: 'Set testcase module filter: chat, restful, pipeline, quantization. Default contains all models'
@@ -75,6 +75,8 @@ jobs:
         include:
           - backend: turbomind
             model: local_case
+        exclude:
+          - backend: pytorch
     steps:
       - name: print
         run: |
