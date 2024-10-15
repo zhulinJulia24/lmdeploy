@@ -22,7 +22,7 @@ on:
         required: true
         description: 'Set testcase module filter: chat, restful, pipeline, quantization. Default contains all models'
         type: string
-        default: "['restful','local_case']"
+        default: "['restful']"
       offline_mode:
         required: true
         description: 'Whether start a offline mode, if true, you should prepare code and whl package by yourself'
