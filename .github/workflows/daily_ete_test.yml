@@ -71,7 +71,7 @@ jobs:
       fail-fast: false
       matrix:
         backend: ${{ fromJSON(inputs.backend) || fromJSON('["turbomind", "turbomind-vl"]')}}
-        model: ${{ fromJSON(inputs.model) || fromJSON('["restful","local_case"]')}}
+        model: ${{ fromJSON(inputs.model) || fromJSON('["restful"]')}}
         include:
           - backend: turbomind
             model: local_case
