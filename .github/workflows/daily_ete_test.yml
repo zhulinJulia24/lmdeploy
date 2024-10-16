@@ -164,7 +164,6 @@ jobs:
           rm -rf allure-results
           # remove tmp log in testcase
           mkdir ${{env.REPORT_DIR}}/.pytest_cache -p
-          ln -s ${{env.REPORT_DIR}}/.pytest_cache autotest
       - name: Change testconfig on v100
         if: ${{matrix.runner_lable == 'linux-v100'}}
         run: |
@@ -352,7 +351,6 @@ jobs:
           lmdeploy check_env
           rm -rf allure-results
           mkdir ${{env.REPORT_DIR}}/.pytest_cache -p
-          ln -s ${{env.REPORT_DIR}}/.pytest_cache autotest
       - name: Start restful api turbomind
         if: matrix.backend == 'turbomind'
         run: |
@@ -469,7 +467,6 @@ jobs:
           lmdeploy check_env
           rm -rf allure-results
           mkdir ${{env.REPORT_DIR}}/.pytest_cache -p
-          ln -s ${{env.REPORT_DIR}}/.pytest_cache autotest
       - name: Test lmdeploy - interface pipeline case
         run: |
           pytest autotest/interface/pipeline/test_pipeline_func.py -m 'not pr_test' -n 4 --alluredir=${{env.REPORT_DIR}} ${{env.COV_PARAM}} || true
@@ -554,7 +551,6 @@ jobs:
           python3 -m pip list
           lmdeploy check_env
           mkdir ${{env.REPORT_DIR}}/.pytest_cache -p
-          ln -s ${{env.REPORT_DIR}}/.pytest_cache autotest
       - name: Change testconfig on v100
         if: ${{matrix.runner_lable == 'linux-v100'}}
         run: |
@@ -653,7 +649,6 @@ jobs:
           python3 -m pip list
           lmdeploy check_env
           mkdir ${{env.REPORT_DIR}}/.pytest_cache -p
-          ln -s ${{env.REPORT_DIR}}/.pytest_cache autotest
       - name: Setup paths for evaluation
         run: |
           ln -s /root/opencompass-data ./data
