@@ -17,7 +17,7 @@ on:
         required: true
         description: 'Set backend testcase filter: turbomind or pytorch or turbomind, pytorch. Default is "["turbomind", "pytorch"]"'
         type: string
-        default: "['turbomind', 'turbomind-vl']"
+        default: "['turbomind', 'pytorch', 'turbomind-vl']"
       model:
         required: true
         description: 'Set testcase module filter: chat, restful, pipeline, quantization. Default contains all models'
@@ -157,6 +157,7 @@ jobs:
           python3 -m pip install -r requirements/test.txt
       - name: Check env
         run: |
+          pip install triton==3.1.0
           pip uninstall -y nvidia-nccl-cu11
           python3 -m pip list
           lmdeploy check_env
