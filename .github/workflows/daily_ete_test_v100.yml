@@ -45,7 +45,6 @@ env:
   TEST_CODE_PATH: /nvme/qa_test_models/test_pkg/lmdeploy
   OFFLINE_CODE_PATH: /nvme/qa_test_models/offline_pkg/lmdeploy
   OFFLINE_REQUIREMENTS: /nvme/qa_test_models/offline_pkg/requirements.txt
-  DEEPSEEK_VL: /nvme/qa_test_models/offline_pkg/DeepSeek-VL
   TEST_RUNNER: linux-v100
 
 jobs:
@@ -160,7 +159,6 @@ jobs:
         run: |
           python3 -m pip install lmdeploy-*.whl --no-deps
           python3 -m pip install -r requirements/test.txt
-          pip install ${{env.DEEPSEEK_VL}} --no-deps
       - name: Check env
         run: |
           pip install transformers
@@ -248,7 +246,6 @@ jobs:
         run: |
           python3 -m pip install lmdeploy-*.whl --no-deps
           python3 -m pip install -r requirements/test.txt
-          pip install ${{env.DEEPSEEK_VL}} --no-deps
       - name: Check env
         run: |
           pip uninstall -y nvidia-nccl-cu11
@@ -348,7 +345,6 @@ jobs:
         run: |
           python3 -m pip install lmdeploy-*.whl --no-deps
           python3 -m pip install -r requirements/test.txt
-          pip install ${{env.DEEPSEEK_VL}} --no-deps
       - name: Check env
         run: |
           pip uninstall -y nvidia-nccl-cu11
@@ -440,7 +436,6 @@ jobs:
         run: |
           python3 -m pip install lmdeploy-*.whl --no-deps
           python3 -m pip install -r requirements/test.txt
-          pip install ${{env.DEEPSEEK_VL}} --no-deps
       - name: Check env
         run: |
           pip uninstall -y nvidia-nccl-cu11
@@ -501,7 +496,6 @@ jobs:
         run: |
           python3 -m pip install lmdeploy-*.whl --no-deps
           python3 -m pip install -r requirements/test.txt
-          pip install ${{env.DEEPSEEK_VL}} --no-deps
       - name: Check env
         run: |
           pip uninstall -y nvidia-nccl-cu11
@@ -559,7 +553,6 @@ jobs:
         run: |
           python3 -m pip install lmdeploy-*.whl --no-deps
           python3 -m pip install -r requirements/test.txt
-          pip install ${{env.DEEPSEEK_VL}} --no-deps
       - name: Install opencompass
         run: |
           git clone --depth=1 https://github.com/open-compass/opencompass.git
