@@ -190,7 +190,7 @@ jobs:
     needs: test_quantization
     if: ${{!cancelled() && (github.event_name == 'schedule' || contains(fromJSON(github.event.inputs.regression_func), 'tools'))}}
     runs-on: linux-v100
-    timeout-minutes: 120
+    timeout-minutes: 180
     strategy:
       fail-fast: false
       matrix:
@@ -308,7 +308,7 @@ jobs:
       fail-fast: false
       matrix:
         backend: ['turbomind', 'pytorch']
-    timeout-minutes: 60
+    timeout-minutes: 120
     container:
       image: openmmlab/lmdeploy:latest-cu12
       options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip -e NVIDIA_DISABLE_REQUIRE=1 --pull never"
@@ -348,13 +348,13 @@ jobs:
         run: |
           CUDA_VISIBLE_DEVICES=6,7 lmdeploy serve api_server /nvme/qa_test_models/internlm/internlm2_5-20b-chat --tp 2 > restful.log  2>&1  &
           echo "restful_pid=$!" >> "$GITHUB_ENV"
-          sleep 120s
+          sleep 600s
       - name: Start restful api pytorch
         if: matrix.backend == 'pytorch'
         run: |
           CUDA_VISIBLE_DEVICES=6,7 lmdeploy serve api_server /nvme/qa_test_models/internlm/internlm2_5-20b-chat --tp 2 --backend pytorch > restful.log  2>&1  &
           echo "restful_pid=$!" >> "$GITHUB_ENV"
-          sleep 180s
+          sleep 600s
       - name: Test lmdeploy - restful api
         timeout-minutes: 75
         run: |
@@ -369,13 +369,13 @@ jobs:
         run: |
           CUDA_VISIBLE_DEVICES=6,7 lmdeploy serve api_server /nvme/qa_test_models/internlm/internlm2_5-20b --tp 2 > restful.log  2>&1  &
           echo "restful_pid=$!" >> "$GITHUB_ENV"
-          sleep 120s
+          sleep 600s
       - name: Start restful api pytorch - base
         if: matrix.backend == 'pytorch'
         run: |
           CUDA_VISIBLE_DEVICES=6,7 lmdeploy serve api_server /nvme/qa_test_models/internlm/internlm2_5-20b --tp 2 --backend pytorch > restful.log  2>&1  &
           echo "restful_pid=$!" >> "$GITHUB_ENV"
-          sleep 180s
+          sleep 600s
       - name: Test lmdeploy - restful api - base
         timeout-minutes: 40
         run: |
@@ -399,7 +399,7 @@ jobs:
     if: ${{!cancelled() && (github.event_name == 'schedule' || contains(fromJSON(github.event.inputs.regression_func), 'pipeline'))}}
     runs-on: linux-v100
     needs: test_quantization
-    timeout-minutes: 120
+    timeout-minutes: 180
     container:
       image: openmmlab/lmdeploy:latest-cu12
       options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip -e NVIDIA_DISABLE_REQUIRE=1 --pull never"
