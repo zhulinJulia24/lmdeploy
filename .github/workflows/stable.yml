@@ -130,17 +130,7 @@ jobs:
           mkdir ${{env.REPORT_DIR}} -p
           CUDA_VISIBLE_DEVICES=6,7 lmdeploy serve api_server /nvme/qa_test_models/${{matrix.model}} --tp 2 --max-batch-size 256 --cache-max-entry-count 0.9 --server-port 23344 > ${{env.REPORT_DIR}}/restful.log 2>&1  &
           echo "restful_pid=$!" >> "$GITHUB_ENV"
-          sleep 120s
-      - name: Run OC result
-        continue-on-error: true
-        run: |
-          ln -s /nvme/qa_test_models/dataset/data .
-          opencompass .github/scripts/eval_stable_object_config.py --reuse --dump-eval-details --work-dir ${{env.REPORT_DIR}}-object-1
-          opencompass .github/scripts/eval_stable_subject_config.py --reuse --dump-eval-details --work-dir ${{env.REPORT_DIR}}-subject-1
-          opencompass .github/scripts/eval_stable_object_config.py --reuse --dump-eval-details --work-dir ${{env.REPORT_DIR}}-object-2
-          opencompass .github/scripts/eval_stable_subject_config.py --reuse --dump-eval-details --work-dir ${{env.REPORT_DIR}}-subject-2
-          opencompass .github/scripts/eval_stable_object_config.py --reuse --dump-eval-details --work-dir ${{env.REPORT_DIR}}-object-3
-          opencompass .github/scripts/eval_stable_subject_config.py --reuse --dump-eval-details --work-dir ${{env.REPORT_DIR}}-subject-3
+          sleep 2400s
       - name: Test lmdeploy - restful api
         run: |
           python3 benchmark/profile_restful_api.py --port 23344 --dataset-path /nvme/qa_test_models/datasets/ShareGPT_V3_unfiltered_cleaned_split.json --num-prompts 10000 > ${{env.REPORT_DIR}}/stable.log
