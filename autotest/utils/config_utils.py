@@ -120,7 +120,6 @@ def get_quantization_model_list(type):
 
 def get_vl_model_list(tp_num: int = None, quant_policy: int = None):
     config = get_config()
-
     if quant_policy is None:
         case_list = copy.deepcopy(config.get('vl_model'))
     else:
@@ -150,7 +149,6 @@ def get_vl_model_list(tp_num: int = None, quant_policy: int = None):
                     and key not in config.get('pytorch_quatization').get(
                         'no_kvint' + str(quant_policy))):
             case_list.append(key + '-inner-4bits')
-
     if tp_num is not None:
         return [
             item for item in case_list if get_tp_num(config, item) == tp_num
