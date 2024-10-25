@@ -129,6 +129,8 @@ turbomind_internlm2_5_7b_chat_4bits = deepcopy(*lmdeploy_internlm2_5_7b_chat)
 turbomind_internlm2_5_7b_chat_kvint4 = deepcopy(*lmdeploy_internlm2_5_7b_chat)
 turbomind_internlm2_5_7b_chat_kvint8 = deepcopy(*lmdeploy_internlm2_5_7b_chat)
 turbomind_internlm2_5_7b_chat_batch1 = deepcopy(*lmdeploy_internlm2_5_7b_chat)
+turbomind_internlm2_5_7b_chat_batch1_4bits = deepcopy(
+    *lmdeploy_internlm2_5_7b_chat)
 pytorch_internlm2_5_7b_chat = deepcopy(*lmdeploy_internlm2_5_7b_chat)
 
 # ===== Configs for internlm/internlm2_5_20b_chat =====
@@ -174,7 +176,6 @@ turbomind_llama2_7b_chat = dict(type=TurboMindModel,
                                 max_out_len=MAX_NEW_TOKENS,
                                 max_seq_len=MAX_SESSION_LEN,
                                 batch_size=128,
-                                concurrency=128,
                                 meta_template=llama2_meta_template,
                                 run_cfg=dict(num_gpus=1),
                                 end_str='[INST]')
@@ -236,6 +237,11 @@ turbomind_internlm2_5_7b_chat_batch1[
     'abbr'] = turbomind_internlm2_5_7b_chat_batch1['abbr'] + '_batch1'
 turbomind_internlm2_5_7b_chat_batch1['engine_config']['max_batch_size'] = 1
 turbomind_internlm2_5_7b_chat_batch1['batch_size'] = 1
+turbomind_internlm2_5_7b_chat_batch1_4bits[
+    'abbr'] = turbomind_internlm2_5_7b_chat_batch1_4bits['abbr'] + '_batch1'
+turbomind_internlm2_5_7b_chat_batch1_4bits['engine_config'][
+    'max_batch_size'] = 1
+turbomind_internlm2_5_7b_chat_batch1_4bits['batch_size'] = 1
 
 basic_pytorch_chat_tp1 = dict(type=TurboMindModelwithChatTemplate,
                               engine_config=dict(session_len=MAX_SESSION_LEN,
