@@ -34,7 +34,7 @@ on:
         type: string
         default: "['quant', 'tools','restful','pipeline','benchmark','evaluation']"
   schedule:
-    - cron:  '00 16 * * 0-4'
+    - cron:  '30 16 * * 0-4'
 
 env:
   HOST_PIP_CACHE_DIR: /nvme/github-actions/pip-cache
@@ -195,9 +195,9 @@ jobs:
           chmod -R 777 $workdir
 
   test_tools:
-    needs: test_quantization
     if: ${{!cancelled() && (github.event_name == 'schedule' || contains(fromJSON(github.event.inputs.regression_func), 'tools'))}}
     runs-on: linux-v100
+    needs: test_quantization
     timeout-minutes: 240
     strategy:
       fail-fast: false
