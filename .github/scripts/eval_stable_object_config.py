@@ -41,8 +41,8 @@ with read_base():
         mmlu_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.mmlu_pro.mmlu_pro_0shot_cot_gen_08c1de import \
         mmlu_pro_datasets  # noqa: F401, E501
-    from opencompass.configs.datasets.nq.nq_open_1shot_gen_2e45e5 import \
-        nq_datasets  # noqa: F401, E501
+    # from opencompass.configs.datasets.nq.nq_open_1shot_gen_2e45e5 import \
+    #     nq_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.race.race_cot_gen_d95929 import \
         race_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.scicode.scicode_gen_085b98 import \
