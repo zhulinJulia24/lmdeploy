@@ -92,6 +92,8 @@ def test_pipeline_chat_kvint4_tp2(config, common_case_config, model,
     if 'gw' in worker_id:
         os.environ['CUDA_VISIBLE_DEVICES'] = get_cuda_id_by_workerid(worker_id,
                                                                      tp_num=2)
+        os.environ['MASTER_PORT'] = str(
+            int(worker_id.replace('gw', '')) + 29500)
     p = Process(target=run_pipeline_chat_test,
                 args=(config, common_case_config, model, 'pytorch-kvint',
                       worker_id, {
@@ -141,6 +143,8 @@ def test_pipeline_chat_kvint8_tp2(config, common_case_config, model,
     if 'gw' in worker_id:
         os.environ['CUDA_VISIBLE_DEVICES'] = get_cuda_id_by_workerid(worker_id,
                                                                      tp_num=2)
+        os.environ['MASTER_PORT'] = str(
+            int(worker_id.replace('gw', '')) + 29500)
     p = Process(target=run_pipeline_chat_test,
                 args=(config, common_case_config, model, 'pytorch-kvint',
                       worker_id, {

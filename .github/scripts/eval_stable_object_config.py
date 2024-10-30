@@ -15,6 +15,8 @@ with read_base():
         drop_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.ds1000.ds1000_service_eval_gen_cbc84f import \
         ds1000_datasets  # noqa: F401, E501
+    from opencompass.configs.datasets.GaokaoBench.GaokaoBench_no_subjective_gen_4c31db import \
+        GaokaoBench_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.gpqa.gpqa_openai_simple_evals_gen_5aeece import \
         gpqa_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.gsm8k.gsm8k_0shot_v2_gen_a58960 import \
@@ -39,6 +41,8 @@ with read_base():
         mmlu_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.mmlu_pro.mmlu_pro_0shot_cot_gen_08c1de import \
         mmlu_pro_datasets  # noqa: F401, E501
+    from opencompass.configs.datasets.nq.nq_open_1shot_gen_2e45e5 import \
+        nq_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.race.race_cot_gen_d95929 import \
         race_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.scicode.scicode_gen_085b98 import \
@@ -51,8 +55,122 @@ with read_base():
         teval_datasets as teval_zh_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.TheoremQA.TheoremQA_5shot_gen_6f0af8 import \
         TheoremQA_datasets  # noqa: F401, E501
+    from opencompass.configs.datasets.triviaqa.triviaqa_wiki_1shot_gen_bc5f21 import \
+        triviaqa_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.wikibench.wikibench_gen_0978ad import \
         wikibench_datasets  # noqa: F401, E501
+    from opencompass.configs.summarizers.groups.bbh import \
+        bbh_summary_groups  # noqa: F401, E501
+    from opencompass.configs.summarizers.groups.cmmlu import \
+        cmmlu_summary_groups  # noqa: F401, E501
+    from opencompass.configs.summarizers.groups.ds1000 import \
+        ds1000_summary_groups  # noqa: F401, E501
+    from opencompass.configs.summarizers.groups.GaokaoBench import \
+        GaokaoBench_summary_groups  # noqa: F401, E501
+    from opencompass.configs.summarizers.groups.humanevalx import \
+        humanevalx_summary_groups  # noqa: F401, E501
+    from opencompass.configs.summarizers.groups.mathbench_v1_2024 import \
+        mathbench_2024_summary_groups  # noqa: F401, E501
+    from opencompass.configs.summarizers.groups.mmlu import \
+        mmlu_summary_groups  # noqa: F401, E501
+    from opencompass.configs.summarizers.groups.mmlu_pro import \
+        mmlu_pro_summary_groups  # noqa: F401, E501
+    from opencompass.configs.summarizers.groups.scicode import \
+        scicode_summary_groups  # noqa: F401, E501
+    from opencompass.configs.summarizers.groups.teval import \
+        teval_summary_groups  # noqa: F401, E501
+
+summarizer = dict(
+    dataset_abbrs=[
+        ['race-middle', 'accuracy'],
+        ['race-high', 'accuracy'],
+        ['ARC-c', 'accuracy'],
+        ['BoolQ', 'accuracy'],
+        ['mmlu_pro', 'naive_average'],
+        ['drop', 'accuracy'],
+        ['bbh', 'naive_average'],
+        ['GPQA_diamond', 'accuracy'],
+        ['math', 'accuracy'],
+        ['wikibench-wiki-single_choice_cncircular', 'perf_4'],
+        ['openai_humaneval', 'humaneval_pass@1'],
+        ['sanitized_mbpp', 'score'],
+        ['cmmlu', 'naive_average'],
+        ['mmlu', 'naive_average'],
+        ['teval', 'naive_average'],
+        ['SciCode', 'accuracy'],
+        ['SciCode', 'sub_accuracy'],
+        ['humanevalx', 'naive_average'],
+        ['ds1000', 'naive_average'],
+        ['IFEval', 'Prompt-level-strict-accuracy'],
+        ['gsm8k', 'accuracy'],
+        ['GaokaoBench', 'weighted_average'],
+        ['triviaqa_wiki_1shot', 'score'],
+        ['nq_open_1shot', 'score'],
+        ['hellaswag', 'accuracy'],
+        ['TheoremQA', 'score'],
+        '###### MathBench-A: Application Part ######',
+        'college',
+        'high',
+        'middle',
+        'primary',
+        'arithmetic',
+        'mathbench-a (average)',
+        '###### MathBench-T: Theory Part ######',
+        'college_knowledge',
+        'high_knowledge',
+        'middle_knowledge',
+        'primary_knowledge',
+        'mathbench-t (average)',
+        '###### Overall: Average between MathBench-A and MathBench-T ######',
+        'Overall',
+        '',
+        ''
+        'mmlu',
+        'mmlu-stem',
+        'mmlu-social-science',
+        'mmlu-humanities',
+        'mmlu-other',
+        '',
+        'cmmlu',
+        'cmmlu-stem',
+        'cmmlu-social-science',
+        'cmmlu-humanities',
+        'cmmlu-other',
+        'cmmlu-china-specific',
+        '',
+        'mmlu_pro',
+        'mmlu_pro_biology',
+        'mmlu_pro_business',
+        'mmlu_pro_chemistry',
+        'mmlu_pro_computer_science',
+        'mmlu_pro_economics',
+        'mmlu_pro_engineering',
+        'mmlu_pro_health',
+        'mmlu_pro_history',
+        'mmlu_pro_law',
+        'mmlu_pro_math',
+        'mmlu_pro_philosophy',
+        'mmlu_pro_physics',
+        'mmlu_pro_psychology',
+        'mmlu_pro_other',
+        '',
+        'humanevalx-python',
+        'humanevalx-cpp',
+        'humanevalx-go',
+        'humanevalx-java',
+        'humanevalx-js',
+        '',
+        'ds1000_Pandas',
+        'ds1000_Numpy',
+        'ds1000_Tensorflow',
+        'ds1000_Scipy',
+        'ds1000_Sklearn',
+        'ds1000_Pytorch',
+        'ds1000_Matplotlib',
+    ],
+    summary_groups=sum(
+        [v for k, v in locals().items() if k.endswith('_summary_groups')], []),
+)
 
 datasets = sum((v for k, v in locals().items() if k.endswith('_datasets')
                 and 'scicode' not in k.lower() and 'teval' not in k), [])
