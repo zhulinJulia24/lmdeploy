@@ -958,7 +958,9 @@ def test_backend_config_validate_turbomind(config, model, backend, worker_id):
         backend_config = backend(tp=0)
         pipeline(model_path, backend_config=backend_config)
 
-    with pytest.raises(pydantic.ValidationError):
+    with pytest.raises(
+            AssertionError,
+            match='max_batch_size should be greater than 0, but got 0'):
         backend_config = backend(max_batch_size=0)
         pipeline(model_path, backend_config=backend_config)
 
