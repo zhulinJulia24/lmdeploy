@@ -28,6 +28,8 @@ def test_pipeline_chat_tp2(config, model, worker_id):
     if 'gw' in worker_id:
         os.environ['CUDA_VISIBLE_DEVICES'] = get_cuda_id_by_workerid(worker_id,
                                                                      tp_num=2)
+        os.environ['MASTER_PORT'] = str(
+            int(worker_id.replace('gw', '')) + 29500)
     p = Process(target=run_pipeline_vl_chat_test, args=(config, model))
     p.start()
     p.join()
@@ -59,6 +61,8 @@ def test_pipeline_chat_kvint4_tp2(config, model, worker_id):
     if 'gw' in worker_id:
         os.environ['CUDA_VISIBLE_DEVICES'] = get_cuda_id_by_workerid(worker_id,
                                                                      tp_num=2)
+        os.environ['MASTER_PORT'] = str(
+            int(worker_id.replace('gw', '')) + 29500)
     p = Process(target=run_pipeline_vl_chat_test, args=(config, model, 4))
     p.start()
     p.join()
@@ -86,6 +90,8 @@ def test_pipeline_chat_kvint8_tp2(config, model, worker_id):
     if 'gw' in worker_id:
         os.environ['CUDA_VISIBLE_DEVICES'] = get_cuda_id_by_workerid(worker_id,
                                                                      tp_num=2)
+        os.environ['MASTER_PORT'] = str(
+            int(worker_id.replace('gw', '')) + 29500)
     p = Process(target=run_pipeline_vl_chat_test, args=(config, model, 8))
     p.start()
     p.join()

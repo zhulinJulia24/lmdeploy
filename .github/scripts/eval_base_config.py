@@ -49,6 +49,8 @@ with read_base():
         models as hf_mistral_7b_v0_1  # noqa: F401, E501
     from opencompass.configs.models.mistral.hf_mixtral_8x7b_v0_1 import \
         models as hf_mixtral_8x7b_v0_1  # noqa: F401, E501
+    from opencompass.configs.models.qwen2_5.lmdeploy_qwen2_5_7b import \
+        models as lmdeploy_qwen2_5_7b  # noqa: F401, E501
     from opencompass.configs.models.qwen.hf_qwen1_5_7b import \
         models as hf_qwen1_5_7b  # noqa: F401, E501
     from opencompass.configs.models.qwen.hf_qwen2_7b import \
@@ -65,10 +67,20 @@ with read_base():
 
 turbomind_qwen1_5_7b = deepcopy(*lmdeploy_qwen1_5_7b)
 turbomind_qwen2_7b = deepcopy(*lmdeploy_qwen2_7b)
+turbomind_qwen2_5_7b = deepcopy(*lmdeploy_qwen2_5_7b)
+turbomind_qwen2_5_14b = deepcopy(*lmdeploy_qwen2_5_7b)
+turbomind_qwen2_5_14b['path'] = 'Qwen/Qwen2.5-14B'
 turbomind_internlm2_5_7b = deepcopy(*lmdeploy_internlm2_5_7b)
+turbomind_internlm2_5_7b_4bits = deepcopy(*lmdeploy_internlm2_5_7b)
 turbomind_internlm2_5_7b_batch1 = deepcopy(*lmdeploy_internlm2_5_7b)
+turbomind_internlm2_5_7b_batch1_4bits = deepcopy(*lmdeploy_internlm2_5_7b)
 
-turbomind_internlm2_5_7b_batch1[
-    'abbr'] = turbomind_internlm2_5_7b_batch1['abbr'] + '_batch1'
-turbomind_internlm2_5_7b_batch1['engine_config']['max_batch_size'] = 1
-turbomind_internlm2_5_7b_batch1['batch_size'] = 1
+for model in [v for k, v in locals().items() if k.endswith('_4bits')]:
+    model['engine_config']['model_format'] = 'awq'
+    model['abbr'] = model['abbr'] + '_4bits'
+    model['path'] = model['path'] + '-inner-4bits'
+
+for model in [v for k, v in locals().items() if '_batch1' in k]:
+    model['abbr'] = model['abbr'] + '_batch1'
+    model['engine_config']['max_batch_size'] = 1
+    model['batch_size'] = 1

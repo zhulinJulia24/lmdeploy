@@ -117,6 +117,8 @@ jobs:
           python3 -m pip install -r requirements/test.txt
       - name: Install opencompass
         run: |
+          python3 -m pip install langdetect latex2sympy2
+          mkdir outputs
           git clone --depth=1 https://github.com/open-compass/opencompass.git
           cd opencompass
           python3 -m pip install -e .

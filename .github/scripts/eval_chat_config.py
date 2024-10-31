@@ -129,6 +129,8 @@ turbomind_internlm2_5_7b_chat_4bits = deepcopy(*lmdeploy_internlm2_5_7b_chat)
 turbomind_internlm2_5_7b_chat_kvint4 = deepcopy(*lmdeploy_internlm2_5_7b_chat)
 turbomind_internlm2_5_7b_chat_kvint8 = deepcopy(*lmdeploy_internlm2_5_7b_chat)
 turbomind_internlm2_5_7b_chat_batch1 = deepcopy(*lmdeploy_internlm2_5_7b_chat)
+turbomind_internlm2_5_7b_chat_batch1_4bits = deepcopy(
+    *lmdeploy_internlm2_5_7b_chat)
 pytorch_internlm2_5_7b_chat = deepcopy(*lmdeploy_internlm2_5_7b_chat)
 
 # ===== Configs for internlm/internlm2_5_20b_chat =====
@@ -231,10 +233,10 @@ for model in [v for k, v in locals().items() if k.startswith('pytorch_')]:
     model['gen_config']['do_sample'] = False
     model['batch_size'] = 64
 
-turbomind_internlm2_5_7b_chat_batch1[
-    'abbr'] = turbomind_internlm2_5_7b_chat_batch1['abbr'] + '_batch1'
-turbomind_internlm2_5_7b_chat_batch1['engine_config']['max_batch_size'] = 1
-turbomind_internlm2_5_7b_chat_batch1['batch_size'] = 1
+for model in [v for k, v in locals().items() if '_batch1' in k]:
+    model['abbr'] = model['abbr'] + '_batch1'
+    model['engine_config']['max_batch_size'] = 1
+    model['batch_size'] = 1
 
 basic_pytorch_chat_tp1 = dict(type=TurboMindModelwithChatTemplate,
                               engine_config=dict(session_len=MAX_SESSION_LEN,
