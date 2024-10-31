@@ -4,6 +4,8 @@ from mmengine.config import read_base
 
 with read_base():
     # choose a list of datasets
+    from opencompass.configs.datasets.ARC_c.ARC_c_few_shot_ppl import \
+        ARC_c_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.bbh.bbh_gen_98fba6 import \
         bbh_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.ceval.ceval_ppl import \
@@ -14,17 +16,43 @@ with read_base():
         crowspairs_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.drop.drop_gen_a2697c import \
         drop_datasets  # noqa: F401, E501
-    from opencompass.configs.datasets.gpqa.gpqa_ppl_6bf57a import \
+    # Corebench v1.7
+    from opencompass.configs.datasets.GaokaoBench.GaokaoBench_no_subjective_gen_d21e37 import \
+        GaokaoBench_datasets  # noqa: F401, E501
+    from opencompass.configs.datasets.gpqa.gpqa_few_shot_ppl_4b5a83 import \
         gpqa_datasets  # noqa: F401, E501
-    from opencompass.configs.datasets.gsm8k.gsm8k_gen_1d7fe4 import \
+    from opencompass.configs.datasets.gsm8k.gsm8k_gen_17d0dc import \
         gsm8k_datasets  # noqa: F401, E501
-    from opencompass.configs.datasets.hellaswag.hellaswag_ppl import \
+    from opencompass.configs.datasets.hellaswag.hellaswag_10shot_ppl_59c85e import \
         hellaswag_datasets  # noqa: F401, E501
+    from opencompass.configs.datasets.humaneval.internal_humaneval_gen_ce6b06 import \
+        humaneval_datasets as humaneval_v2_datasets  # noqa: F401, E501
+    from opencompass.configs.datasets.humaneval.internal_humaneval_gen_d2537e import \
+        humaneval_datasets  # noqa: F401, E501
+    from opencompass.configs.datasets.math.math_4shot_base_gen_43d5b6 import \
+        math_datasets  # noqa: F401, E501
+    from opencompass.configs.datasets.MathBench.mathbench_2024_few_shot_mixed_4a3fd4 import \
+        mathbench_datasets  # noqa: F401, E501
+    from opencompass.configs.datasets.mbpp.sanitized_mbpp_gen_742f0c import \
+        sanitized_mbpp_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.mmlu.mmlu_ppl_ac766d import \
         mmlu_datasets  # noqa: F401, E501
-    from opencompass.configs.datasets.race.race_ppl_a138cd import \
+    from opencompass.configs.datasets.mmlu_pro.mmlu_pro_few_shot_gen_bfaf90 import \
+        mmlu_pro_datasets  # noqa: F401, E501
+    from opencompass.configs.datasets.nq.nq_open_1shot_gen_20a989 import \
+        nq_datasets  # noqa: F401, E501
+    from opencompass.configs.datasets.race.race_few_shot_ppl import \
         race_datasets  # noqa: F401, E501
-    # read models
+    from opencompass.configs.datasets.SuperGLUE_BoolQ.SuperGLUE_BoolQ_few_shot_ppl import \
+        BoolQ_datasets  # noqa: F401, E501
+    from opencompass.configs.datasets.TheoremQA.TheoremQA_5shot_gen_6f0af8 import \
+        TheoremQA_datasets  # noqa: F401, E501
+    from opencompass.configs.datasets.triviaqa.triviaqa_wiki_1shot_gen_20a989 import \
+        triviaqa_datasets  # noqa: F401, E501
+    from opencompass.configs.datasets.wikibench.wikibench_few_shot_ppl_c23d79 import \
+        wikibench_datasets  # noqa: F401, E501
+    from opencompass.configs.datasets.winogrande.winogrande_5shot_ll_252f01 import \
+        winogrande_datasets  # noqa: F401, E501
     from opencompass.configs.models.baichuan.hf_baichuan_7b import \
         models as hf_baichuan_7b  # noqa: F401, E501
     from opencompass.configs.models.gemma.hf_gemma_7b import \
@@ -64,6 +92,8 @@ with read_base():
     # and output the results in a chosen format
     from opencompass.configs.summarizers.medium import \
         summarizer  # noqa: F401, E501
+
+    # read models
 
 turbomind_qwen1_5_7b = deepcopy(*lmdeploy_qwen1_5_7b)
 turbomind_qwen2_7b = deepcopy(*lmdeploy_qwen2_7b)
