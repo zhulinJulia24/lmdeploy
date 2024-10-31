@@ -4,7 +4,7 @@ from subprocess import PIPE
 
 import allure
 import torch
-from pytest import assume
+from pytest_assume.plugin import assume
 from utils.get_run_config import get_model_name, get_tp_num
 from utils.rule_condition_assert import assert_result
 
