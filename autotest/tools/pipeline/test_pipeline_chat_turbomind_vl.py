@@ -1,5 +1,5 @@
 import os
-from multiprocessing import Process
+from multiprocessing import Pipe, get_context
 
 import pytest
 from utils.config_utils import get_cuda_id_by_workerid, get_vl_model_list
@@ -14,7 +14,9 @@ from utils.pipeline_chat import (assert_pipeline_vl_chat_log,
 def test_pipeline_chat_tp1(config, model, worker_id):
     if 'gw' in worker_id:
         os.environ['CUDA_VISIBLE_DEVICES'] = get_cuda_id_by_workerid(worker_id)
-    p = Process(target=run_pipeline_vl_chat_test, args=(config, model))
+    spawn_context = get_context('spawn')
+    p = spawn_context.Process(target=run_pipeline_vl_chat_test,
+                              args=(config, model))
     p.start()
     p.join()
     assert_pipeline_vl_chat_log(config, model)
@@ -30,7 +32,9 @@ def test_pipeline_chat_tp2(config, model, worker_id):
                                                                      tp_num=2)
         os.environ['MASTER_PORT'] = str(
             int(worker_id.replace('gw', '')) + 29500)
-    p = Process(target=run_pipeline_vl_chat_test, args=(config, model))
+    spawn_context = get_context('spawn')
+    p = spawn_context.Process(target=run_pipeline_vl_chat_test,
+                              args=(config, model))
     p.start()
     p.join()
     assert_pipeline_vl_chat_log(config, model)
@@ -45,7 +49,9 @@ def test_pipeline_chat_kvint4_tp1(config, model, worker_id):
         return  # kvint4 for qwen2 is not support
     if 'gw' in worker_id:
         os.environ['CUDA_VISIBLE_DEVICES'] = get_cuda_id_by_workerid(worker_id)
-    p = Process(target=run_pipeline_vl_chat_test, args=(config, model, 4))
+    spawn_context = get_context('spawn')
+    p = spawn_context.Process(target=run_pipeline_vl_chat_test,
+                              args=(config, model, 4))
     p.start()
     p.join()
     assert_pipeline_vl_chat_log(config, model)
@@ -63,7 +69,9 @@ def test_pipeline_chat_kvint4_tp2(config, model, worker_id):
                                                                      tp_num=2)
         os.environ['MASTER_PORT'] = str(
             int(worker_id.replace('gw', '')) + 29500)
-    p = Process(target=run_pipeline_vl_chat_test, args=(config, model, 4))
+    spawn_context = get_context('spawn')
+    p = spawn_context.Process(target=run_pipeline_vl_chat_test,
+                              args=(config, model, 4))
     p.start()
     p.join()
     assert_pipeline_vl_chat_log(config, model)
@@ -76,7 +84,9 @@ def test_pipeline_chat_kvint4_tp2(config, model, worker_id):
 def test_pipeline_chat_kvint8_tp1(config, model, worker_id):
     if 'gw' in worker_id:
         os.environ['CUDA_VISIBLE_DEVICES'] = get_cuda_id_by_workerid(worker_id)
-    p = Process(target=run_pipeline_vl_chat_test, args=(config, model, 8))
+    spawn_context = get_context('spawn')
+    p = spawn_context.Process(target=run_pipeline_vl_chat_test,
+                              args=(config, model, 8))
     p.start()
     p.join()
     assert_pipeline_vl_chat_log(config, model)
@@ -92,7 +102,9 @@ def test_pipeline_chat_kvint8_tp2(config, model, worker_id):
                                                                      tp_num=2)
         os.environ['MASTER_PORT'] = str(
             int(worker_id.replace('gw', '')) + 29500)
-    p = Process(target=run_pipeline_vl_chat_test, args=(config, model, 8))
+    spawn_context = get_context('spawn')
+    p = spawn_context.Process(target=run_pipeline_vl_chat_test,
+                              args=(config, model, 8))
     p.start()
     p.join()
     assert_pipeline_vl_chat_log(config, model)
@@ -109,7 +121,9 @@ def test_pipeline_pr_test(config, model, worker_id):
     if 'gw' in worker_id:
         os.environ['CUDA_VISIBLE_DEVICES'] = str(
             int(get_cuda_id_by_workerid(worker_id)) + 5)
-    p = Process(target=run_pipeline_vl_chat_test, args=(config, model))
+    spawn_context = get_context('spawn')
+    p = spawn_context.Process(target=run_pipeline_vl_chat_test,
+                              args=(config, model))
     p.start()
     p.join()
     assert_pipeline_vl_chat_log(config, model)

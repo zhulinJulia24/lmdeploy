@@ -601,7 +601,7 @@ jobs:
         run: |
           export LMDEPLOY_DIR=$(pwd)
 
-          python3 .github/scripts/action_tools.py evaluate "[turbomind_internlm2_5_7b, turbomind_qwen2_7b, turbomind_internlm2_5_7b_batch1]" "[*mmlu_datasets, *gsm8k_datasets]" /root/evaluation-reports/${{ github.run_id }} base true
+          python3 .github/scripts/action_tools.py evaluate "[turbomind_internlm2_5_7b, turbomind_qwen2_5_14b, turbomind_internlm2_5_7b_batch1]" "[*race_datasets, *gsm8k_datasets, *winogrande_datasets]" /root/evaluation-reports/${{ github.run_id }} base true
       - name: Clear workspace
         if: always()
         run: |
