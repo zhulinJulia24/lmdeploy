@@ -13,8 +13,6 @@ with read_base():
         cmmlu_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.drop.drop_openai_simple_evals_gen_3857b0 import \
         drop_datasets  # noqa: F401, E501
-    from opencompass.configs.datasets.ds1000.ds1000_service_eval_gen_cbc84f import \
-        ds1000_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.GaokaoBench.GaokaoBench_no_subjective_gen_4c31db import \
         GaokaoBench_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.gpqa.gpqa_openai_simple_evals_gen_5aeece import \
@@ -25,8 +23,6 @@ with read_base():
         hellaswag_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.humaneval.humaneval_openai_sample_evals_gen_159614 import \
         humaneval_datasets  # noqa: F401, E501
-    from opencompass.configs.datasets.humanevalx.humanevalx_gen_620cfa import \
-        humanevalx_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.IFEval.IFEval_gen_3321a3 import \
         ifeval_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.LCBench.lcbench_gen_5ff288 import \
