@@ -63,12 +63,8 @@ with read_base():
         bbh_summary_groups  # noqa: F401, E501
     from opencompass.configs.summarizers.groups.cmmlu import \
         cmmlu_summary_groups  # noqa: F401, E501
-    from opencompass.configs.summarizers.groups.ds1000 import \
-        ds1000_summary_groups  # noqa: F401, E501
     from opencompass.configs.summarizers.groups.GaokaoBench import \
         GaokaoBench_summary_groups  # noqa: F401, E501
-    from opencompass.configs.summarizers.groups.humanevalx import \
-        humanevalx_summary_groups  # noqa: F401, E501
     from opencompass.configs.summarizers.groups.mathbench_v1_2024 import \
         mathbench_2024_summary_groups  # noqa: F401, E501
     from opencompass.configs.summarizers.groups.mmlu import \
