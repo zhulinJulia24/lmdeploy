@@ -288,16 +288,18 @@ def run_pipeline_vl_chat_test(config, model_case, quant_policy: int = None):
     if 'llava' in model_case:
         backend_config = TurbomindEngineConfig(tp=tp,
                                                session_len=8192,
-                                               model_name='vicuna')
+                                               model_name='vicuna',
+                                               cache_max_entry_count=0.5)
     else:
-        backend_config = TurbomindEngineConfig(tp=tp, session_len=8192)
+        backend_config = TurbomindEngineConfig(tp=tp,
+                                               session_len=8192,
+                                               cache_max_entry_count=0.5)
     if '4bit' in model_case.lower() or 'awq' in model_case.lower():
         backend_config.model_format = 'awq'
     if quant_policy is not None:
         backend_config.quant_policy = quant_policy
 
     if not is_bf16_supported():
-        backend_config.cache_max_entry_count = 0.5
         backend_config.dtype = 'float16'
     pipe = pipeline(hf_path, backend_config=backend_config)
 
