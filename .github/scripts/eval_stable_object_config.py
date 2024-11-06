@@ -171,6 +171,14 @@ summarizer = dict(
         [v for k, v in locals().items() if k.endswith('_summary_groups')], []),
 )
 
+api_meta_template = dict(
+    round=[
+        dict(role='HUMAN', api_role='HUMAN'),
+        dict(role='BOT', api_role='BOT', generate=True),
+    ],
+    reserved_roles=[dict(role='SYSTEM', api_role='SYSTEM')],
+)
+
 models = [
     dict(
         abbr='lmdeploy-api-test',
