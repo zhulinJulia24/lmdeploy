@@ -7,8 +7,6 @@ with read_base():
         ARC_c_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.bbh.bbh_gen_5b92b0 import \
         bbh_datasets  # noqa: F401, E501
-    from opencompass.configs.datasets.CHARM.charm_reason_cot_only_gen_f7b7d3 import \
-        charm_reason_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.cmmlu.cmmlu_0shot_cot_gen_305931 import \
         cmmlu_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.drop.drop_openai_simple_evals_gen_3857b0 import \
@@ -19,6 +17,7 @@ with read_base():
         GaokaoBench_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.gpqa.gpqa_openai_simple_evals_gen_5aeece import \
         gpqa_datasets  # noqa: F401, E501
+    # new datasets in Fullbench v1.1
     from opencompass.configs.datasets.gsm8k.gsm8k_0shot_v2_gen_a58960 import \
         gsm8k_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.hellaswag.hellaswag_10shot_gen_e42710 import \
@@ -29,8 +28,6 @@ with read_base():
         humanevalx_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.IFEval.IFEval_gen_3321a3 import \
         ifeval_datasets  # noqa: F401, E501
-    from opencompass.configs.datasets.LCBench.lcbench_gen_5ff288 import \
-        LCBench_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.math.math_0shot_gen_393424 import \
         math_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.MathBench.mathbench_2024_gen_50a320 import \
@@ -41,8 +38,8 @@ with read_base():
         mmlu_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.mmlu_pro.mmlu_pro_0shot_cot_gen_08c1de import \
         mmlu_pro_datasets  # noqa: F401, E501
-    # from opencompass.configs.datasets.nq.nq_open_1shot_gen_2e45e5 import \
-    #     nq_datasets  # noqa: F401, E501
+    from opencompass.configs.datasets.nq.nq_open_1shot_gen_2e45e5 import \
+        nq_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.race.race_cot_gen_d95929 import \
         race_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.scicode.scicode_gen_085b98 import \
@@ -79,6 +76,12 @@ with read_base():
         scicode_summary_groups  # noqa: F401, E501
     from opencompass.configs.summarizers.groups.teval import \
         teval_summary_groups  # noqa: F401, E501
+
+datasets = sum((v for k, v in locals().items() if k.endswith('_datasets')
+                and 'scicode' not in k.lower() and 'teval' not in k), [])
+datasets += teval_en_datasets
+datasets += teval_zh_datasets
+datasets += SciCode_datasets
 
 summarizer = dict(
     dataset_abbrs=[
@@ -171,12 +174,6 @@ summarizer = dict(
     summary_groups=sum(
         [v for k, v in locals().items() if k.endswith('_summary_groups')], []),
 )
-
-datasets = sum((v for k, v in locals().items() if k.endswith('_datasets')
-                and 'scicode' not in k.lower() and 'teval' not in k), [])
-datasets += teval_en_datasets
-datasets += teval_zh_datasets
-datasets += SciCode_datasets
 
 api_meta_template = dict(
     round=[
