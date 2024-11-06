@@ -1,36 +1,27 @@
 from mmengine.config import read_base
-from opencompass.models import OpenAISDK
 
 with read_base():
-    # choose a list of datasets
+    # read hf models - chat models
+    # Dataset
     from opencompass.configs.datasets.ARC_c.ARC_c_cot_gen_926652 import \
         ARC_c_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.bbh.bbh_gen_5b92b0 import \
         bbh_datasets  # noqa: F401, E501
-    from opencompass.configs.datasets.CHARM.charm_reason_cot_only_gen_f7b7d3 import \
-        charm_reason_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.cmmlu.cmmlu_0shot_cot_gen_305931 import \
         cmmlu_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.drop.drop_openai_simple_evals_gen_3857b0 import \
         drop_datasets  # noqa: F401, E501
-    from opencompass.configs.datasets.ds1000.ds1000_service_eval_gen_cbc84f import \
-        ds1000_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.GaokaoBench.GaokaoBench_no_subjective_gen_4c31db import \
         GaokaoBench_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.gpqa.gpqa_openai_simple_evals_gen_5aeece import \
         gpqa_datasets  # noqa: F401, E501
+    # new datasets in Fullbench v1.1
     from opencompass.configs.datasets.gsm8k.gsm8k_0shot_v2_gen_a58960 import \
         gsm8k_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.hellaswag.hellaswag_10shot_gen_e42710 import \
         hellaswag_datasets  # noqa: F401, E501
-    from opencompass.configs.datasets.humaneval.humaneval_openai_sample_evals_gen_159614 import \
-        humaneval_datasets  # noqa: F401, E501
-    from opencompass.configs.datasets.humanevalx.humanevalx_gen_620cfa import \
-        humanevalx_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.IFEval.IFEval_gen_3321a3 import \
         ifeval_datasets  # noqa: F401, E501
-    from opencompass.configs.datasets.LCBench.lcbench_gen_5ff288 import \
-        LCBench_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.math.math_0shot_gen_393424 import \
         math_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.MathBench.mathbench_2024_gen_50a320 import \
@@ -41,12 +32,10 @@ with read_base():
         mmlu_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.mmlu_pro.mmlu_pro_0shot_cot_gen_08c1de import \
         mmlu_pro_datasets  # noqa: F401, E501
-    # from opencompass.configs.datasets.nq.nq_open_1shot_gen_2e45e5 import \
-    #     nq_datasets  # noqa: F401, E501
+    from opencompass.configs.datasets.nq.nq_open_1shot_gen_2e45e5 import \
+        nq_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.race.race_cot_gen_d95929 import \
         race_datasets  # noqa: F401, E501
-    from opencompass.configs.datasets.scicode.scicode_gen_085b98 import \
-        SciCode_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.SuperGLUE_BoolQ.SuperGLUE_BoolQ_cot_gen_1d56df import \
         BoolQ_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.teval.teval_en_gen_1ac254 import \
@@ -59,6 +48,7 @@ with read_base():
         triviaqa_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.wikibench.wikibench_gen_0978ad import \
         wikibench_datasets  # noqa: F401, E501
+    # Summary Groups
     from opencompass.configs.summarizers.groups.bbh import \
         bbh_summary_groups  # noqa: F401, E501
     from opencompass.configs.summarizers.groups.cmmlu import \
@@ -80,9 +70,32 @@ with read_base():
     from opencompass.configs.summarizers.groups.teval import \
         teval_summary_groups  # noqa: F401, E501
 
+# For HumanEval-X Evaluation
+# Apply the evaluator ip_address and port
+race_datasets = [race_datasets[1]]
+for item in humanevalx_datasets:
+    item['eval_cfg']['evaluator'][
+        'ip_address'] = 'codeeval.opencompass.org.cn/humanevalx'
+    item['eval_cfg']['evaluator']['port'] = ''
+
+# For DS-1000 Evaluation
+# Apply the evaluator ip_address and port
+for item in ds1000_datasets:
+    item['eval_cfg']['evaluator'][
+        'ip_address'] = 'codeeval.opencompass.org.cn/ds1000'
+    item['eval_cfg']['evaluator']['port'] = ''
+
+datasets = sum(
+    (v for k, v in locals().items() if k.endswith('_datasets')
+     and 'scicode' not in k.lower() and 'teval' not in k),
+    [],
+)
+datasets += teval_en_datasets
+datasets += teval_zh_datasets
+# datasets += SciCode_datasets
+
 summarizer = dict(
     dataset_abbrs=[
-        ['race-middle', 'accuracy'],
         ['race-high', 'accuracy'],
         ['ARC-c', 'accuracy'],
         ['BoolQ', 'accuracy'],
@@ -123,7 +136,6 @@ summarizer = dict(
         'mathbench-t (average)',
         '###### Overall: Average between MathBench-A and MathBench-T ######',
         'Overall',
-        '',
         ''
         'mmlu',
         'mmlu-stem',
@@ -170,20 +182,6 @@ summarizer = dict(
     ],
     summary_groups=sum(
         [v for k, v in locals().items() if k.endswith('_summary_groups')], []),
-)
-
-datasets = sum((v for k, v in locals().items() if k.endswith('_datasets')
-                and 'scicode' not in k.lower() and 'teval' not in k), [])
-datasets += teval_en_datasets
-datasets += teval_zh_datasets
-datasets += SciCode_datasets
-
-api_meta_template = dict(
-    round=[
-        dict(role='HUMAN', api_role='HUMAN'),
-        dict(role='BOT', api_role='BOT', generate=True),
-    ],
-    reserved_roles=[dict(role='SYSTEM', api_role='SYSTEM')],
 )
 
 models = [
