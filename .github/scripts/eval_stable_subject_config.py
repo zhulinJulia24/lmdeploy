@@ -1,12 +1,15 @@
 from mmengine.config import read_base
+
 from opencompass.models import OpenAISDK
 from opencompass.partitioners.sub_naive import SubjectiveNaivePartitioner
 from opencompass.runners import LocalRunner
+from opencompass.summarizers import SubjectiveSummarizer
 from opencompass.tasks.subjective_eval import SubjectiveEvalTask
 
 with read_base():
-    # choose a list of datasets
-    from opencompass.configs.datasets.subjective.alignbench.alignbench_judgeby_critiquellm import \
+    # read hf models - chat models
+    # Dataset
+    from opencompass.configs.datasets.subjective.alignbench.alignbench_v1_1_judgeby_critiquellm import \
         alignbench_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.subjective.alpaca_eval.alpacav2_judgeby_gpt4 import \
         alpacav2_datasets  # noqa: F401, E501
@@ -16,14 +19,19 @@ with read_base():
         compassarena_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.subjective.fofo.fofo_bilingual_judge import \
         fofo_datasets  # noqa: F401, E501
+    from opencompass.configs.datasets.subjective.followbench.followbench_llmeval import \
+        followbench_llmeval_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.subjective.multiround.mtbench101_judge import \
         mtbench101_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.subjective.wildbench.wildbench_pair_judge import \
         wildbench_datasets  # noqa: F401, E501
 
-datasets = sum((v for k, v in locals().items()
-                if k.endswith('_datasets') and 'wildbench' not in k), [])
-datasets += wildbench_datasets
+summarizer = dict(type=SubjectiveSummarizer, function='subjective')
+
+datasets = sum((v for k, v in locals().items() if k.endswith('_datasets')
+                and 'mtbench101' not in k and 'wildbench' not in k), [])
+datasets += mtbench101_datasets  # noqa: F401, E501
+datasets += wildbench_datasets  # noqa: F401, E501
 
 api_meta_template = dict(
     round=[
@@ -53,7 +61,6 @@ models = [
 ]
 
 judge_models = models
-
 eval = dict(
     partitioner=dict(
         type=SubjectiveNaivePartitioner,
