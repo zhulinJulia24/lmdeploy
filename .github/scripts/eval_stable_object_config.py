@@ -1,8 +1,9 @@
 from mmengine.config import read_base
-from opencompass.models import OpenAISDK
+from opencompass.models.openai_api import OpenAISDK
 
 with read_base():
-    # choose a list of datasets
+    # read hf models - chat models
+    # Dataset
     from opencompass.configs.datasets.ARC_c.ARC_c_cot_gen_926652 import \
         ARC_c_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.bbh.bbh_gen_5b92b0 import \
@@ -56,6 +57,7 @@ with read_base():
         triviaqa_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.wikibench.wikibench_gen_0978ad import \
         wikibench_datasets  # noqa: F401, E501
+    # Summary Groups
     from opencompass.configs.summarizers.groups.bbh import \
         bbh_summary_groups  # noqa: F401, E501
     from opencompass.configs.summarizers.groups.cmmlu import \
@@ -85,7 +87,7 @@ datasets += SciCode_datasets
 
 summarizer = dict(
     dataset_abbrs=[
-        ['race-middle', 'accuracy'],
+        ['race-midlle', 'accuracy'],
         ['race-high', 'accuracy'],
         ['ARC-c', 'accuracy'],
         ['BoolQ', 'accuracy'],
@@ -126,7 +128,6 @@ summarizer = dict(
         'mathbench-t (average)',
         '###### Overall: Average between MathBench-A and MathBench-T ######',
         'Overall',
-        '',
         ''
         'mmlu',
         'mmlu-stem',
