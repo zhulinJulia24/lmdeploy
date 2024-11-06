@@ -70,21 +70,6 @@ with read_base():
     from opencompass.configs.summarizers.groups.teval import \
         teval_summary_groups  # noqa: F401, E501
 
-# For HumanEval-X Evaluation
-# Apply the evaluator ip_address and port
-race_datasets = [race_datasets[1]]
-for item in humanevalx_datasets:
-    item['eval_cfg']['evaluator'][
-        'ip_address'] = 'codeeval.opencompass.org.cn/humanevalx'
-    item['eval_cfg']['evaluator']['port'] = ''
-
-# For DS-1000 Evaluation
-# Apply the evaluator ip_address and port
-for item in ds1000_datasets:
-    item['eval_cfg']['evaluator'][
-        'ip_address'] = 'codeeval.opencompass.org.cn/ds1000'
-    item['eval_cfg']['evaluator']['port'] = ''
-
 datasets = sum(
     (v for k, v in locals().items() if k.endswith('_datasets')
      and 'scicode' not in k.lower() and 'teval' not in k),
@@ -96,6 +81,7 @@ datasets += teval_zh_datasets
 
 summarizer = dict(
     dataset_abbrs=[
+        ['race-midlle', 'accuracy'],
         ['race-high', 'accuracy'],
         ['ARC-c', 'accuracy'],
         ['BoolQ', 'accuracy'],
