@@ -5,6 +5,7 @@ from opencompass.partitioners.sub_naive import SubjectiveNaivePartitioner
 from opencompass.runners import LocalRunner
 from opencompass.summarizers import SubjectiveSummarizer
 from opencompass.tasks.subjective_eval import SubjectiveEvalTask
+from opencompass.models.openai_api import OpenAISDK
 
 with read_base():
     # read hf models - chat models
