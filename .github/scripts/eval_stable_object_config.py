@@ -1,4 +1,5 @@
 from mmengine.config import read_base
+from opencompass.models.openai_api import OpenAISDK
 
 with read_base():
     # read hf models - chat models
