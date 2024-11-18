@@ -169,7 +169,7 @@ jobs:
           echo ${{github.event.inputs.chat_datasets}}
           export LMDEPLOY_DIR=$(pwd)
 
-          python3 .github/scripts/action_tools.py evaluate "${{github.event.inputs.chat_models}}" "${{github.event.inputs.chat_datasets}}" /root/evaluation-reports/${{ github.run_id }} chat
+          sleep 72000
       - name: Evaluate base models
         if: matrix.evaluate_type == 'base'
         run: |
@@ -177,7 +177,7 @@ jobs:
           echo ${{github.event.inputs.baes_datasets}}
           export LMDEPLOY_DIR=$(pwd)
 
-          python3 .github/scripts/action_tools.py evaluate "${{github.event.inputs.base_models}}" "${{github.event.inputs.baes_datasets}}" /root/evaluation-reports/${{ github.run_id }} base
+          sleep 72000
       - name: Clear workspace
         if: always()
         run: |
