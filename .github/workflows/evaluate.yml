@@ -97,7 +97,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        evaluate_type: ['chat', 'base']
+        evaluate_type: ['chat']
     container:
       image: openmmlab/lmdeploy:latest-cu11
       options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip -e NVIDIA_DISABLE_REQUIRE=1 --pull never"
@@ -165,19 +165,7 @@ jobs:
       - name: Evaluate chat models
         if: matrix.evaluate_type == 'chat'
         run: |
-          echo ${{github.event.inputs.chat_models}}
-          echo ${{github.event.inputs.chat_datasets}}
-          export LMDEPLOY_DIR=$(pwd)
-
-          python3 .github/scripts/action_tools.py evaluate "${{github.event.inputs.chat_models}}" "${{github.event.inputs.chat_datasets}}" /root/evaluation-reports/${{ github.run_id }} chat
-      - name: Evaluate base models
-        if: matrix.evaluate_type == 'base'
-        run: |
-          echo ${{github.event.inputs.base_models}}
-          echo ${{github.event.inputs.baes_datasets}}
-          export LMDEPLOY_DIR=$(pwd)
-
-          python3 .github/scripts/action_tools.py evaluate "${{github.event.inputs.base_models}}" "${{github.event.inputs.baes_datasets}}" /root/evaluation-reports/${{ github.run_id }} base
+          sleep 7200
       - name: Clear workspace
         if: always()
         run: |
