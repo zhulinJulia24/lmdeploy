@@ -104,6 +104,7 @@ pytorch_chat_model:
     - mistralai/Mixtral-8x7B-Instruct-v0.1
     - google/gemma-7b-it
     - google/gemma-2-9b-it
+    - google/gemma-2-27b-it
     - deepseek-ai/deepseek-moe-16b-chat
     - deepseek-ai/deepseek-coder-1.3b-instruct
     - deepseek-ai/DeepSeek-V2-Lite-Chat
@@ -184,7 +185,10 @@ turbomind_quatization:
         - Qwen/Qwen2.5-0.5B-Instruct
         - Qwen/Qwen2.5-7B-Instruct
         - Qwen/Qwen2-7B-Instruct-GPTQ-Int4
+        - deepseek-ai/DeepSeek-V2-Lite-Chat
     no_kvint8:
+        - empty
+    no_converted:
         - deepseek-ai/DeepSeek-V2-Lite-Chat
 
 pytorch_quatization:
@@ -225,7 +229,7 @@ pytorch_quatization:
         - microsoft/Phi-3.5-vision-instruct
         - openbmb/MiniCPM-V-2_6
     no_kvint8:
-        - deepseek-ai/DeepSeek-V2-Lite-Chat
+        - empty
 
 longtext_model:
     - meta-llama/Meta-Llama-3-1-8B-Instruct

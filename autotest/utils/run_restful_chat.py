@@ -90,9 +90,6 @@ def start_restful_api(config, param, model, model_path, backend_type,
         pid = startRes.pid
 
     http_url = BASE_HTTP_URL + ':' + str(port)
-    with open(start_log, 'r') as file:
-        content = file.read()
-        print(content)
     start_time = int(time())
 
     start_timeout = 300
@@ -107,6 +104,9 @@ def start_restful_api(config, param, model, model_path, backend_type,
         result = health_check(http_url)
         if result or total_time >= start_timeout:
             break
+    with open(start_log, 'r') as file:
+        content = file.read()
+        print(content)
     allure.attach.file(start_log, attachment_type=allure.attachment_type.TEXT)
     return pid, startRes
 
