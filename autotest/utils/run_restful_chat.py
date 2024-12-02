@@ -92,11 +92,14 @@ def start_restful_api(config, param, model, model_path, backend_type,
     http_url = BASE_HTTP_URL + ':' + str(port)
     start_time = int(time())
 
-    start_timeout = 300
+    start_timeout = 240
     if not is_bf16_supported():
-        start_timeout = 600
+        start_timeout = 540
 
-    sleep(5)
+    sleep(60)
+    with open(start_log, 'r') as file:
+        content = file.read()
+        print(content)
     for i in range(start_timeout):
         sleep(1)
         end_time = int(time())
@@ -104,9 +107,6 @@ def start_restful_api(config, param, model, model_path, backend_type,
         result = health_check(http_url)
         if result or total_time >= start_timeout:
             break
-    with open(start_log, 'r') as file:
-        content = file.read()
-        print(content)
     allure.attach.file(start_log, attachment_type=allure.attachment_type.TEXT)
     return pid, startRes
 
