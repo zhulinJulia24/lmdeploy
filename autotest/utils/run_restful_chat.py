@@ -82,7 +82,7 @@ def start_restful_api(config, param, model, model_path, backend_type,
         f.writelines('reproduce command restful: ' + cmd + '\n')
 
         startRes = subprocess.Popen([cmd],
-                                    stdout=f,
+                                    stdout=True,
                                     stderr=f,
                                     shell=True,
                                     text=True,
