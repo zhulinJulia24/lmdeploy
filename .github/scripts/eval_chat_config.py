@@ -96,6 +96,8 @@ with read_base():
         models as lmdeploy_qwen1_5_7b_chat  # noqa: F401, E501
     from opencompass.configs.models.qwen.lmdeploy_qwen2_7b_instruct import \
         models as lmdeploy_qwen2_7b_instruct  # noqa: F401, E501
+    from opencompass.configs.models.qwen2_5.lmdeploy_qwen2_5_7b_instruct import \
+        models as lmdeploy_qwen2_5_7b_instruct  # noqa: F401, E501
     from opencompass.configs.models.qwen.lmdeploy_qwen_7b_chat import \
         models as lmdeploy_qwen_7b_chat  # noqa: F401, E501
     # Summary Groups
@@ -218,6 +220,7 @@ turbomind_llama3_1_8b_instruct_kvint4 = deepcopy(
 turbomind_llama3_1_8b_instruct_kvint8 = deepcopy(
     turbomind_llama3_1_8b_instruct)
 pytorch_llama3_1_8b_instruct = deepcopy(turbomind_llama3_1_8b_instruct)
+pytorch_llama3_1_8b_instruct_w8a8 = deepcopy(turbomind_llama3_1_8b_instruct)
 
 # ===== Configs for Qwen/Qwen2-7B-Instruct =====
 turbomind_qwen2_7b_instruct = deepcopy(*lmdeploy_qwen2_7b_instruct)
@@ -225,6 +228,15 @@ turbomind_qwen2_7b_instruct_4bits = deepcopy(*lmdeploy_qwen2_7b_instruct)
 turbomind_qwen2_7b_instruct_kvint4 = deepcopy(*lmdeploy_qwen2_7b_instruct)
 turbomind_qwen2_7b_instruct_kvint8 = deepcopy(*lmdeploy_qwen2_7b_instruct)
 pytorch_qwen2_7b_instruct = deepcopy(*lmdeploy_qwen2_7b_instruct)
+pytorch_qwen2_7b_instruct_w8a8 = deepcopy(*lmdeploy_qwen2_7b_instruct)
+
+# ===== Configs for Qwen/Qwen25-7B-Instruct =====
+turbomind_qwen2_5_7b_instruct = deepcopy(*lmdeploy_qwen2_5_7b_instruct)
+turbomind_qwen2_5_7b_instruct_4bits = deepcopy(*lmdeploy_qwen2_5_7b_instruct)
+turbomind_qwen2_5_7b_instruct_kvint4 = deepcopy(*lmdeploy_qwen2_5_7b_instruct)
+turbomind_qwen2_5_7b_instruct_kvint8 = deepcopy(*lmdeploy_qwen2_5_7b_instruct)
+pytorch_qwen2_5_7b_instruct = deepcopy(*lmdeploy_qwen2_5_7b_instruct)
+pytorch_qwen2_5_7b_instruct_w8a8 = deepcopy(*lmdeploy_qwen2_5_7b_instruct)
 
 for model in [v for k, v in locals().items() if k.startswith('turbomind_')]:
     model['engine_config']['max_batch_size'] = 128
@@ -235,6 +247,10 @@ for model in [v for k, v in locals().items() if k.endswith('_4bits')]:
     model['engine_config']['model_format'] = 'awq'
     model['abbr'] = model['abbr'] + '_4bits'
     model['path'] = model['path'] + '-inner-4bits'
+
+for model in [v for k, v in locals().items() if k.endswith('_w8a8')]:
+    model['abbr'] = model['abbr'] + '_w8a8'
+    model['path'] = model['path'] + '-inner-w8a8'
 
 for model in [v for k, v in locals().items() if k.endswith('_kvint4')]:
     model['engine_config']['quant_policy'] = 4
