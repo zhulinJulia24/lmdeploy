@@ -159,6 +159,7 @@ jobs:
           python3 -m pip install /root/packages/autoawq-0.2.6-cp310-cp310-manylinux2014_x86_64.whl --no-deps
           python3 -m pip install /root/packages/xformers-0.0.27+cu118-cp310-cp310-manylinux2014_x86_64.whl --no-deps
           python3 -m pip install -r ${{env.OFFLINE_REQUIREMENTS}}
+          python3 -m pip install triton==3.0.0
       - name: Install lmdeploy
         run: |
           python3 -m pip install lmdeploy-*.whl --no-deps
@@ -254,6 +255,7 @@ jobs:
           python3 -m pip install /root/packages/autoawq-0.2.6-cp310-cp310-manylinux2014_x86_64.whl --no-deps
           python3 -m pip install /root/packages/xformers-0.0.27+cu118-cp310-cp310-manylinux2014_x86_64.whl --no-deps
           python3 -m pip install -r ${{env.OFFLINE_REQUIREMENTS}}
+          python3 -m pip install triton==3.0.0
       - name: Install lmdeploy
         run: |
           python3 -m pip install lmdeploy-*.whl --no-deps
@@ -354,6 +356,7 @@ jobs:
           python3 -m pip install /root/packages/autoawq-0.2.6-cp310-cp310-manylinux2014_x86_64.whl --no-deps
           python3 -m pip install /root/packages/xformers-0.0.27+cu118-cp310-cp310-manylinux2014_x86_64.whl --no-deps
           python3 -m pip install -r ${{env.OFFLINE_REQUIREMENTS}}
+          python3 -m pip install triton==3.0.0
       - name: Install lmdeploy
         run: |
           python3 -m pip install lmdeploy-*.whl --no-deps
@@ -446,6 +449,7 @@ jobs:
           python3 -m pip install /root/packages/autoawq-0.2.6-cp310-cp310-manylinux2014_x86_64.whl --no-deps
           python3 -m pip install /root/packages/xformers-0.0.27+cu118-cp310-cp310-manylinux2014_x86_64.whl --no-deps
           python3 -m pip install -r ${{env.OFFLINE_REQUIREMENTS}}
+          python3 -m pip install triton==3.0.0
       - name: Install lmdeploy
         run: |
           python3 -m pip install lmdeploy-*.whl --no-deps
@@ -507,6 +511,7 @@ jobs:
           python3 -m pip install /root/packages/autoawq-0.2.6-cp310-cp310-manylinux2014_x86_64.whl --no-deps
           python3 -m pip install /root/packages/xformers-0.0.27+cu118-cp310-cp310-manylinux2014_x86_64.whl --no-deps
           python3 -m pip install -r ${{env.OFFLINE_REQUIREMENTS}}
+          python3 -m pip install triton==3.0.0
       - name: Install lmdeploy
         run: |
           python3 -m pip install lmdeploy-*.whl --no-deps
@@ -570,6 +575,7 @@ jobs:
           python3 -m pip install /root/packages/autoawq-0.2.6-cp310-cp310-manylinux2014_x86_64.whl --no-deps
           python3 -m pip install /root/packages/xformers-0.0.27+cu118-cp310-cp310-manylinux2014_x86_64.whl --no-deps
           python3 -m pip install -r ${{env.OFFLINE_REQUIREMENTS}}
+          python3 -m pip install triton==3.0.0
       - name: Install lmdeploy
         run: |
           python3 -m pip install lmdeploy-*.whl --no-deps
