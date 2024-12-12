@@ -187,8 +187,10 @@ for model in [v for k, v in locals().items() if k.endswith('_4bits')]:
     model['engine_config']['model_format'] = 'awq'
     model['abbr'] = model['abbr'] + '_4bits'
     model['path'] = model['path'] + '-inner-4bits'
+    model['gen_config']['enable_prefix_caching'] = True
 
 for model in [v for k, v in locals().items() if '_batch1' in k]:
     model['abbr'] = model['abbr'] + '_batch1'
     model['engine_config']['max_batch_size'] = 1
     model['batch_size'] = 1
+    model['gen_config']['enable_prefix_caching'] = True
