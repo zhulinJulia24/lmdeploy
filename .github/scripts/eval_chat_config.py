@@ -229,6 +229,7 @@ pytorch_qwen2_7b_instruct = deepcopy(*lmdeploy_qwen2_7b_instruct)
 for model in [v for k, v in locals().items() if k.startswith('turbomind_')]:
     model['engine_config']['max_batch_size'] = 128
     model['gen_config']['do_sample'] = False
+    model['gen_config']['enable_prefix_caching'] = True
     model['batch_size'] = 128
 
 for model in [v for k, v in locals().items() if k.endswith('_4bits')]:
@@ -249,6 +250,7 @@ for model in [v for k, v in locals().items() if k.startswith('pytorch_')]:
     model['backend'] = 'pytorch'
     model['engine_config']['max_batch_size'] = 64
     model['gen_config']['do_sample'] = False
+    model['gen_config']['enable_prefix_caching'] = True
     model['batch_size'] = 64
 
 for model in [v for k, v in locals().items() if '_batch1' in k]:
