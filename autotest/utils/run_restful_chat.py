@@ -58,6 +58,7 @@ def start_restful_api(config, param, model, model_path, backend_type, worker_id)
             cmd += ' --model-format awq'
         elif 'gptq' in model.lower():
             cmd += ' --model-format gptq'
+        cmd += ' --communicator native'
     if backend_type == 'pytorch':
         cmd += ' --backend pytorch'
         if not is_bf16_supported():

@@ -26,7 +26,10 @@ def run_pipeline_mllm_test(model_path, resource_path, tp, backend_type, is_pr_te
     if 'pytorch' in backend_type:
         backend_config = PytorchEngineConfig(tp=tp, session_len=32576, cache_max_entry_count=0.6)
     else:
-        backend_config = TurbomindEngineConfig(tp=tp, session_len=32576, cache_max_entry_count=0.6)
+        backend_config = TurbomindEngineConfig(tp=tp,
+                                               session_len=32576,
+                                               cache_max_entry_count=0.6,
+                                               communicator='native')
 
     if 'kvint' in backend_type:
         backend_config.quant_policy = extra.get('quant_policy')

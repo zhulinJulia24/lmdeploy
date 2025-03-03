@@ -31,6 +31,7 @@ def command_line_test(config,
                 cmd += ' --model-format awq'
             elif 'gptq' in model_case.lower():
                 cmd += ' --model-format gptq'
+            cmd += ' --communicator native'
         if case == 'base_testcase':
             cmd += ' --chat-template ' + TEMPLATE
     return command_test(config, [cmd], model_case, case, case_info, type == 'turbomind', worker_id=worker_id)
@@ -64,6 +65,7 @@ def hf_command_line_test(config,
             cmd += ' --model-format awq'
         elif 'gptq' in model_case.lower():
             cmd += ' --model-format gptq'
+        cmd += ' --communicator native'
 
     if case == 'base_testcase':
         cmd += ' --chat-template ' + TEMPLATE

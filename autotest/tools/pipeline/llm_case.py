@@ -15,7 +15,7 @@ def run_pipeline_chat_test(model_path, cases_path, tp, backend_type, is_pr_test,
     if 'pytorch' in backend_type:
         backend_config = PytorchEngineConfig(tp=tp)
     else:
-        backend_config = TurbomindEngineConfig(tp=tp)
+        backend_config = TurbomindEngineConfig(tp=tp, communicator='native')
 
     if 'lora' in backend_type:
         backend_config.adapters = extra.get('adapters')
