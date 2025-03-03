@@ -194,6 +194,7 @@ turbomind_llama2_7b_chat_kvint8 = deepcopy(*lmdeploy_llama2_7b_chat)
 
 for model in [v for k, v in locals().items() if k.startswith('turbomind_')]:
     model['engine_config']['max_batch_size'] = 512
+    model['engine_config']['communicator'] = 'native'
     model['gen_config']['do_sample'] = False
     model['batch_size'] = 1000
 
