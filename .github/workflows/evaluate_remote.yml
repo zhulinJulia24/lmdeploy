@@ -99,7 +99,6 @@ jobs:
             . ${{env.CONDA_PATH}}/bin/activate
             conda activate ${{env.CONDA_ENV}}
             conda info --envs
-            echo "models = [v for k, v in locals().items() if k.startswith('pytorch_')]" >> .github/scripts/eval_regression_${{matrix.regression_func}}.py
+            echo "models = sorted(models, key=lambda x: x['run_cfg']['num_gpus'])" >> .github/scripts/eval_regression_${{matrix.regression_func}}.py
             opencompass .github/scripts/eval_regression_${{matrix.regression_func}}.py --work-dir ${{env.REPORT_ROOT}}/${{ github.run_id }}/${{matrix.regression_func}} --reuse --dump-eval-details
             python .github/scripts/action_tools.py generate_output_for_evaluation ${{env.REPORT_ROOT}}/${{ github.run_id }}/${{matrix.regression_func}}
-
