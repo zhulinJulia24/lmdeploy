@@ -55,6 +55,28 @@ env:
   CONDA_ENV: lmdeploy_test
 
 jobs:
+  build-pypi:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          repository: ${{ github.event.inputs.repo_org || 'open-compass/opencompass' }}
+          ref: ${{github.event.inputs.repo_ref || 'main'}}
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Build lagent
+        run: |
+          pip install wheel setuptools
+          python setup.py sdist bdist_wheel
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          if-no-files-found: error
+          path: dist/*
+          retention-days: 1
+          name: my-artifact-${{ github.run_id }}
 
   run_test_volc:
     if: ${{!cancelled()}}
@@ -79,10 +101,9 @@ jobs:
           conda info --envs
           pip list
       - name:  modify config
-        if: matrix.regression_func != 'chat_sub_fullbench'
         run: |
           cp -r /fs-computility/llm/qa-llm-cicd/ocplayground/template/configs_cluster/volc.py .
-          cat /fs-computility/llm/qa-llm-cicd/config/test_config.txt >> .github/scripts/eval_regression_${{matrix.regression_func}}.py
+          cat /fs-computility/llm/qa-llm-cicd/config/lmdeploy_test_config.txt >> .github/scripts/eval_regression_${{matrix.regression_func}}.py
       - name:  modify config - models filter
         if: matrix.backend == 'turbomind'
         run: |
