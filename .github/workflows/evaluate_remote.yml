@@ -79,7 +79,7 @@ jobs:
       - name:  modify config
         run: |
           cp .github/scripts/eval_regression_${{matrix.regression_func}}.py opencompass/eval_regression_${{matrix.regression_func}}.py
-          cp -r /fs-computility/llm/qa-llm-cicd/ocplayground/template/configs_cluster/volc.py .
+          cp -r /fs-computility/llm/qa-llm-cicd/ocplayground/template/configs_cluster/volc.py opencompass
           cat /fs-computility/llm/qa-llm-cicd/config/lmdeploy_test_config.txt >> opencompass/eval_regression_${{matrix.regression_func}}.py
       - name:  modify config - models filter
         if: matrix.backend == 'turbomind'
