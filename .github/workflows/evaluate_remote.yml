@@ -66,11 +66,6 @@ jobs:
     environment: 'prod'
     timeout-minutes: 480 #6hours
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-        with:
-          repository: ${{ github.event.inputs.repo_org_lmdeploy || 'InternLM/lmdeploy' }}
-          ref: ${{github.event.inputs.repo_ref_lmdeploy || 'main'}}
       - name: Checkout opencompass
         uses: actions/checkout@v3
         with:
@@ -82,9 +77,14 @@ jobs:
           conda activate ${{env.CONDA_ENV}}
           conda info --envs
           pip list
+      - name: download lmdeploy
+        run: |
+          git clone --depth=1 https://github.com/${{ github.event.inputs.repo_org_lmdeploy}}.git
+          cd lmdeploy
+          git checkout ${{ github.event.inputs.repo_ref_lmdeploy}}
       - name:  modify config
         run: |
-          cp ../lmdeploy/.github/scripts/eval_regression_${{matrix.regression_func}}.py .github/scripts/eval_regression_${{matrix.regression_func}}.py
+          cp lmdeploy/.github/scripts/eval_regression_${{matrix.regression_func}}.py .github/scripts/eval_regression_${{matrix.regression_func}}.py
           cp -r /fs-computility/llm/qa-llm-cicd/ocplayground/template/configs_cluster/volc.py .
           cat /fs-computility/llm/qa-llm-cicd/config/lmdeploy_test_config.txt >> .github/scripts/eval_regression_${{matrix.regression_func}}.py
       - name:  modify config - models filter
