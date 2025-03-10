@@ -74,8 +74,8 @@ jobs:
       - name: Checkout opencompass
         uses: actions/checkout@v3
         with:
-          repository: ${{ github.event.inputs.repo_org_lmdeploy || 'InternLM/lmdeploy' }}
-          ref: ${{github.event.inputs.repo_ref_lmdeploy || 'main'}}
+          repository: ${{ github.event.inputs.repo_org || 'open-compass/opencompass' }}
+          ref: ${{github.event.inputs.repo_ref || 'main'}}
       - name: conda env
         run: |
           . ${{env.CONDA_PATH}}/bin/activate
