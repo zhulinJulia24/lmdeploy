@@ -4,9 +4,11 @@ from mmengine.config import read_base
 
 with read_base():
     # choose a list of datasets
-    from opencompass.configs.datasets.gpqa.gpqa_openai_simple_evals_gen_5aeece import gpqa_datasets  # noqa: F401, E501
+    from opencompass.configs.datasets.gpqa.gpqa_0shot_nocot_genericllmeval_gen_772ea0 import \
+        gpqa_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.IFEval.IFEval_gen_353ae7 import ifeval_datasets  # noqa: F401, E501
-    from opencompass.configs.datasets.math.math_0shot_gen_11c4b5 import math_datasets  # noqa: F401, E501
+    from opencompass.configs.datasets.math.math_500_llmjudge_gen_6ff468 import math_datasets  # noqa: F401, E501
+    from opencompass.configs.datasets.mmlu.mmlu_llmjudge_gen_f4336b import mmlu_datasets  # noqa: F401, E501
     # read hf models - chat models
     from opencompass.configs.models.chatglm.lmdeploy_glm4_9b_chat import \
         models as lmdeploy_glm4_9b_chat_model  # noqa: F401, E501
@@ -70,6 +72,9 @@ with read_base():
         models as lmdeploy_yi_1_5_9b_chat_model  # noqa: F401, E501
     from opencompass.configs.models.yi.lmdeploy_yi_1_5_34b_chat import \
         models as lmdeploy_yi_1_5_34b_chat_model  # noqa: F401, E501
+    from opencompass.configs.summarizers.groups.mathbench_v1_2024 import \
+        mathbench_2024_summary_groups  # noqa: F401, E501
+    from opencompass.configs.summarizers.groups.mmlu import mmlu_summary_groups  # noqa: F401, E501
 
     from .volc import infer as volc_infer  # noqa: F401, E501
 
@@ -137,8 +142,13 @@ for model in [v for k, v in locals().items() if k.endswith('_native')]:
 summarizer = dict(
     dataset_abbrs=[
         ['GPQA_diamond', 'accuracy'],
-        ['math', 'accuracy'],
+        ['math_prm800k_500-llmjudge', 'accuracy'],
         ['IFEval', 'Prompt-level-strict-accuracy'],
+        'mmlu',
+        'mmlu-stem',
+        'mmlu-social-science',
+        'mmlu-humanities',
+        'mmlu-other',
     ],
     summary_groups=sum([v for k, v in locals().items() if k.endswith('_summary_groups')], []),
 )
