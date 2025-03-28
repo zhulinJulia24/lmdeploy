@@ -76,6 +76,7 @@ with read_base():
         mathbench_2024_summary_groups  # noqa: F401, E501
     from opencompass.configs.summarizers.groups.mmlu import mmlu_summary_groups  # noqa: F401, E501
 
+    from .volc import eval as volc_eval  # noqa: F401, E501
     from .volc import infer as volc_infer  # noqa: F401, E501
     from .volc import obj_llm_judge_cfg as obj_llm_judge_cfg  # noqa: F401, E501
 
