@@ -77,6 +77,7 @@ with read_base():
     from opencompass.configs.summarizers.groups.mmlu import mmlu_summary_groups  # noqa: F401, E501
 
     from .volc import infer as volc_infer  # noqa: F401, E501
+    from .volc import obj_llm_judge_cfg as obj_llm_judge_cfg  # noqa: F401, E501
 
 datasets = sum([v for k, v in locals().items() if k.endswith('_datasets')], [])
 
