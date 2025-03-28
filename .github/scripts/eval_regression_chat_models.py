@@ -153,3 +153,7 @@ summarizer = dict(
     ],
     summary_groups=sum([v for k, v in locals().items() if k.endswith('_summary_groups')], []),
 )
+
+for item in datasets:
+    if 'judge_cfg' in item['eval_cfg']['evaluator']:
+        item['eval_cfg']['evaluator']['judge_cfg'] = obj_llm_judge_cfg
