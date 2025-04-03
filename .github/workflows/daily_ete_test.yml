@@ -130,7 +130,7 @@ jobs:
     needs: download_pkgs
     if: ${{!cancelled() && (github.event_name == 'schedule' || contains(fromJSON(github.event.inputs.regression_func), 'quant') )}}
     runs-on: [self-hosted, linux-a100]
-    timeout-minutes: 150
+    timeout-minutes: 90
     env:
       PYTHONPATH: /nvme/qa_test_models/offline_pkg/LLaVA
       MODELSCOPE_CACHE: /nvme/qa_test_models/modelscope_hub
@@ -459,7 +459,7 @@ jobs:
   test_benchmark:
     if: ${{!cancelled() && (github.event_name == 'schedule' || contains(fromJSON(github.event.inputs.regression_func), 'benchmark'))}}
     runs-on: [self-hosted, linux-a100]
-    needs: test_quantization
+    needs: test_tools
     timeout-minutes: 120
     container:
       image: openmmlab/lmdeploy:latest-cu11
@@ -512,7 +512,7 @@ jobs:
   test_evaluation:
     if: ${{!cancelled() && (github.event_name == 'schedule' || contains(fromJSON(github.event.inputs.regression_func), 'evaluation'))}}
     runs-on: [self-hosted, linux-a100]
-    needs: test_quantization
+    needs: test_tools
     timeout-minutes: 120 # 2hours
     strategy:
       fail-fast: false

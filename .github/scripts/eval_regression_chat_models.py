@@ -8,7 +8,8 @@ with read_base():
         gpqa_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.IFEval.IFEval_gen_353ae7 import ifeval_datasets  # noqa: F401, E501
     from opencompass.configs.datasets.math.math_500_llmjudge_gen_6ff468 import math_datasets  # noqa: F401, E501
-    from opencompass.configs.datasets.mmlu.mmlu_llmjudge_gen_f4336b import mmlu_datasets  # noqa: F401, E501
+    from opencompass.configs.datasets.mmlu_pro.mmlu_pro_0shot_nocot_genericllmeval_gen_08c1de import \
+        mmlu_pro_datasets  # noqa: F401, E501
     # read hf models - chat models
     from opencompass.configs.models.chatglm.lmdeploy_glm4_9b_chat import \
         models as lmdeploy_glm4_9b_chat_model  # noqa: F401, E501
@@ -74,12 +75,13 @@ with read_base():
         models as lmdeploy_yi_1_5_34b_chat_model  # noqa: F401, E501
     from opencompass.configs.summarizers.groups.mathbench_v1_2024 import \
         mathbench_2024_summary_groups  # noqa: F401, E501
-    from opencompass.configs.summarizers.groups.mmlu import mmlu_summary_groups  # noqa: F401, E501
+    from opencompass.configs.summarizers.groups.mmlu_pro import mmlu_pro_summary_groups  # noqa: F401, E501
 
     from .volc import eval as volc_eval  # noqa: F401, E501
     from .volc import infer as volc_infer  # noqa: F401, E501
     from .volc import obj_llm_judge_cfg as obj_llm_judge_cfg  # noqa: F401, E501
 
+mmlu_pro_datasets = [x for x in mmlu_pro_datasets if x['abbr'] in ['mmlu_pro_chemistry', 'mmlu_pro_math']]
 datasets = sum([v for k, v in locals().items() if k.endswith('_datasets')], [])
 
 pytorch_glm4_9b_chat_model = deepcopy(lmdeploy_glm4_9b_chat_model)
@@ -146,11 +148,22 @@ summarizer = dict(
         ['GPQA_diamond', 'accuracy'],
         ['math_prm800k_500-llmjudge', 'accuracy'],
         ['IFEval', 'Prompt-level-strict-accuracy'],
-        'mmlu',
-        'mmlu-stem',
-        'mmlu-social-science',
-        'mmlu-humanities',
-        'mmlu-other',
+        ['mmlu_pro', 'accuracy'],
+        'mmlu_pro',
+        'mmlu_pro_biology',
+        'mmlu_pro_business',
+        'mmlu_pro_chemistry',
+        'mmlu_pro_computer_science',
+        'mmlu_pro_economics',
+        'mmlu_pro_engineering',
+        'mmlu_pro_health',
+        'mmlu_pro_history',
+        'mmlu_pro_law',
+        'mmlu_pro_math',
+        'mmlu_pro_philosophy',
+        'mmlu_pro_physics',
+        'mmlu_pro_psychology',
+        'mmlu_pro_other',
     ],
     summary_groups=sum([v for k, v in locals().items() if k.endswith('_summary_groups')], []),
 )
