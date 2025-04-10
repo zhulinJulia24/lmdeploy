@@ -134,24 +134,24 @@ def run_pipeline_vl_chat_test(config,
         with allure.step('batch-example2'):
             response = get_response_from_output(output_text, 'batch-example2')
             case_result = 'tiger' in response.lower() or '虎' in response
-            f.writelines('batch-example2 pic result: ' + str(case_result) + 'reason: batch-example1: tiger should in ' +
+            f.writelines('batch-example2 pic result: ' + str(case_result) + 'reason: batch-example2: tiger should in ' +
                          response + '\n')
             with assume:
-                assert case_result, 'reason: batch-example1: tiger should in ' + response
+                assert case_result, 'reason: batch-example2: tiger should in ' + response
         with allure.step('multi-turn1'):
             response = get_response_from_output(output_text, 'multi-turn1')
             case_result = 'ski' in response.lower() or '滑雪' in response
-            f.writelines('multi-turn1 pic result: ' + str(case_result) + 'reason: batch-example1: tiger should in ' +
+            f.writelines('multi-turn1 pic result: ' + str(case_result) + 'reason: multi-turn1: tiger should in ' +
                          response + '\n')
             with assume:
-                assert case_result, 'reason: batch-example1: tiger should in ' + response
+                assert case_result, 'reason: multi-turn1: tiger should in ' + response
         with allure.step('multi-turn2'):
             response = get_response_from_output(output_text, 'multi-turn2')
             case_result = 'ski' in response.lower() or '滑雪' in response
-            f.writelines('multi-turn2 pic result: ' + str(case_result) + 'reason: batch-example1: tiger should in ' +
+            f.writelines('multi-turn2 pic result: ' + str(case_result) + 'reason: multi-turn2: tiger should in ' +
                          response + '\n')
             with assume:
-                assert case_result, 'reason: batch-example1: tiger should in ' + response
+                assert case_result, 'reason: multi-turn2: tiger should in ' + response
         if not is_smoke:
             if 'internvl' in model_case.lower():
                 internvl_vl_testcase(output_text, f)
