@@ -75,7 +75,7 @@ public:
     void setLevel(const Level level)
     {
         level_ = level;
-        log(DEBUG, "Set logger level by %s", getLevelName(level).c_str());
+        log(INFO, "Set logger level by %s", getLevelName(level).c_str());
     }
 
     int getLevel() const

@@ -1,18 +1,9 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 
 import enum
-import os
 
-from lmdeploy.utils import get_logger
-
-logger = get_logger('lmdeploy')
-
-LATENCY_DEQUE_LEN = 15
-AIOHTTP_TIMEOUT = os.getenv('AIOHTTP_TIMEOUT', None)
-if AIOHTTP_TIMEOUT is not None:
-    AIOHTTP_TIMEOUT = int(AIOHTTP_TIMEOUT)
-logger.info(f'AIOHTTP_TIMEOUT set to {AIOHTTP_TIMEOUT}. It can be modified before launching the proxy server '
-            'through env variable AIOHTTP_TIMEOUT')
+LATENCY_DEEQUE_LEN = 15
+API_TIMEOUT_LEN = 100
 
 
 class Strategy(enum.Enum):
@@ -43,7 +34,9 @@ class ErrorCodes(enum.Enum):
 
 
 err_msg = {
-    ErrorCodes.MODEL_NOT_FOUND: 'The request model name does not exist in the model list.',
-    ErrorCodes.SERVICE_UNAVAILABLE: 'The service is unavailable now. May retry later.',
+    ErrorCodes.MODEL_NOT_FOUND:
+    'The request model name does not exist in the model list.',
+    ErrorCodes.SERVICE_UNAVAILABLE:
+    'The service is unavailable now. May retry later.',
     ErrorCodes.API_TIMEOUT: 'Failed to get response after a period of time'
 }

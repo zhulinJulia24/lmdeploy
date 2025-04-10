@@ -1,0 +1,632 @@
+[43;30m[WARNING][m Unexpected key(s) present at root: _exclude_paths
+flake8...................................................................[41mFailed[m
+[2m- hook id: flake8[m
+[2m- exit code: 1[m
+
+[1m.github/scripts/doc_link_checker.py[m[36m:[m59[36m:[m23[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mbenchmark/benchmark_decode.py[m[36m:[m49[36m:[m54[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mbenchmark/benchmark_decode.py[m[36m:[m50[36m:[m36[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mbenchmark/benchmark_decode.py[m[36m:[m51[36m:[m53[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mbenchmark/benchmark_decode.py[m[36m:[m52[36m:[m34[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mbenchmark/profile_generation.py[m[36m:[m179[36m:[m54[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mbenchmark/profile_generation.py[m[36m:[m187[36m:[m42[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mbenchmark/profile_generation.py[m[36m:[m187[36m:[m46[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mbenchmark/profile_generation.py[m[36m:[m187[36m:[m50[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mbenchmark/profile_generation.py[m[36m:[m370[36m:[m35[36m:[m [1m[31mW604[m backticks are deprecated, use 'repr()'
+[1mbenchmark/profile_generation.py[m[36m:[m453[36m:[m93[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mbenchmark/profile_generation.py[m[36m:[m454[36m:[m44[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mbenchmark/profile_generation.py[m[36m:[m454[36m:[m69[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mbenchmark/profile_restful_api.py[m[36m:[m808[36m:[m75[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mbenchmark/profile_restful_api.py[m[36m:[m808[36m:[m89[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mbenchmark/profile_restful_api.py[m[36m:[m811[36m:[m76[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mbenchmark/profile_restful_api.py[m[36m:[m811[36m:[m90[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mbenchmark/profile_restful_api.py[m[36m:[m814[36m:[m48[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mbenchmark/profile_restful_api.py[m[36m:[m814[36m:[m62[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mbenchmark/profile_restful_api.py[m[36m:[m826[36m:[m26[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/api.py[m[36m:[m168[36m:[m30[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/api.py[m[36m:[m168[36m:[m46[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/api.py[m[36m:[m174[36m:[m39[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/api.py[m[36m:[m174[36m:[m51[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/archs.py[m[36m:[m48[36m:[m61[36m:[m [1m[31mW604[m backticks are deprecated, use 'repr()'
+[1mlmdeploy/archs.py[m[36m:[m54[36m:[m34[36m:[m [1m[31mW604[m backticks are deprecated, use 'repr()'
+[1mlmdeploy/cli/utils.py[m[36m:[m55[36m:[m40[36m:[m [1m[31mE127[m continuation line over-indented for visual indent
+[1mlmdeploy/lite/quantization/awq.py[m[36m:[m332[36m:[m45[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/lite/quantization/awq.py[m[36m:[m393[36m:[m45[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/lite/quantization/calibration.py[m[36m:[m163[36m:[m48[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/lite/quantization/calibration.py[m[36m:[m436[36m:[m48[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/profiler.py[m[36m:[m152[36m:[m42[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/profiler.py[m[36m:[m155[36m:[m28[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/profiler.py[m[36m:[m156[36m:[m35[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/profiler.py[m[36m:[m158[36m:[m42[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/profiler.py[m[36m:[m159[36m:[m68[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/pytorch/backends/dlinfer/ascend/graph_runner.py[m[36m:[m78[36m:[m64[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/pytorch/backends/dlinfer/ascend/graph_runner.py[m[36m:[m78[36m:[m65[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/pytorch/backends/dlinfer/ascend/graph_runner.py[m[36m:[m95[36m:[m23[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/pytorch/backends/dlinfer/ascend/graph_runner.py[m[36m:[m95[36m:[m24[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/pytorch/check_env/base.py[m[36m:[m39[36m:[m58[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/pytorch/check_env/model.py[m[36m:[m40[36m:[m32[36m:[m [1m[31mW604[m backticks are deprecated, use 'repr()'
+[1mlmdeploy/pytorch/configurations/builder.py[m[36m:[m26[36m:[m37[36m:[m [1m[31mW604[m backticks are deprecated, use 'repr()'
+[1mlmdeploy/pytorch/configurations/builder.py[m[36m:[m34[36m:[m41[36m:[m [1m[31mW604[m backticks are deprecated, use 'repr()'
+[1mlmdeploy/pytorch/engine/cache_engine.py[m[36m:[m36[36m:[m56[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/pytorch/engine/model_agent.py[m[36m:[m60[36m:[m56[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/pytorch/engine/model_agent.py[m[36m:[m61[36m:[m47[36m:[m [1m[31mE227[m missing whitespace around bitwise or shift operator
+[1mlmdeploy/pytorch/engine/model_agent.py[m[36m:[m75[36m:[m44[36m:[m [1m[31mE227[m missing whitespace around bitwise or shift operator
+[1mlmdeploy/pytorch/engine/model_agent.py[m[36m:[m85[36m:[m41[36m:[m [1m[31mW604[m backticks are deprecated, use 'repr()'
+[1mlmdeploy/pytorch/kernels/cuda/pagedattention.py[m[36m:[m672[36m:[m26[36m:[m [1m[31mW604[m backticks are deprecated, use 'repr()'
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m175[36m:[m-565[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m175[36m:[m-513[36m:[m [1m[31mE272[m multiple spaces before keyword
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m175[36m:[m-477[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m175[36m:[m-426[36m:[m [1m[31mE272[m multiple spaces before keyword
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m175[36m:[m-392[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m175[36m:[m-391[36m:[m [1m[31mE272[m multiple spaces before keyword
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m175[36m:[m-320[36m:[m [1m[31mE272[m multiple spaces before keyword
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m175[36m:[m-294[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m175[36m:[m-233[36m:[m [1m[31mE272[m multiple spaces before keyword
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m175[36m:[m-207[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m175[36m:[m-144[36m:[m [1m[31mE272[m multiple spaces before keyword
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m175[36m:[m-112[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m175[36m:[m-66[36m:[m [1m[31mE272[m multiple spaces before keyword
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m175[36m:[m-57[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m195[36m:[m-346[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m195[36m:[m-329[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m195[36m:[m-306[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m195[36m:[m-288[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m195[36m:[m-269[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m195[36m:[m-251[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m195[36m:[m-231[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m195[36m:[m-195[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m195[36m:[m-169[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m195[36m:[m-154[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m195[36m:[m-149[36m:[m [1m[31mE202[m whitespace before ')'
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m195[36m:[m-147[36m:[m [1m[31mE272[m multiple spaces before keyword
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m195[36m:[m-116[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m195[36m:[m-20[36m:[m [1m[31mE272[m multiple spaces before keyword
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m195[36m:[m-1[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m195[36m:[m0[36m:[m [1m[31mE272[m multiple spaces before keyword
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m199[36m:[m-23[36m:[m [1m[31mE272[m multiple spaces before keyword
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m199[36m:[m-1[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m218[36m:[m-361[36m:[m [1m[31mE272[m multiple spaces before keyword
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m218[36m:[m-318[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m218[36m:[m-275[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m218[36m:[m-255[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m218[36m:[m-235[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m218[36m:[m-208[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m218[36m:[m-182[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m218[36m:[m-152[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m218[36m:[m-128[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m218[36m:[m-108[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m218[36m:[m-79[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m218[36m:[m-48[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m218[36m:[m-18[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m218[36m:[m-1[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m218[36m:[m27[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m238[36m:[m-425[36m:[m [1m[31mE202[m whitespace before ')'
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m238[36m:[m-423[36m:[m [1m[31mE272[m multiple spaces before keyword
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m238[36m:[m-414[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m238[36m:[m-371[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m238[36m:[m-351[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m238[36m:[m-331[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m238[36m:[m-304[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m238[36m:[m-278[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m238[36m:[m-248[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m238[36m:[m-224[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m238[36m:[m-204[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m238[36m:[m-175[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m238[36m:[m-144[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m238[36m:[m-114[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m238[36m:[m-97[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m238[36m:[m-27[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m238[36m:[m-18[36m:[m [1m[31mE202[m whitespace before ')'
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m238[36m:[m-16[36m:[m [1m[31mE272[m multiple spaces before keyword
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m370[36m:[m-145[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m379[36m:[m-23[36m:[m [1m[31mE272[m multiple spaces before keyword
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m379[36m:[m-1[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m379[36m:[m0[36m:[m [1m[31mE272[m multiple spaces before keyword
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m383[36m:[m-23[36m:[m [1m[31mE272[m multiple spaces before keyword
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m383[36m:[m-1[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m400[36m:[m-595[36m:[m [1m[31mE272[m multiple spaces before keyword
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m400[36m:[m-563[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m400[36m:[m-485[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m400[36m:[m-447[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m400[36m:[m-372[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m400[36m:[m-330[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m400[36m:[m-243[36m:[m [1m[31mE272[m multiple spaces before keyword
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m400[36m:[m-234[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m400[36m:[m-156[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m400[36m:[m-118[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m400[36m:[m-43[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m400[36m:[m-1[36m:[m [1m[31mE231[m missing whitespace after ','
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[m[36m:[m403[36m:[m-19[36m:[m [1m[31mE272[m multiple spaces before keyword
+[1mlmdeploy/pytorch/kernels/dispatcher.py[m[36m:[m110[36m:[m-1[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/pytorch/kernels/dispatcher.py[m[36m:[m110[36m:[m0[36m:[m [1m[31mE272[m multiple spaces before keyword
+[1mlmdeploy/pytorch/models/phi3_v.py[m[36m:[m148[36m:[m77[36m:[m [1m[31mW604[m backticks are deprecated, use 'repr()'
+[1mlmdeploy/serve/async_engine.py[m[36m:[m138[36m:[m26[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/serve/async_engine.py[m[36m:[m138[36m:[m46[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/serve/gradio/api_server_backend.py[m[36m:[m179[36m:[m43[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/serve/gradio/api_server_backend.py[m[36m:[m179[36m:[m59[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/serve/gradio/turbomind_coupled.py[m[36m:[m206[36m:[m47[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/serve/gradio/turbomind_coupled.py[m[36m:[m206[36m:[m63[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/serve/openai/api_client.py[m[36m:[m420[36m:[m33[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/serve/openai/api_server.py[m[36m:[m125[36m:[m72[36m:[m [1m[31mW604[m backticks are deprecated, use 'repr()'
+[1mlmdeploy/serve/openai/api_server.py[m[36m:[m127[36m:[m70[36m:[m [1m[31mW604[m backticks are deprecated, use 'repr()'
+[1mlmdeploy/serve/openai/api_server.py[m[36m:[m129[36m:[m74[36m:[m [1m[31mW604[m backticks are deprecated, use 'repr()'
+[1mlmdeploy/serve/openai/api_server.py[m[36m:[m132[36m:[m50[36m:[m [1m[31mW604[m backticks are deprecated, use 'repr()'
+[1mlmdeploy/serve/openai/api_server.py[m[36m:[m135[36m:[m56[36m:[m [1m[31mW604[m backticks are deprecated, use 'repr()'
+[1mlmdeploy/serve/openai/api_server.py[m[36m:[m339[36m:[m79[36m:[m [1m[31mW604[m backticks are deprecated, use 'repr()'
+[1mlmdeploy/serve/openai/api_server.py[m[36m:[m571[36m:[m79[36m:[m [1m[31mW604[m backticks are deprecated, use 'repr()'
+[1mlmdeploy/serve/openai/api_server.py[m[36m:[m1055[36m:[m68[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/serve/openai/api_server.py[m[36m:[m1056[36m:[m30[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/serve/proxy/proxy.py[m[36m:[m235[36m:[m71[36m:[m [1m[31mW604[m backticks are deprecated, use 'repr()'
+[1mlmdeploy/tokenizer.py[m[36m:[m89[36m:[m42[36m:[m [1m[31mW604[m backticks are deprecated, use 'repr()'
+[1mlmdeploy/turbomind/turbomind.py[m[36m:[m190[36m:[m45[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/turbomind/turbomind.py[m[36m:[m223[36m:[m72[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/utils.py[m[36m:[m215[36m:[m61[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/vl/model/molmo.py[m[36m:[m142[36m:[m47[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/vl/model/molmo.py[m[36m:[m172[36m:[m42[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/vl/model/qwen.py[m[36m:[m125[36m:[m53[36m:[m [1m[31mE231[m missing whitespace after ':'
+[1mlmdeploy/vl/model/xcomposer2.py[m[36m:[m272[36m:[m69[36m:[m [1m[31mE702[m multiple statements on one line (semicolon)
+
+isort....................................................................[41mFailed[m
+[2m- hook id: isort[m
+[2m- files were modified by this hook[m
+
+Fixing /home/zhulin1/code/lmdeployLin/autotest/benchmark/test_generation_performance.py
+Fixing /home/zhulin1/code/lmdeployLin/autotest/benchmark/test_throughput_performance.py
+Fixing /home/zhulin1/code/lmdeployLin/autotest/interface/pipeline/test_pipeline_func.py
+Fixing /home/zhulin1/code/lmdeployLin/autotest/interface/pipeline/test_pipeline_longtext_func.py
+Fixing /home/zhulin1/code/lmdeployLin/autotest/interface/restful/test_restful_chat_func.py
+Fixing /home/zhulin1/code/lmdeployLin/autotest/interface/restful/test_restful_completions_v1.py
+Fixing /home/zhulin1/code/lmdeployLin/autotest/tools/chat/test_command_chat_hf_pytorch.py
+Fixing /home/zhulin1/code/lmdeployLin/autotest/tools/chat/test_command_chat_hf_turbomind.py
+Fixing /home/zhulin1/code/lmdeployLin/autotest/tools/chat/test_command_chat_workspace.py
+Fixing /home/zhulin1/code/lmdeployLin/autotest/tools/convert/test_convert.py
+Fixing /home/zhulin1/code/lmdeployLin/autotest/tools/pipeline/llm_case.py
+Fixing /home/zhulin1/code/lmdeployLin/autotest/tools/pipeline/mllm_case.py
+Fixing /home/zhulin1/code/lmdeployLin/autotest/tools/quantization/test_quantization_awq.py
+Fixing /home/zhulin1/code/lmdeployLin/autotest/tools/quantization/test_quantization_w8a8.py
+Fixing /home/zhulin1/code/lmdeployLin/autotest/tools/restful/test_restful_chat_hf_pytorch_llm.py
+Fixing /home/zhulin1/code/lmdeployLin/autotest/tools/restful/test_restful_chat_hf_pytorch_mllm.py
+Fixing /home/zhulin1/code/lmdeployLin/autotest/tools/restful/test_restful_chat_hf_turbomind_llm.py
+Fixing /home/zhulin1/code/lmdeployLin/autotest/tools/restful/test_restful_chat_hf_turbomind_mllm.py
+Fixing /home/zhulin1/code/lmdeployLin/autotest/tools/restful/test_restful_chat_workspace.py
+Fixing /home/zhulin1/code/lmdeployLin/benchmark/profile_generation.py
+Fixing /home/zhulin1/code/lmdeployLin/benchmark/profile_pipeline_api.py
+Fixing /home/zhulin1/code/lmdeployLin/benchmark/profile_restful_api.py
+Fixing /home/zhulin1/code/lmdeployLin/benchmark/profile_throughput.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/__init__.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/cli/serve.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/lite/apis/auto_awq.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/lite/apis/calibrate.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/lite/apis/smooth_quant.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/lite/quantization/calibration.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/lite/quantization/weight/quantizer.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/lite/utils/__init__.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/backends/cuda/attention.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/backends/cuda/blockedf8_modules.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/backends/cuda/moe.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/backends/cuda/multinomial_sampling.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/backends/default/activation.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/backends/default/multinomial_sampling.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/backends/default/rotary_embedding.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/backends/dlinfer/attention.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/backends/dlinfer/moe.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/backends/dlinfer/rotary_embedding.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/engine/model_agent.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/kernels/__init__.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/kernels/cuda/__init__.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/kernels/cuda/triton_utils.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/models/baichuan.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/models/chatglm2.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/models/cogvlm.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/models/dbrx.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/models/deepseek.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/models/deepseek_v2.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/models/falcon.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/models/gemma.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/models/internlm.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/models/internlm2.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/models/internlm3.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/models/internvl.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/models/llama.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/models/llava.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/models/minicpm3.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/models/minicpmv26.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/models/mistral.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/models/mixtral.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/models/mllama.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/models/patch.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/models/phi3.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/models/phi3_moe.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/models/q_modules.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/models/qwen.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/models/qwen2.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/models/qwen2_moe.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/models/qwen2_vl.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/models/starcoder2.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/nn/rotary_embedding.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/paging/scheduler.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/pytorch/weight_loader/model_weight_loader.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/serve/async_engine.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/serve/gradio/api_server_backend.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/serve/gradio/vl.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/serve/proxy/proxy.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/serve/vl_async_engine.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/turbomind/deploy/target_model/base.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/turbomind/turbomind.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/vl/engine.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/vl/model/internvl_llava.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/vl/model/mini_gemeni.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/vl/model/utils.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/vl/model/xcomposer2.py
+Fixing /home/zhulin1/code/lmdeployLin/lmdeploy/vl/model/yi.py
+
+yapf.....................................................................[41mFailed[m
+[2m- hook id: yapf[m
+[2m- exit code: 1[m
+[2m- files were modified by this hook[m
+
+Traceback (most recent call last):
+  File "/home/zhulin1/.cache/pre-commit/repopxc9mzgd/py_env-python3.12/lib/python3.12/site-packages/yapf/yapflib/pytree_utils.py", line 119, in ParseCodeToTree
+    tree = parser_driver.parse_string(code, debug=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhulin1/miniconda3/lib/python3.12/lib2to3/pgen2/driver.py", line 103, in parse_string
+    return self.parse_tokens(tokens, debug)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhulin1/miniconda3/lib/python3.12/lib2to3/pgen2/driver.py", line 71, in parse_tokens
+    if p.addtoken(type, value, (prefix, start)):
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhulin1/miniconda3/lib/python3.12/lib2to3/pgen2/parse.py", line 162, in addtoken
+    raise ParseError("bad input", type, value, context)
+lib2to3.pgen2.parse.ParseError: bad input: type=1, value='name', context=('', (1047, 99))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/zhulin1/.cache/pre-commit/repopxc9mzgd/py_env-python3.12/lib/python3.12/site-packages/yapf/yapflib/yapf_api.py", line 183, in FormatCode
+    tree = pytree_utils.ParseCodeToTree(unformatted_source)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhulin1/.cache/pre-commit/repopxc9mzgd/py_env-python3.12/lib/python3.12/site-packages/yapf/yapflib/pytree_utils.py", line 125, in ParseCodeToTree
+    tree = parser_driver.parse_string(code, debug=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhulin1/miniconda3/lib/python3.12/lib2to3/pgen2/driver.py", line 103, in parse_string
+    return self.parse_tokens(tokens, debug)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhulin1/miniconda3/lib/python3.12/lib2to3/pgen2/driver.py", line 71, in parse_tokens
+    if p.addtoken(type, value, (prefix, start)):
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhulin1/miniconda3/lib/python3.12/lib2to3/pgen2/parse.py", line 162, in addtoken
+    raise ParseError("bad input", type, value, context)
+lib2to3.pgen2.parse.ParseError: bad input: type=1, value='name', context=('', (1047, 99))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/zhulin1/.cache/pre-commit/repopxc9mzgd/py_env-python3.12/lib/python3.12/site-packages/yapf/__init__.py", line 225, in _FormatFile
+    reformatted_code, encoding, has_change = yapf_api.FormatFile(
+                                             ^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhulin1/.cache/pre-commit/repopxc9mzgd/py_env-python3.12/lib/python3.12/site-packages/yapf/yapflib/yapf_api.py", line 96, in FormatFile
+    reformatted_source, changed = FormatCode(
+                                  ^^^^^^^^^^^
+  File "/home/zhulin1/.cache/pre-commit/repopxc9mzgd/py_env-python3.12/lib/python3.12/site-packages/yapf/yapflib/yapf_api.py", line 186, in FormatCode
+    raise errors.YapfError(errors.FormatErrorMsg(e))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhulin1/.cache/pre-commit/repopxc9mzgd/py_env-python3.12/lib/python3.12/site-packages/yapf/yapflib/errors.py", line 37, in FormatErrorMsg
+    return '{}:{}:{}: {}'.format(e.args[1][0], e.args[1][1], e.args[1][2], e.msg)
+                                 ~~~~~~^^^
+IndexError: tuple index out of range
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/zhulin1/.cache/pre-commit/repopxc9mzgd/py_env-python3.12/bin/yapf", line 8, in <module>
+    sys.exit(run_main())
+             ^^^^^^^^^^
+  File "/home/zhulin1/.cache/pre-commit/repopxc9mzgd/py_env-python3.12/lib/python3.12/site-packages/yapf/__init__.py", line 360, in run_main
+    sys.exit(main(sys.argv))
+             ^^^^^^^^^^^^^^
+  File "/home/zhulin1/.cache/pre-commit/repopxc9mzgd/py_env-python3.12/lib/python3.12/site-packages/yapf/__init__.py", line 124, in main
+    changed = FormatFiles(
+              ^^^^^^^^^^^^
+  File "/home/zhulin1/.cache/pre-commit/repopxc9mzgd/py_env-python3.12/lib/python3.12/site-packages/yapf/__init__.py", line 202, in FormatFiles
+    changed |= _FormatFile(filename, lines, style_config, no_local_style,
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhulin1/.cache/pre-commit/repopxc9mzgd/py_env-python3.12/lib/python3.12/site-packages/yapf/__init__.py", line 236, in _FormatFile
+    raise errors.YapfError(errors.FormatErrorMsg(e))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhulin1/.cache/pre-commit/repopxc9mzgd/py_env-python3.12/lib/python3.12/site-packages/yapf/yapflib/errors.py", line 37, in FormatErrorMsg
+    return '{}:{}:{}: {}'.format(e.args[1][0], e.args[1][1], e.args[1][2], e.msg)
+                                 ~~~~~~^^^
+IndexError: tuple index out of range
+
+codespell................................................................[41mFailed[m
+[2m- hook id: codespell[m
+[2m- exit code: 65[m
+
+[33mlmdeploy/cli/utils.py[0m:[33m31[0m: [31madapers[0m ==> [32madapters[0m
+[33m.github/workflows/benchmark.yml[0m:[33m18[0m: [31mthroughtput[0m ==> [32mthroughput[0m
+[33msrc/turbomind/kernels/gemm/transform.h[0m:[33m15[0m: [31mNd[0m ==> [32mAnd, 2nd[0m
+[33msrc/turbomind/kernels/gemm/transform.h[0m:[33m16[0m: [31mNd[0m ==> [32mAnd, 2nd[0m
+[33msrc/turbomind/kernels/gemm/transform.h[0m:[33m18[0m: [31mNd[0m ==> [32mAnd, 2nd[0m
+[33msrc/turbomind/kernels/gemm/transform.h[0m:[33m19[0m: [31mNd[0m ==> [32mAnd, 2nd[0m
+[33msrc/turbomind/kernels/gemm/transform.h[0m:[33m23[0m: [31mNd[0m ==> [32mAnd, 2nd[0m
+[33msrc/turbomind/kernels/gemm/transform.h[0m:[33m35[0m: [31mNd[0m ==> [32mAnd, 2nd[0m
+[33msrc/turbomind/kernels/gemm/transform.h[0m:[33m37[0m: [31mNd[0m ==> [32mAnd, 2nd[0m
+[33msrc/turbomind/kernels/gemm/transform.h[0m:[33m39[0m: [31mNd[0m ==> [32mAnd, 2nd[0m
+[33msrc/turbomind/kernels/gemm/transform.h[0m:[33m40[0m: [31mNd[0m ==> [32mAnd, 2nd[0m
+[33msrc/turbomind/kernels/gemm/transform.h[0m:[33m45[0m: [31mNd[0m ==> [32mAnd, 2nd[0m
+[33msrc/turbomind/kernels/gemm/transform.h[0m:[33m56[0m: [31mNd[0m ==> [32mAnd, 2nd[0m
+[33msrc/turbomind/kernels/gemm/transform.h[0m:[33m61[0m: [31mNd[0m ==> [32mAnd, 2nd[0m
+[33msrc/turbomind/kernels/gemm/transform.h[0m:[33m86[0m: [31mNd[0m ==> [32mAnd, 2nd[0m
+[33msrc/turbomind/kernels/gemm/transform.h[0m:[33m88[0m: [31mNd[0m ==> [32mAnd, 2nd[0m
+[33msrc/turbomind/kernels/gemm/transform.h[0m:[33m90[0m: [31mNd[0m ==> [32mAnd, 2nd[0m
+[33msrc/turbomind/kernels/gemm/transform.h[0m:[33m91[0m: [31mNd[0m ==> [32mAnd, 2nd[0m
+[33msrc/turbomind/kernels/gemm/transform.h[0m:[33m93[0m: [31mNd[0m ==> [32mAnd, 2nd[0m
+[33msrc/turbomind/kernels/gemm/transform.h[0m:[33m103[0m: [31mNd[0m ==> [32mAnd, 2nd[0m
+[33msrc/turbomind/kernels/gemm/transform.h[0m:[33m104[0m: [31mNd[0m ==> [32mAnd, 2nd[0m
+[33mlmdeploy/utils.py[0m:[33m222[0m: [31mwarpper[0m ==> [32mwrapper, warper[0m
+[33mlmdeploy/utils.py[0m:[33m230[0m: [31mwarpper[0m ==> [32mwrapper, warper[0m
+[33msrc/turbomind/utils/gemm_test/t5_gemm_func.cc[0m:[33m194[0m: [31msplited[0m ==> [32msplit[0m
+[33mdocs/en/get_started/ascend/get_started.md[0m:[33m26[0m: [31mCANN[0m ==> [32mCAN[0m
+[33mdocs/en/get_started/ascend/get_started.md[0m:[33m29[0m: [31mCANN[0m ==> [32mCAN[0m
+[33mdocs/en/get_started/ascend/get_started.md[0m:[33m30[0m: [31mcann[0m ==> [32mcan[0m
+[33mdocs/en/get_started/ascend/get_started.md[0m:[33m32[0m: [31mCANN[0m ==> [32mCAN[0m
+[33mdocs/en/get_started/ascend/get_started.md[0m:[33m32[0m: [31mcann[0m ==> [32mcan[0m
+[33mdocs/en/get_started/ascend/get_started.md[0m:[33m32[0m: [31mcann[0m ==> [32mcan[0m
+[33msrc/turbomind/engine/model_request.h[0m:[33m21[0m: [31muninitailized[0m ==> [32muninitialized[0m
+[33msrc/turbomind/models/llama/SequenceManager.cc[0m:[33m259[0m: [31mmodifiying[0m ==> [32mmodifying[0m
+[33mdocs/zh_cn/advance/structed_output.md[0m:[33m3[0m: [31mpipline[0m ==> [32mpipeline[0m
+[33mlmdeploy/turbomind/deploy/target_model/base.py[0m:[33m71[0m: [31mdivisble[0m ==> [32mdivisible[0m
+[33mlmdeploy/turbomind/deploy/target_model/base.py[0m:[33m72[0m: [31mdivisble[0m ==> [32mdivisible[0m
+[33msrc/turbomind/kernels/attention/mainloop_sm80.h[0m:[33m69[0m: [31mAdvnace[0m ==> [32mAdvance[0m
+[33msrc/turbomind/kernels/attention/mainloop_sm80.h[0m:[33m77[0m: [31mAdvnace[0m ==> [32mAdvance[0m
+[33msrc/turbomind/models/llama/LlamaBatch.cc[0m:[33m1230[0m: [31mlenght[0m ==> [32mlength[0m
+[33msrc/turbomind/models/llama/LlamaBatch.cc[0m:[33m1289[0m: [31mlenght[0m ==> [32mlength[0m
+[33msrc/turbomind/models/llama/LlamaBatch.cc[0m:[33m1612[0m: [31mmodifcations[0m ==> [32mmodifications[0m
+[33mdocker/Dockerfile_aarch64_ascend[0m:[33m69[0m: [31mtbe[0m ==> [32mthe[0m
+[33mdocker/Dockerfile_aarch64_ascend[0m:[33m96[0m: [31mtbe[0m ==> [32mthe[0m
+[33mdocs/en/benchmark/a100_fp16.md[0m:[33m12[0m: [31mequest[0m ==> [32mrequest, quest[0m
+[33msrc/turbomind/utils/gemm.cc[0m:[33m720[0m: [31msepartely[0m ==> [32mseparately[0m
+[33msrc/turbomind/engine/model_request.cc[0m:[33m115[0m: [31mhistroy[0m ==> [32mhistory[0m
+[33mlmdeploy/vl/model/base.py[0m:[33m38[0m: [31mthirdparty[0m ==> [32mthird party, third-party[0m
+[33m.github/CONTRIBUTING.md[0m:[33m208[0m: [31mrequirments[0m ==> [32mrequirements[0m
+[33mlmdeploy/vl/model/mini_gemeni.py[0m:[33m301[0m: [31mcotent[0m ==> [32mcontent, cogent[0m
+[33mdocs/zh_cn/get_started/ascend/get_started.md[0m:[33m25[0m: [31mCANN[0m ==> [32mCAN[0m
+[33mdocs/zh_cn/get_started/ascend/get_started.md[0m:[33m28[0m: [31mCANN[0m ==> [32mCAN[0m
+[33mdocs/zh_cn/get_started/ascend/get_started.md[0m:[33m29[0m: [31mcann[0m ==> [32mcan[0m
+[33mdocs/zh_cn/get_started/ascend/get_started.md[0m:[33m31[0m: [31mcann[0m ==> [32mcan[0m
+[33mdocs/zh_cn/get_started/ascend/get_started.md[0m:[33m31[0m: [31mcann[0m ==> [32mcan[0m
+[33mdocs/zh_cn/get_started/ascend/get_started.md[0m:[33m36[0m: [31mCANN[0m ==> [32mCAN[0m
+
+trim trailing whitespace.................................................[42mPassed[m
+check yaml...............................................................[42mPassed[m
+fix end of files.........................................................[42mPassed[m
+fix requirements.txt.....................................................[42mPassed[m
+fix double quoted strings................................................[42mPassed[m
+check for merge conflicts................................................[42mPassed[m
+fix python encoding pragma...............................................[42mPassed[m
+mixed line ending........................................................[42mPassed[m
+mdformat.................................................................[42mPassed[m
+docformatter.............................................................[42mPassed[m
+ruff.....................................................................[41mFailed[m
+[2m- hook id: ruff[m
+[2m- exit code: 1[m
+
+[1mautotest/utils/pipeline_chat.py[0m[36m:[0m244[36m:[0m31[36m:[0m [1;31mE721[0m Use `is` and `is not` for type comparisons, or `isinstance()` for isinstance checks
+    [1m[94m|[0m
+[1m[94m242 |[0m                 result &= len(content.keys()) <= logprobs_num
+[1m[94m243 |[0m                 for key in content.keys():
+[1m[94m244 |[0m                     result &= type(content.get(key)) == float
+    [1m[94m|[0m                               [1m[91m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [1m[91mE721[0m
+[1m[94m245 |[0m     return result
+    [1m[94m|[0m
+
+[1mautotest/utils/restful_return_check.py[0m[36m:[0m46[36m:[0m12[36m:[0m [1;31mE721[0m Use `is` and `is not` for type comparisons, or `isinstance()` for isinstance checks
+   [1m[94m|[0m
+[1m[94m44 |[0m     assert_logprob_element(logprobs)
+[1m[94m45 |[0m     assert len(logprobs.get('top_logprobs')) >= 0
+[1m[94m46 |[0m     assert type(logprobs.get('top_logprobs')) == list
+   [1m[94m|[0m            [1m[91m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [1m[91mE721[0m
+[1m[94m47 |[0m     assert len(logprobs.get('top_logprobs')) <= logprobs_num
+[1m[94m48 |[0m     for logprob_element in logprobs.get('top_logprobs'):
+   [1m[94m|[0m
+
+[1mautotest/utils/restful_return_check.py[0m[36m:[0m53[36m:[0m46[36m:[0m [1;31mE721[0m Use `is` and `is not` for type comparisons, or `isinstance()` for isinstance checks
+   [1m[94m|[0m
+[1m[94m52 |[0m def assert_logprob_element(logprob):
+[1m[94m53 |[0m     assert len(logprob.get('token')) > 0 and type(logprob.get('token')) == str
+   [1m[94m|[0m                                              [1m[91m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [1m[91mE721[0m
+[1m[94m54 |[0m     assert len(logprob.get('bytes')) > 0 and type(logprob.get('bytes')) == list
+[1m[94m55 |[0m     assert type(logprob.get('logprob')) == float
+   [1m[94m|[0m
+
+[1mautotest/utils/restful_return_check.py[0m[36m:[0m54[36m:[0m46[36m:[0m [1;31mE721[0m Use `is` and `is not` for type comparisons, or `isinstance()` for isinstance checks
+   [1m[94m|[0m
+[1m[94m52 |[0m def assert_logprob_element(logprob):
+[1m[94m53 |[0m     assert len(logprob.get('token')) > 0 and type(logprob.get('token')) == str
+[1m[94m54 |[0m     assert len(logprob.get('bytes')) > 0 and type(logprob.get('bytes')) == list
+   [1m[94m|[0m                                              [1m[91m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [1m[91mE721[0m
+[1m[94m55 |[0m     assert type(logprob.get('logprob')) == float
+   [1m[94m|[0m
+
+[1mautotest/utils/restful_return_check.py[0m[36m:[0m55[36m:[0m12[36m:[0m [1;31mE721[0m Use `is` and `is not` for type comparisons, or `isinstance()` for isinstance checks
+   [1m[94m|[0m
+[1m[94m53 |[0m     assert len(logprob.get('token')) > 0 and type(logprob.get('token')) == str
+[1m[94m54 |[0m     assert len(logprob.get('bytes')) > 0 and type(logprob.get('bytes')) == list
+[1m[94m55 |[0m     assert type(logprob.get('logprob')) == float
+   [1m[94m|[0m            [1m[91m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [1m[91mE721[0m
+   [1m[94m|[0m
+
+[1mlmdeploy/archs.py[0m[36m:[0m93[36m:[0m12[36m:[0m [1;31mE721[0m Use `is` and `is not` for type comparisons, or `isinstance()` for isinstance checks
+   [1m[94m|[0m
+[1m[94m91 |[0m         config = TurbomindEngineConfig()
+[1m[94m92 |[0m     if backend_config is not None:
+[1m[94m93 |[0m         if type(backend_config) == type(config):
+   [1m[94m|[0m            [1m[91m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [1m[91mE721[0m
+[1m[94m94 |[0m             return backend_config
+[1m[94m95 |[0m         else:
+   [1m[94m|[0m
+
+[1mlmdeploy/messages.py[0m[36m:[0m134[36m:[0m16[36m:[0m [1;31mE721[0m Use `is` and `is not` for type comparisons, or `isinstance()` for isinstance checks
+    [1m[94m|[0m
+[1m[94m132 |[0m     def __post_init__(self):
+[1m[94m133 |[0m         """Check input validation."""
+[1m[94m134 |[0m         assert type(self.n) == int and self.n > 0, 'n is not a positive integer'
+    [1m[94m|[0m                [1m[91m^^^^^^^^^^^^^^^^^^^[0m [1m[91mE721[0m
+[1m[94m135 |[0m         assert self.top_p >= 0 and self.top_p <= 1  # [0, 1]
+[1m[94m136 |[0m         assert self.top_k >= 0, 'top_k can not be a negative integer'
+    [1m[94m|[0m
+
+[1mlmdeploy/model.py[0m[36m:[0m1038[36m:[0m24[36m:[0m [1;31mF541[0m [[36m*[0m] f-string without any placeholders
+     [1m[94m|[0m
+[1m[94m1036 |[0m                 ret += f"{box_map[message['role']]}{message['content']}{self.eosys}"
+[1m[94m1037 |[0m             elif message['role'] == 'assistant':
+[1m[94m1038 |[0m                 ret += f'<|im_start|>assistant'
+     [1m[94m|[0m                        [1m[91m^^^^^^^^^^^^^^^^^^^^^^^^[0m [1m[91mF541[0m
+[1m[94m1039 |[0m                 if message.get('content') is not None:
+[1m[94m1040 |[0m                     ret += f"{self.separator}{message['content']}"
+     [1m[94m|[0m
+     [1m[94m= [0m[1m[96mhelp[0m: Remove extraneous `f` prefix
+
+[1mlmdeploy/model.py[0m[36m:[0m1051[36m:[0m28[36m:[0m [1;31mF541[0m [[36m*[0m] f-string without any placeholders
+     [1m[94m|[0m
+[1m[94m1049 |[0m             if message['role'] == 'tool':
+[1m[94m1050 |[0m                 if index == 0 or messages[index - 1]['role'] != 'tool':
+[1m[94m1051 |[0m                     ret += f'<|im_start|>user'
+     [1m[94m|[0m                            [1m[91m^^^^^^^^^^^^^^^^^^^[0m [1m[91mF541[0m
+[1m[94m1052 |[0m                 ret += f"{self.separator}<tool_response>{self.separator}{message['content']}{self.separator}</tool_response>"
+[1m[94m1053 |[0m                 if index == len(messages) - 1 or messages[index + 1]['role'] != 'tool':
+     [1m[94m|[0m
+     [1m[94m= [0m[1m[96mhelp[0m: Remove extraneous `f` prefix
+
+[1mlmdeploy/model.py[0m[36m:[0m1354[36m:[0m7[36m:[0m [1;31mF811[0m Redefinition of unused `Deepseek` from line 239
+     [1m[94m|[0m
+[1m[94m1353 |[0m @MODELS.register_module(name=['deepseek'])
+[1m[94m1354 |[0m class Deepseek(BaseChatTemplate):
+     [1m[94m|[0m       [1m[91m^^^^^^^^[0m [1m[91mF811[0m
+[1m[94m1355 |[0m
+[1m[94m1356 |[0m     def __init__(self,
+     [1m[94m|[0m
+     [1m[94m= [0m[1m[96mhelp[0m: Remove definition: `Deepseek`
+
+[1mlmdeploy/pytorch/engine/guided_process.py[0m[36m:[0m49[36m:[0m12[36m:[0m [1;31mE721[0m Use `is` and `is not` for type comparisons, or `isinstance()` for isinstance checks
+   [1m[94m|[0m
+[1m[94m47 |[0m         instruction = self.fsm.get_next_instruction(self.fsm_state[seq_id])
+[1m[94m48 |[0m
+[1m[94m49 |[0m         if type(instruction) == Generate:
+   [1m[94m|[0m            [1m[91m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [1m[91mE721[0m
+[1m[94m50 |[0m             allowed_tokens = instruction.tokens
+[1m[94m51 |[0m         elif type(instruction) == Write:
+   [1m[94m|[0m
+
+[1mlmdeploy/pytorch/engine/guided_process.py[0m[36m:[0m51[36m:[0m14[36m:[0m [1;31mE721[0m Use `is` and `is not` for type comparisons, or `isinstance()` for isinstance checks
+   [1m[94m|[0m
+[1m[94m49 |[0m         if type(instruction) == Generate:
+[1m[94m50 |[0m             allowed_tokens = instruction.tokens
+[1m[94m51 |[0m         elif type(instruction) == Write:
+   [1m[94m|[0m              [1m[91m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [1m[91mE721[0m
+[1m[94m52 |[0m             # TODO: support fast forward tokens
+[1m[94m53 |[0m             allowed_tokens = [instruction.tokens[0]]
+   [1m[94m|[0m
+
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[0m[36m:[0m106[36m:[0m16[36m:[0m [1;31mE721[0m Use `is` and `is not` for type comparisons, or `isinstance()` for isinstance checks
+    [1m[94m|[0m
+[1m[94m104 |[0m         def _make_sig_key_str(key):
+[1m[94m105 |[0m             anno = self.type_hint[key]
+[1m[94m106 |[0m             if anno == bool:
+    [1m[94m|[0m                [1m[91m^^^^^^^^^^^^[0m [1m[91mE721[0m
+[1m[94m107 |[0m                 return '"i1"'
+[1m[94m108 |[0m             elif anno == float:
+    [1m[94m|[0m
+
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[0m[36m:[0m108[36m:[0m18[36m:[0m [1;31mE721[0m Use `is` and `is not` for type comparisons, or `isinstance()` for isinstance checks
+    [1m[94m|[0m
+[1m[94m106 |[0m             if anno == bool:
+[1m[94m107 |[0m                 return '"i1"'
+[1m[94m108 |[0m             elif anno == float:
+    [1m[94m|[0m                  [1m[91m^^^^^^^^^^^^^[0m [1m[91mE721[0m
+[1m[94m109 |[0m                 return '"fp32"'
+[1m[94m110 |[0m             elif anno == torch.int32:
+    [1m[94m|[0m
+
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[0m[36m:[0m317[36m:[0m16[36m:[0m [1;31mE721[0m Use `is` and `is not` for type comparisons, or `isinstance()` for isinstance checks
+    [1m[94m|[0m
+[1m[94m315 |[0m         def _make_sig_key_str(key):
+[1m[94m316 |[0m             anno = self.type_hint[key]
+[1m[94m317 |[0m             if anno == bool:
+    [1m[94m|[0m                [1m[91m^^^^^^^^^^^^[0m [1m[91mE721[0m
+[1m[94m318 |[0m                 return '"i1"'
+[1m[94m319 |[0m             elif anno == float:
+    [1m[94m|[0m
+
+[1mlmdeploy/pytorch/kernels/cuda/triton_utils.py[0m[36m:[0m319[36m:[0m18[36m:[0m [1;31mE721[0m Use `is` and `is not` for type comparisons, or `isinstance()` for isinstance checks
+    [1m[94m|[0m
+[1m[94m317 |[0m             if anno == bool:
+[1m[94m318 |[0m                 return '"i1"'
+[1m[94m319 |[0m             elif anno == float:
+    [1m[94m|[0m                  [1m[91m^^^^^^^^^^^^^[0m [1m[91mE721[0m
+[1m[94m320 |[0m                 return '"fp32"'
+[1m[94m321 |[0m             elif anno == torch.int32:
+    [1m[94m|[0m
+
+[1mlmdeploy/pytorch/model_inputs.py[0m[36m:[0m375[36m:[0m49[36m:[0m [1;31mE741[0m Ambiguous variable name: `l`
+    [1m[94m|[0m
+[1m[94m373 |[0m         else:
+[1m[94m374 |[0m             device = position_ids.device
+[1m[94m375 |[0m             position_ids_1d = [ids[:l] for ids, l in zip(position_ids.cpu(), seq_length.cpu())]
+    [1m[94m|[0m                                                 [1m[91m^[0m [1m[91mE741[0m
+[1m[94m376 |[0m             position_ids_1d = torch.cat(position_ids_1d).to(device)
+[1m[94m377 |[0m         return position_ids_1d
+    [1m[94m|[0m
+
+[1mtests/pytorch/kernel/test_flash_attention.py[0m[36m:[0m8[36m:[0m26[36m:[0m [1;31mE741[0m Ambiguous variable name: `l`
+   [1m[94m|[0m
+[1m[94m 7 |[0m def _conti_input(data, q_seqlens):
+[1m[94m 8 |[0m     data = [x[:l] for x, l in zip(data, q_seqlens)]
+   [1m[94m|[0m                          [1m[91m^[0m [1m[91mE741[0m
+[1m[94m 9 |[0m     data = torch.cat(data, dim=0)
+[1m[94m10 |[0m     return data
+   [1m[94m|[0m
+
+[1mtests/pytorch/kernel/test_flash_attention.py[0m[36m:[0m19[36m:[0m16[36m:[0m [1;31mE741[0m Ambiguous variable name: `l`
+   [1m[94m|[0m
+[1m[94m17 |[0m     if causal:
+[1m[94m18 |[0m         seq_ranges = [torch.arange(max_seq_len) for _ in q_seqlens]
+[1m[94m19 |[0m         for r, l in zip(seq_ranges, q_seqlens):
+   [1m[94m|[0m                [1m[91m^[0m [1m[91mE741[0m
+[1m[94m20 |[0m             r[l:] = -max_kv_len
+[1m[94m21 |[0m         seq_ranges = torch.stack(seq_ranges, dim=0).cuda()
+   [1m[94m|[0m
+
+[1mtests/pytorch/kernel/test_paged_attention.py[0m[36m:[0m8[36m:[0m26[36m:[0m [1;31mE741[0m Ambiguous variable name: `l`
+   [1m[94m|[0m
+[1m[94m 7 |[0m def _conti_input(data, seq_lens):
+[1m[94m 8 |[0m     data = [x[:l] for x, l in zip(data, seq_lens)]
+   [1m[94m|[0m                          [1m[91m^[0m [1m[91mE741[0m
+[1m[94m 9 |[0m     data = torch.cat(data, dim=0)
+[1m[94m10 |[0m     return data
+   [1m[94m|[0m
+
+[1mtests/pytorch/kernel/test_paged_attention.py[0m[36m:[0m18[36m:[0m12[36m:[0m [1;31mE741[0m Ambiguous variable name: `l`
+   [1m[94m|[0m
+[1m[94m16 |[0m     max_full_len = full_seq_lens.max().item()
+[1m[94m17 |[0m     seq_ranges = [torch.arange(max_seq_len) for _ in seq_lens]
+[1m[94m18 |[0m     for r, l in zip(seq_ranges, seq_lens):
+   [1m[94m|[0m            [1m[91m^[0m [1m[91mE741[0m
+[1m[94m19 |[0m         r[l:] = -max_full_len
+[1m[94m20 |[0m     seq_ranges = torch.stack(seq_ranges, dim=0).cuda()
+   [1m[94m|[0m
+
+Found 21 errors.
+[[36m*[0m] 2 fixable with the `--fix` option.
+
+PyMarkdown...............................................................[42mPassed[m
+mypy.....................................................................[41mFailed[m
+[2m- hook id: mypy[m
+[2m- exit code: 2[m
+
+docs/zh_cn/conf.py: [1m[31merror:(B[m Duplicate module named (B[m[1m"conf"(B[m (also at (B[m[1m"docs/en/conf.py"(B[m)(B[m[33m(B[m
+docs/zh_cn/conf.py: [34mnote:(B[m See [4mhttps://mypy.readthedocs.io/en/stable/running_mypy.html#mapping-file-paths-to-modules(B[m for more info(B[m
+docs/zh_cn/conf.py: [34mnote:(B[m Common resolutions include: a) using `--exclude` to avoid checking one of them, b) adding `__init__.py` somewhere, c) using `--explicit-package-bases` or adjusting MYPYPATH(B[m
+[1m[31mFound 1 error in 1 file (errors prevented further checking)(B[m
+
+pylint...................................................................[42mPassed[m

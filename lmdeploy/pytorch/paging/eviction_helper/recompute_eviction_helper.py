@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import List
+from typing import Dict
 
 from ...messages import SchedulerSequence
 from .base_eviction_helper import BaseEvictionHelper
@@ -8,36 +8,36 @@ from .base_eviction_helper import BaseEvictionHelper
 class RecomputeEvictionHelper(BaseEvictionHelper):
     """recompute eviction."""
 
-    def evict_for_seq(self, seq: SchedulerSequence, evictable_seqs: List[SchedulerSequence], prealloc_size: int):
-        """evict seqs."""
-        block_manager = self.block_manager
-        block_trie = self.block_trie
-        num_required_blocks = block_manager.num_required_blocks(seq, prealloc_size)
+    def __init__(self, block_manager):
+        super().__init__(block_manager)
 
-        if block_manager.get_num_free_gpu_blocks() >= num_required_blocks:
+    def need_swap_in(self, seq: SchedulerSequence):
+        """sequence need swap in."""
+        return False
+
+    def swap_in(self, seq: SchedulerSequence, swap_in_map: Dict[int, int]):
+        """sequence swap in."""
+        self.block_manager.allocate(seq)
+
+    def swap_out(self, seq: SchedulerSequence, swap_out_map: Dict[int, int]):
+        """sequence swap out."""
+        self.block_manager.free(seq)
+        seq.set_step(0)
+        seq.logical_blocks.reset()
+
+    def try_swap_out(self, seq: SchedulerSequence, swap_out_map: Dict[int,
+                                                                      int]):
+        """try swap out."""
+        if seq.history_len > 0:
+            self.swap_out(seq, swap_out_map)
             return True
+        else:
+            return False
 
-        success = False
-        while len(evictable_seqs) > 0:
-            evict_seq = evictable_seqs.pop(0)
-
-            block_manager.free(evict_seq)
-            num_req = (num_required_blocks - block_manager.get_num_free_gpu_blocks())
-            if num_req <= 0:
-                success = True
-                break
-
-            block_trie.evict(num_req)
-            num_req = (num_required_blocks - block_manager.get_num_free_gpu_blocks())
-            if num_req <= 0:
-                success = True
-                break
-
-        # for empty evictable_seqs case
-        num_req = num_required_blocks - block_manager.get_num_free_gpu_blocks()
-        if num_req > 0:
-            block_trie.evict(num_req)
-            if num_required_blocks <= block_manager.get_num_free_gpu_blocks():
-                success = True
-
-        return success
+    def try_swap_in(self, seq: SchedulerSequence, swap_in_map: Dict[int, int]):
+        """try swap in."""
+        if self.block_manager.can_allocate(seq):
+            self.swap_in(seq, swap_in_map)
+            return True
+        else:
+            return False

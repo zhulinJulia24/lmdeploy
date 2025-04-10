@@ -1,7 +1,6 @@
 // Copyright (c) OpenMMLab. All rights reserved.
 
 #include "src/turbomind/models/llama/SequenceManager.h"
-#include "src/turbomind/kernels/attention/block.h"
 #include "src/turbomind/models/llama/BlockManager.h"
 #include "src/turbomind/utils/allocator.h"
 #include "src/turbomind/utils/debug_utils.h"
@@ -14,23 +13,26 @@
 
 namespace turbomind {
 
-SequenceManager::SequenceManager(size_t             layer_num,
-                                 const BlockConfig& block_config,
-                                 double             block_count,
-                                 int                chunk_size,
-                                 bool               enable_prefix_caching,
-                                 int                rank,
-                                 IAllocator*        allocator,
-                                 GetFreeMemSize     get_free_size):
-    block_seq_len_(block_config.block_len_), rank_(rank)
+SequenceManager::SequenceManager(size_t         layer_num,
+                                 size_t         head_num,
+                                 size_t         head_dim,
+                                 size_t         block_seq_len,
+                                 double         block_count,
+                                 int            chunk_size,
+                                 size_t         elem_bits,
+                                 int            rank,
+                                 IAllocator*    allocator,
+                                 GetFreeMemSize get_free_size):
+    block_seq_len_(block_seq_len), rank_(rank)
 {
-    block::Layout layout{block_config};
-    // dump(layout);
+    constexpr int kBitsPerByte = 8;
 
-    size_t block_size = layout.block_size(layer_num);
+    // [2, L, H, block_seq_len, D]
+    size_t block_size = 2UL * layer_num * head_num * block_seq_len * head_dim * elem_bits / kBitsPerByte;
 
-    block_manager_ = std::make_shared<BlockManager>(block_size, block_count, chunk_size, allocator, get_free_size);
-    block_trie_    = std::make_shared<BlockTrie>(block_config.block_len_, block_manager_, enable_prefix_caching);
+    block_manager_ = std::make_unique<BlockManager>(block_size, block_count, chunk_size, allocator, get_free_size);
+
+    val_offset_ = block_size / 2;
 }
 
 const Sequence* SequenceManager::Create(uint64_t id)
@@ -70,10 +72,7 @@ void SequenceManager::Erase(std::map<uint64_t, Sequence>::iterator& it)
     else {
         UpdateAndSetUnlock(seq);
     }
-    // if prefix cache enabled, blocks will be shared by sequences, cannot be freed immediately
-    if (!block_trie_->enabled()) {
-        freed_.insert(freed_.end(), seq.blocks.begin(), seq.blocks.end());
-    }
+    freed_.insert(freed_.end(), seq.blocks.begin(), seq.blocks.end());
     it = sequences_.erase(it);
 }
 
@@ -84,21 +83,6 @@ bool SequenceManager::Erase(uint64_t id)
         return true;
     }
     return false;
-}
-
-void SequenceManager::CacheIfEnabled(const Sequences& sequences, int active_size)
-{
-    if (block_trie_->enabled()) {
-        block_trie_->verify();
-        for (int i = 0; i < active_size; ++i) {
-            auto& seq = *sequences[i];
-            // only cache prompt blocks
-            if (!seq.prompt.empty()) {
-                block_trie_->cache(seq);
-                seq.prompt.clear();
-            }
-        }
-    }
 }
 
 void SequenceManager::VerifyAndLockCached(const Sequences& sequences)
@@ -156,21 +140,23 @@ struct Schedule {
 
     int last;
 
-    int remaining_input_count;
+    int input_count1;
+    int input_count2;
 
     Sequences        active;
     std::vector<int> block_counts;
     Sequences        inactive;
     Sequences        victims;
 
-    Schedule(Snapshot snapshot, int size, int max_input_count):
+    Schedule(Snapshot snapshot, int size, int _input_count1, int _input_count2):
         free(snapshot.free),
         cached(snapshot.cached),
         last(size),
         use_count_(std::move(snapshot.use_count)),
         unlocked_(size),
         it_(size),
-        remaining_input_count(max_input_count)
+        input_count1(_input_count1),
+        input_count2(_input_count2)
     {
     }
 
@@ -226,8 +212,6 @@ struct Transaction {
     const Sequences& sequences_;
     Schedule&        schedule_;
 
-    std::shared_ptr<BlockTrie> block_trie_;
-
     explicit Transaction(const Sequences& sequences, int index, int block_count, int input_count, Schedule& sched):
         sequences_(sequences), schedule_(sched), index_(index), block_count_(block_count), input_count_(input_count)
     {
@@ -235,7 +219,7 @@ struct Transaction {
 
     void Process()
     {
-        if (schedule_.remaining_input_count > 0) {
+        if (schedule_.input_count1 > 0) {
             int count = block_count_;
 
             int tmp = std::min(schedule_.free, count);
@@ -288,8 +272,11 @@ struct Transaction {
         schedule_.active.push_back(sequences_[index_]);
         schedule_.block_counts.push_back(block_count_);
 
-        input_count_ = std::min(input_count_, schedule_.remaining_input_count);
-        schedule_.remaining_input_count -= input_count_;
+        if (input_count_ > schedule_.input_count2) {
+            input_count_ = schedule_.input_count1;
+        }
+        schedule_.input_count1 -= input_count_;
+        schedule_.input_count2 -= input_count_;
         const_cast<Sequence*>(sequences_[index_])->input_length = input_count_;
     }
 };
@@ -394,26 +381,12 @@ auto SequenceManager::Materialize(Sequences                    sequences,
     // the blocks can still be preempted later
     VerifyAndLockCached(sequences);
 
-    if (block_trie_->enabled()) {
-        // verify blocks in trie cache
-        block_trie_->verify();
-
-        // match prefix cache
-        for (int i = 0; i < sequences.size(); i++) {
-            if (!sequences[i]->prompt.empty() && sequences[i]->blocks.empty()) {
-                auto& seq = const_cast<Sequence&>(*sequences[i]);
-                block_trie_->match(seq);
-                seq.cache_len = seq.blocks.size() * block_seq_len_;
-            }
-        }
-    }
-
-    const int max_input_count = adjust(sequences, context_lengths);
+    auto [input_count1, input_count2] = adjust(sequences, context_lengths);
 
     std::vector<int> required = CountRequiredBlocks(sequences, context_lengths, step_length);
     // dbg(required);
 
-    Schedule schedule(block_manager_->TakeSnapshot(), sequences.size(), max_input_count);
+    Schedule schedule(block_manager_->TakeSnapshot(), sequences.size(), input_count1, input_count2);
 
     // `schedule.last` is decreasing in the loop
     for (int i = 0; i < schedule.last; ++i) {
@@ -453,7 +426,6 @@ auto SequenceManager::Materialize(Sequences                    sequences,
 
     // release preempted blocks -> cached
     if (!schedule.victims.empty()) {
-        TM_LOG_WARNING("[SeqMgr] #victim: %d", (int)schedule.victims.size());
         for (const auto& p : schedule.victims) {
             UpdateAndSetUnlock(*p);
         }

@@ -30,7 +30,6 @@
 #include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <type_traits>
 #include <unordered_map>
 #include <vector>
 
@@ -86,7 +85,7 @@ DataType getTensorType()
     else if (std::is_same<T, uint>::value || std::is_same<T, const uint>::value) {
         return TYPE_UINT32;
     }
-    else if (std::is_same<T, unsigned long>::value || std::is_same<T, const unsigned long>::value) {
+    else if (std::is_same<T, unsigned long long int>::value || std::is_same<T, const unsigned long long int>::value) {
         return TYPE_UINT64;
     }
     else if (std::is_same<T, bool>::value || std::is_same<T, const bool>::value) {
@@ -95,32 +94,8 @@ DataType getTensorType()
     else if (std::is_same<T, char>::value || std::is_same<T, const char>::value) {
         return TYPE_BYTES;
     }
-    else if (std::is_pointer_v<T> && sizeof(T) == sizeof(uint64_t)) {
-        return TYPE_UINT64;
-    }
     else {
         return TYPE_INVALID;
-    }
-}
-
-static inline size_t get_elem_size(DataType type)
-{
-    switch (type) {
-        case DataType::TYPE_FP16:
-        case DataType::TYPE_BF16:
-        case DataType::TYPE_INT16:
-            return 2;
-        case DataType::TYPE_FP32:
-        case DataType::TYPE_INT32:
-        case DataType::TYPE_UINT32:
-            return 4;
-        case DataType::TYPE_UINT64:
-        case DataType::TYPE_INT64:
-            return 8;
-        case DataType::TYPE_UINT8:
-            return 1;
-        default:
-            throw std::runtime_error("not supported");
     }
 }
 
@@ -360,6 +335,7 @@ public:
     inline void insert(const std::string& key, const Tensor& value)
     {
         FT_CHECK_WITH_INFO(!isExist(key), fmtstr("Duplicated key %s", key.c_str()));
+        FT_CHECK_WITH_INFO(isValid(value), fmtstr("A none tensor or nullptr is not allowed (key is %s)", key.c_str()));
         tensor_map_.insert({key, value});
     }
 
@@ -539,44 +515,9 @@ public:
         return tensor_map_.end();
     }
 
-    int count(const std::string& key) const
-    {
-        return tensor_map_.count(key);
-    }
-
-    bool empty() const
-    {
-        return tensor_map_.empty();
-    }
-
     std::string      toString();
     static TensorMap fromNpyFolder(const std::string& base_folder);
     void             saveNpy(const std::string& base_folder);
-};
-
-struct ManagedTensor {
-    Tensor                tensor;
-    std::shared_ptr<void> data_holder;
-
-    Tensor* operator->() noexcept
-    {
-        return &tensor;
-    }
-
-    const Tensor* operator->() const noexcept
-    {
-        return &tensor;
-    }
-
-    Tensor& operator*() noexcept
-    {
-        return tensor;
-    }
-
-    const Tensor& operator*() const noexcept
-    {
-        return tensor;
-    }
 };
 
 }  // namespace turbomind

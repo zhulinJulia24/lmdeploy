@@ -16,12 +16,11 @@
  */
 
 // Modified from
-// https://github.com/NVIDIA/FasterTransformer/blob/main/src/fastertransformer/models/multi_gpu_gpt/ParallelGptDecoderLayerWeight.h
+// https://github.com/NVIDIA/FasterTransformer/blob/main/src/turbomind/models/multi_gpu_gpt/ParallelGptDecoderLayerWeight.h
 
 #pragma once
 
 #include "src/turbomind/models/llama/LlamaDenseWeight.h"
-#include "src/turbomind/models/llama/llama_params.h"
 #include "src/turbomind/utils/Tensor.h"
 
 namespace turbomind {
@@ -30,36 +29,27 @@ template<typename T>
 struct LlamaDecoderLayerWeight {
 public:
     LlamaDecoderLayerWeight() = delete;
-
-    LlamaDecoderLayerWeight(int                layer_id,
-                            const ModelParam&  model,
-                            const EngineParam& engine,
-                            const LoraParam&   lora_param,
-                            const MoeParam&    moe_param);
-
+    LlamaDecoderLayerWeight(size_t     head_num,
+                            size_t     kv_head_num,
+                            size_t     size_per_head,
+                            size_t     inter_size,
+                            WeightType weight_type,
+                            int        group_size,
+                            bool       attn_bias,
+                            size_t     tensor_para_size,
+                            size_t     tensor_para_rank);
     ~LlamaDecoderLayerWeight();
-    LlamaDecoderLayerWeight(const LlamaDecoderLayerWeight&) = delete;
-    LlamaDecoderLayerWeight& operator=(const LlamaDecoderLayerWeight&) = delete;
+    LlamaDecoderLayerWeight(const LlamaDecoderLayerWeight& other) = delete;
+    LlamaDecoderLayerWeight& operator=(const LlamaDecoderLayerWeight& other) = delete;
 
     void loadModel(std::string dir_path, FtCudaDataType model_file_type);
 
     TensorMap getParams(std::string prefix);
 
-    void prepare(void* workspace, size_t size, const cudaDeviceProp& prop, cudaStream_t st);
-
-    size_t workspace_size() const noexcept;
-
-    void malloc(cudaStream_t st);
-
-    void free(cudaStream_t st);
-
-    T* self_attn_norm_weights{};
-    T* ffn_norm_weights{};
-
+    T*                      self_attn_norm_weights{};
+    T*                      ffn_norm_weights{};
     LlamaAttentionWeight<T> self_attn_weights{};
-
-    LlamaFfnWeight<T> ffn_weights{};
-    MoeFfnWeight<T>   moe_weights{};
+    LlamaFfnWeight<T>       ffn_weights{};
 
 private:
     size_t     head_num_;
@@ -70,12 +60,11 @@ private:
     WeightType weight_type_;
     size_t     bit_size_;
     bool       attn_bias_;
-    size_t     attn_tp_size_;
-    size_t     attn_tp_rank_;
-    size_t     mlp_tp_size_;
-    size_t     mlp_tp_rank_;
+    size_t     tensor_para_size_;
+    size_t     tensor_para_rank_;
     bool       is_maintain_buffer_ = false;
-    bool       fused_up_and_gate_;
+
+    void mallocWeights();
 };
 
 }  // namespace turbomind

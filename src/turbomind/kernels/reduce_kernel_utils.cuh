@@ -53,32 +53,6 @@ struct BytesToType<16> {
     using type = float4;
 };
 
-template<typename T>
-__device__ inline T getMaxValue();
-
-template<>
-__device__ inline float getMaxValue<float>()
-{
-    return FLT_MAX;
-}
-
-template<>
-__device__ inline half getMaxValue<half>()
-{
-    return __ushort_as_half((unsigned short)0x7BFFU);
-}
-
-#ifdef ENABLE_BF16
-template<>
-__device__ inline __nv_bfloat16 getMaxValue<__nv_bfloat16>()
-{
-#if __CUDA_ARCH__ >= 800
-    return __ushort_as_bfloat16((unsigned short)0x7F7FU);
-#endif
-    return {};
-}
-#endif
-
 template<int Bytes>
 __device__ inline void copy(const void* local, void* data)
 {
@@ -345,7 +319,7 @@ __device__ __forceinline__ TopK<T, MAX_K> reduce_topk_op(const TopK<T, MAX_K>& a
 template<typename T>
 struct TopK_2 {
     int p = -1;
-    T   u = -getMaxValue<T>();
+    T   u = -((std::is_same<T, half>::value) ? HALF_FLT_MAX : FLT_MAX);
 
     __device__ __forceinline__ void insert(T elem, int elem_id)
     {
@@ -357,7 +331,7 @@ struct TopK_2 {
 
     __device__ __forceinline__ void init()
     {
-        u = -getMaxValue<T>();
+        u = -((std::is_same<T, half>::value) ? HALF_FLT_MAX : FLT_MAX);
         p = -1;
     }
 };

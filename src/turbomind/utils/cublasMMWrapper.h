@@ -84,7 +84,7 @@ public:
                     IAllocator*        allocator);
 #endif
 
-    virtual ~cublasMMWrapper();
+    ~cublasMMWrapper();
 
     cublasMMWrapper(const cublasMMWrapper& wrapper);
 

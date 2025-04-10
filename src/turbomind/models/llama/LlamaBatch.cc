@@ -1,50 +1,34 @@
 // Copyright (c) OpenMMLab. All rights reserved.
 
+#include "src/turbomind/models/llama/LlamaBatch.h"
+#include "src/turbomind/kernels/decoding_kernels.h"
+#include "src/turbomind/kernels/sampling_topk_kernels.h"
+#include "src/turbomind/macro.h"
+#include "src/turbomind/models/llama/BlockManager.h"
+#include "src/turbomind/models/llama/LlamaNcclGuard.h"
+#include "src/turbomind/models/llama/LlamaV2.h"
+#include "src/turbomind/models/llama/Request.h"
+#include "src/turbomind/models/llama/SequenceManager.h"
+#include "src/turbomind/models/llama/copy.h"
+#include "src/turbomind/models/llama/llama_kernels.h"
+#include "src/turbomind/models/llama/llama_utils.h"
+#include "src/turbomind/utils/Tensor.h"
+#include "src/turbomind/utils/cuda_utils.h"
+#include "src/turbomind/utils/debug_utils.h"
+#include "src/turbomind/utils/gemm_test/gemm_func.h"
+#include "src/turbomind/utils/logger.h"
 #include <algorithm>
-#include <atomic>
-#include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <iomanip>
-#include <memory>
-#include <memory_resource>
+#include <iterator>
+#include <mutex>
 #include <numeric>
-#include <random>
 #include <sstream>
-#include <thread>
 #include <unordered_map>
 #include <utility>
-
-#include <cuda_runtime.h>
-
-#include "src/turbomind/comm/device_comm.h"
-#include "src/turbomind/comm/host_comm.h"
-#include "src/turbomind/macro.h"
-
-#include "src/turbomind/engine/gateway.h"
-#include "src/turbomind/engine/request.h"
-
-#include "src/turbomind/kernels/core/data_type.h"
-#include "src/turbomind/kernels/decoding_kernels.h"
-#include "src/turbomind/kernels/gemm/tuner/params.h"
-#include "src/turbomind/kernels/sampling_topk_kernels.h"
-
-#include "src/turbomind/models/llama/BlockManager.h"
-#include "src/turbomind/models/llama/LlamaBatch.h"
-#include "src/turbomind/models/llama/LlamaV2.h"
-#include "src/turbomind/models/llama/SequenceManager.h"
-#include "src/turbomind/models/llama/copy.h"
-#include "src/turbomind/models/llama/llama_kernels.h"
-#include "src/turbomind/models/llama/llama_utils.h"
-
-#include "src/turbomind/utils/Tensor.h"
-#include "src/turbomind/utils/anomaly_handler.h"
-#include "src/turbomind/utils/constant.h"
-#include "src/turbomind/utils/cuda_utils.h"
-#include "src/turbomind/utils/debug_utils.h"
-#include "src/turbomind/utils/logger.h"
 
 namespace turbomind {
 
@@ -74,7 +58,6 @@ void ClearState(BatchState& s)
 {
     std::fill_n(s.requests.begin(), s.size, nullptr);
     std::fill_n(s.sequences.begin(), s.size, nullptr);
-    std::fill_n(s.errors.begin(), s.size, 0);
     s.size = s.active_size = 0;
 }
 
@@ -94,102 +77,150 @@ void DropEmbeddings(const Sequence& seq)
 }
 
 template<typename T>
-void LlamaBatch<T>::DisableInvalidRequests(Requests& infer_reqs, Requests& kill_reqs)
+void LlamaBatch<T>::RejectInvalidRequests(Requests& stop_reqs, Requests& infer_reqs)
 {
-    NvtxScope _("disable invalid");
+    std::unordered_map<uint64_t, int> occurrence;
 
-    std::pmr::monotonic_buffer_resource    mbr;
-    std::pmr::unordered_map<uint64_t, int> occur(&mbr);
-
-    auto count = [&occur](const auto& reqs) {
-        for (const auto& r : reqs) {
-            ++occur[r->id];
+    auto count_occurrence = [&occurrence](const Requests& rs) {
+        for (const auto& r : rs) {
+            ++occurrence[r->id];
         }
     };
 
-    auto validate = [&occur](auto& reqs, const char* type) {
-        for (const auto& r : reqs) {
-            if (occur[r->id] > 1) {
-                TM_LOG_ERROR("Skip conflicting %s request for ID %lu", type, r->id);
-                r->ec = Request::kConflict;
-            }
-        }
+    auto reject = [](const char* type, std::shared_ptr<Request>& req, int ec) {
+        TM_LOG_WARNING(
+            "[RejectInvalidRequests] Skipping invalid %s request for id %ld, code = %d", type, (long)req->id, ec);
+        req->signal.set_value(ec);
+        req.reset();
     };
 
-    // Current batch
-    for (int i = 0; i < state_->size; ++i) {
-        if (state_->requests[i]) {
-            ++occur[state_->requests[i]->id];
-        }
-    }
+    auto handle_conflict_or_invalid = [this, &occurrence, &reject](Requests& rs, const char* type) {
+        for (auto& r : rs) {
+            if (r) {
+                int ec = 0;
 
-    count(kill_reqs);
-    count(infer_reqs);
+                const int  input_length = r->inputs[rank_].getVal<int>("input_lengths", 0);
+                const auto get_offset   = [&](int token_count) {
+                    return std::max(0, std::min(token_count, r->inputs[rank_].getVal<int>("step", token_count)));
+                };
 
-    validate(kill_reqs, "kill");
-    validate(infer_reqs, "infer");
-
-    // New requests that never get a chance to start
-    for (auto& r : infer_reqs) {
-        if (r && r->cancel_flag.load(std::memory_order_acquire) == -1) {
-            r->ec = Request::kCancel;
-        }
-    }
-}
-
-template<class T>
-void LlamaBatch<T>::FindCanceledIndices(std::vector<int>& indices)
-{
-    for (int i = 0; i < state_->size; ++i) {  // current batch
-        const auto& r = state_->requests[i];
-        if (r && r->cancel_flag.load(std::memory_order_acquire) == -1) {
-            indices.push_back(i);
-        }
-    }
-}
-
-template<class T>
-void LlamaBatch<T>::ProcessCancelRequests(std::vector<int>& indices, std::vector<Signal>& signals)
-{
-    int count = 0;
-
-    for (const auto& i : indices) {
-        if (auto& r = state_->requests[i]) {
-            ++count;
-            signals.push_back(Interrupt(i, true));
-            // Interrupt should reset r
-            FT_CHECK(!r);
-        }
-    }
-
-    if (count) {
-        // Still need this sync after `Interrupt`?
-        check_cuda_error(cudaStreamSynchronize(stream_));
-    }
-}
-
-template<class T>
-void LlamaBatch<T>::ProcessKillRequests(const Requests& kill_reqs, std::vector<Signal>& signals)
-{
-    for (auto& r : kill_reqs) {
-        if (r) {
-            int ec = r->ec;
-            if (!ec) {
-                if (!sequence_manager_->Erase(r->id)) {
+                if (occurrence[r->id] != 1) {
+                    ec = Request::kConflict;
+                }
+                else if (r->start_flag && r->stop_flag) {
                     ec = Request::kInvalid;
                 }
-            }
-            signals.push_back([=] {
-                if (r->end_cb) {
-                    r->end_cb(ec);
+                else if (input_length > session_len_) {
+                    ec = Request::kTooLong;
                 }
-            });
+                else if (!r->start_flag) {
+                    if (auto seq = sequence_manager_->Get(r->id); seq == nullptr) {
+                        ec = Request::kInvalid;
+                    }
+                    else if (get_offset(seq->tokens.size()) + input_length > session_len_) {
+                        ec = Request::kTooLong;
+                    }
+                }
+
+                if (ec) {
+                    reject(type, r, ec);
+                }
+            }
         }
+    };
+
+    auto drop_invalid = [](Requests& rs) {
+        int count = 0;
+        for (int i = 0; i < rs.size(); ++i) {
+            if (rs[i]) {
+                rs[count++] = std::move(rs[i]);
+            }
+        }
+        rs.resize(count);
+    };
+
+    count_occurrence(stop_reqs);
+    count_occurrence(infer_reqs);
+
+    if (!stop_reqs.empty()) {
+        handle_conflict_or_invalid(stop_reqs, "stop");
+
+        // invalidate stop-only requests for inactive sequences
+        for (auto& r : stop_reqs) {
+            if (r && r->end_flag == false) {
+                int ec = Request::kInactive;
+                for (int i = 0; i < state_->size; ++i) {
+                    if (state_->requests[i] && state_->requests[i]->id == r->id) {
+                        ec = 0;
+                        break;
+                    }
+                }
+                if (ec) {
+                    reject("stop", r, ec);
+                }
+            }
+        }
+
+        drop_invalid(stop_reqs);
+    }
+
+    if (!infer_reqs.empty()) {
+        handle_conflict_or_invalid(infer_reqs, "infer");
+
+        // invalidate requests for busy sequences
+        for (auto& r : infer_reqs) {
+            if (r) {
+                for (int i = 0; i < state_->size; ++i) {
+                    if (state_->requests[i] && state_->requests[i]->id == r->id) {
+                        reject("infer", r, Request::kBusy);
+                        break;
+                    }
+                }
+            }
+        }
+
+        drop_invalid(infer_reqs);
     }
 }
 
 template<typename T>
-void LlamaBatch<T>::ProcessInferRequests(const Requests& reqs, std::vector<Signal>& signals)
+auto LlamaBatch<T>::ProcessStopRequests(const Requests& requests) -> std::vector<Signal>
+{
+    NvtxScope           scope("stop_request");
+    std::vector<Signal> signals;
+    int                 count = 0;
+    for (const auto& r : requests) {
+        int ec = Request::kFail;
+        // find matching active sequence
+        for (int i = 0; i < state_->size; ++i) {
+            // stop & optionally erase active sequence
+            if (state_->requests[i] && state_->requests[i]->id == r->id) {
+                ec = 0;
+                signals.push_back(Interrupt(i, true, r->end_flag));
+                ++count;
+                break;
+            }
+        }
+        // mismatch, try erase inactive sequence, in this case there is no active request to interrupt
+        if (ec && r->end_flag) {
+            if (sequence_manager_->Erase(r->id)) {
+                ec = 0;
+            }
+        }
+        signals.push_back([=] {
+            if (rank_ == 0) {
+                r->signal.set_value(ec);
+            }
+        });
+    }
+    if (count) {
+        check_cuda_error(cudaStreamSynchronize(stream_));
+    }
+    return signals;
+}
+
+template<typename T>
+void LlamaBatch<T>::ProcessInferRequests(const Requests& requests)
 {
     NvtxScope scope("infer_request");
     auto&     state = *incoming_;
@@ -200,99 +231,54 @@ void LlamaBatch<T>::ProcessInferRequests(const Requests& reqs, std::vector<Signa
     std::vector<int> existing_idx;
 
     int idx = 0;
-    for (const auto& r : reqs) {
-
-        if (tp_rank_ == 0) {
-            TM_LOG_INFO("[ProcessInferRequests] Request for %ld received.", (long)r->id);
-        }
-
-        if (r->ec) {
-            signals.push_back([r] { UpdateState(*r, r->ec, 0); });
-            continue;
-        }
-
-        const int input_length = r->inputs.at("input_ids").shape[0];
-
-        if (input_length > session_len_) {
-            signals.push_back([r] { UpdateState(*r, Request::kTooLong, 0); });
-            continue;
-        }
-
-        auto ptr = r->session.start_flag ? sequence_manager_->Create(r->id) : sequence_manager_->Get(r->id);
-        if (!ptr) {
-            signals.push_back([r] { UpdateState(*r, Request::kInvalid, 0); });
-            continue;
-        }
-
-        const int step = [&] {
-            int s = r->session.step;
-            if (s < 0) {
-                s = ptr->tokens.size();
-            }
-            else if (s > ptr->tokens.size()) {
-                if (tp_rank_ == 0) {
-                    TM_LOG_WARNING("[ProcessInferRequests] Skipping invalid step (%d) setting for ID %lu", s, ptr->id);
-                }
-                s = ptr->tokens.size();
-            }
-            return s;
-        }();
-
-        if (step + input_length > session_len_) {
-            signals.push_back([r] { UpdateState(*r, Request::kTooLong, 0); });
-            continue;
-        }
-
+    for (const auto& r : requests) {
         FT_CHECK(!state.requests[idx]);
 
-        state.requests[idx]  = r;
-        state.sequences[idx] = ptr;
+        if (rank_ == 0) {
+            TM_LOG_WARNING("[ProcessInferRequests] Request for %ld received.", (long)r->id);
+        }
+
+        state.requests[idx] = r;
+
+        // get sequence for the request
+        state.sequences[idx] = r->start_flag ? sequence_manager_->Create(r->id) : sequence_manager_->Get(r->id);
+        FT_CHECK(state.sequences[idx]);
 
         auto& seq = *state.sequences[idx];
 
-        if (step < seq.tokens.size()) {
-            // resize sequence tokens to match step
-            seq.tokens.resize(step);
-            seq.cache_len = std::min(seq.cache_len, step);
-            DropEmbeddings(seq);
+        if (int step = r->inputs[rank_].getVal<int>("step", -1); step >= 0) {
+            if (step <= seq.tokens.size()) {
+                seq.tokens.resize(step);
+                seq.cache_len = std::min(seq.cache_len, step);
+                DropEmbeddings(seq);
+            }
+            else if (rank_ == 0) {
+                TM_LOG_WARNING(
+                    "[ProcessInferRequests] Skipping invalid step (%d) setting for ID %ld", step, (long)seq.id);
+            }
         }
 
-        const int* input_ids = r->inputs.getPtr<int>("input_ids");
+        const int  input_length = r->inputs[rank_].getVal<int>("input_lengths");
+        const int* input_ids    = r->inputs[rank_].getPtr<int>("input_ids");
 
-        {
-            // `output_ids` contains all token ids of the sequences
-            const auto output_ids_base = state.output_ids + session_len_ * idx;
-            auto       d_output_ids    = output_ids_base;
-            auto       h_output_ids    = r->output_ids.getPtr<int>();
-            // copy history tokens
-            if (!seq.tokens.empty()) {
-                d_output_ids = Copy(seq.tokens.data(), seq.tokens.size(), d_output_ids);
-                h_output_ids = std::copy_n(seq.tokens.data(), seq.tokens.size(), h_output_ids);
-            }
+        // `output_ids` contains all token ids of the sequences
+        const auto output_ids_base = state.output_ids + session_len_ * idx;
+        auto       output_ids      = output_ids_base;
 
-            // copy input tokens
-            if (input_length) {
-                d_output_ids = Copy(input_ids, input_length, d_output_ids);
-                h_output_ids = std::copy_n(input_ids, input_length, h_output_ids);
-            }
-
-            // total context length (history + input)
-            state.h_prompt_length[idx]  = d_output_ids - output_ids_base;
-            state.h_context_length[idx] = d_output_ids - output_ids_base;
-            state.h_finished[idx]       = false;
+        // copy history tokens
+        if (!seq.tokens.empty()) {
+            output_ids = Copy(seq.tokens.data(), seq.tokens.size(), output_ids);
         }
 
-        // copy input tokens to prompt for prefix matching
-        if (input_length && r->session.start_flag && !r->inputs.isExist("input_embedding_ranges")) {
-            // TODO: truncate prompt to enable prefix caching for VLM
-            seq.prompt.resize(input_length);
-            std::copy_n(input_ids, input_length, seq.prompt.data());
+        // copy input tokens
+        if (input_length) {
+            output_ids = Copy(input_ids, input_length, output_ids);
         }
 
         // copy input embeddings
-        if (r->inputs.isExist("input_embedding_ranges")) {
-            const auto range_tensor = r->inputs.at("input_embedding_ranges");
-            const auto emb_tensor   = r->inputs.at("input_embeddings");
+        if (r->inputs[rank_].isExist("input_embedding_ranges")) {
+            const auto range_tensor = r->inputs[rank_].at("input_embedding_ranges");
+            const auto emb_tensor   = r->inputs[rank_].at("input_embeddings");
             const int* ranges       = range_tensor.getPtr<int>();
 
             auto check_embeddings = [&](int& num_valid_embeddings) {
@@ -330,7 +316,7 @@ void LlamaBatch<T>::ProcessInferRequests(const Requests& reqs, std::vector<Signa
                                range_tensor.toString().c_str());
             }
             else {
-                const char* emb_tensor_ptr = emb_tensor.getPtr<char>();
+                char* emb_tensor_ptr = emb_tensor.getPtr<char>();
                 for (size_t i = 0; i < num_valid_embeddings; i++) {
                     int    begin = ranges[i * 2];
                     int    end   = ranges[i * 2 + 1];
@@ -342,54 +328,74 @@ void LlamaBatch<T>::ProcessInferRequests(const Requests& reqs, std::vector<Signa
             }
         }
 
-        const int max_new_tokens = state.requests[idx]->gen_cfg.max_new_tokens;
-        state.seq_len_limit[idx] = state.h_context_length[idx] + max_new_tokens;
+        // total context length (history + input)
+        state.h_prompt_length[idx]  = output_ids - output_ids_base;
+        state.h_context_length[idx] = output_ids - output_ids_base;
+        state.h_finished[idx]       = false;
+
+        const int request_output_len = state.requests[idx]->inputs[rank_].getVal<int>("request_output_len");
+        state.seq_len_limit[idx]     = state.h_context_length[idx] + request_output_len;
         // `length_criterion` sets finish flag when step >= seq_limit_len, however when step == seq_limit_len
         // the actual sequence length is seq_limit_len + 1, hence seq_limit_len must truncated to session_len - 1
         if (state.seq_len_limit[idx] >= session_len_) {
             state.seq_len_limit[idx] = session_len_ - 1;
-            if (tp_rank_ == 0) {
+            if (rank_ == 0) {
                 const int trunc_output_len = state.seq_len_limit[idx] - state.h_context_length[idx];
                 TM_LOG_WARNING(
-                    "[ProcessInferRequests] [%ld] total sequence length (%d + %d) exceeds `session_len` (%d), `max_new_tokens` is truncated to %d",
+                    "[ProcessInferRequests] [%ld] total sequence length (%d + %d) exceeds `session_len` (%d), `request_output_len` is truncated to %d",
                     (long)seq.id,
                     state.h_context_length[idx],
-                    max_new_tokens,
+                    request_output_len,
                     (int)session_len_,
                     trunc_output_len);
             }
         }
 
         // compute rope scaling factor
-        if (r->session.start_flag) {
-            seq.rope_theta = model_->attn_param_.rope.base;
-            if (model_->attn_param_.rope.type == RopeType::kDynamic) {
-                auto scaling_factor = model_->attn_param_.rope.factor;
-                if (scaling_factor >= 1.f) {  // infer by current context length
-                    auto max_seq_len = state.h_context_length[idx];
-                    auto max_pos_emb = model_->attn_param_.rope.max_position_embeddings;
-                    if (max_seq_len > max_pos_emb) {
-                        scaling_factor = scaling_factor * max_seq_len / max_pos_emb - (scaling_factor - 1);
-                        float rope_dim = model_->attn_param_.rope.dim;
-                        seq.rope_theta *= powf(scaling_factor, rope_dim / (rope_dim - 2.f));
-                        TM_LOG_INFO("[ProcessInferRequests] %ld rope_scaling_factor: %f, rope_theta = %f",
-                                    (long)seq.id,
-                                    scaling_factor,
-                                    seq.rope_theta);
-                    }
+        if (r->start_flag) {
+            seq.rope_theta      = model_->attn_params_.rotary_embedding_base;
+            auto scaling_factor = 1.f;
+            if (r->inputs[rank_].isExist("rope_scaling_factor")) {  // runtime scaling factor
+                scaling_factor = r->inputs[rank_].getVal<float>("rope_scaling_factor");
+            }
+            else if (model_->attn_params_.rope_scaling_factor >= 1.f) {  // infer by `seq_len_limit`
+                scaling_factor   = model_->attn_params_.rope_scaling_factor;
+                auto max_seq_len = state.seq_len_limit[idx];
+                auto max_pos_emb = model_->attn_params_.max_position_embeddings;
+                if (max_seq_len > max_pos_emb) {
+                    scaling_factor = scaling_factor * max_seq_len / max_pos_emb - (scaling_factor - 1);
+                    // scaling_factor = std::max(exp2f(ceilf(log2f((float)max_seq_len / max_pos_emb) + 1.f))
+                    // - 1.f, 1.f);
                 }
+                else {
+                    scaling_factor = 1.f;
+                }
+            }
+            if (scaling_factor != 1.f) {
+                float rope_dim = model_->attn_params_.rotary_embedding_dim;
+                seq.rope_theta *= powf(scaling_factor, rope_dim / (rope_dim - 2.f));
+                TM_LOG_INFO("[ProcessInferRequests] %ld rope_scaling_factor: %f, rope_theta = %f",
+                            (long)seq.id,
+                            scaling_factor,
+                            seq.rope_theta);
             }
         }
         state.h_rope_theta[idx] = seq.rope_theta;
 
-        if (r->session.start_flag) {
+        if (r->start_flag) {
             // prepare to initialize random state for new sequence
-            h_random_seed_[idx] = r->gen_cfg.random_seed;
+            h_random_seed_[idx] = r->inputs[rank_].getVal<unsigned long long>("random_seed", 0);
         }
         else {
             // Recover device states if not a new sequence
             h_curand_state_[existing_idx.size()] = *(curandState_t*)seq.random_state.data();
             existing_idx.push_back(idx);
+        }
+
+        // ! SHARED STATE IS MODIFIED, BARRIER SYNCHRONIZATION REQUIRED
+        // assign priority based on arrival time
+        if (rank_ == 0) {
+            r->unique_id = request_count_++;
         }
 
         // increment pointer
@@ -416,9 +422,9 @@ void LlamaBatch<T>::ProcessInferRequests(const Requests& reqs, std::vector<Signa
 }
 
 template<typename T>
-int LlamaBatch<T>::AdjustMaxInputCount(GenerationState&                    g,
-                                       const std::vector<const Sequence*>& sequences,
-                                       const std::vector<int>&             context_length)
+void LlamaBatch<T>::AdjustMaxInputCount(GenerationState&                    g,
+                                        const std::vector<const Sequence*>& sequences,
+                                        const std::vector<int>&             context_length)
 {
     int input_count = 0;
     for (int i = 0; i < sequences.size(); ++i) {
@@ -440,12 +446,11 @@ int LlamaBatch<T>::AdjustMaxInputCount(GenerationState&                    g,
         x = std::max(x, input_count);
     }
 
-    // Enlarge to satisfy `max_prefill_iters_`
     input_count = std::max(g.min_input_count.front() + batch_size, num_tokens_per_iter_);
-    // Clamp to conform memory constraint
-    input_count = std::min(input_count, max_forward_token_num_);
-
-    return input_count;
+    input_count = std::min(input_count, max_context_token_num_);
+    // update max input count
+    g.max_input_count1 = input_count;
+    g.max_input_count2 = std::min(input_count + extra_tokens_per_iter_, max_context_token_num_);
 }
 
 template<typename T>
@@ -486,12 +491,14 @@ void LlamaBatch<T>::Initialize(GenerationState& g)
     process(state_);
     process(incoming_);
 
-    auto adjust = [this, &g](const Sequences& sequences, const std::vector<int>& context_length) -> int {
-        return AdjustMaxInputCount(g, sequences, context_length);
+    auto adjust = [this, &g](const Sequences&        sequences,
+                             const std::vector<int>& context_length) -> std::pair<int, int> {
+        AdjustMaxInputCount(g, sequences, context_length);
+        return {g.max_input_count1, g.max_input_count2};
     };
 
     // TM_LOG_INFO("max_input_count %d", max_input_count);
-    auto outcome = sequence_manager_->Materialize(sequences, context_lengths, priorities, 1, adjust);
+    auto outcome = sequence_manager_->Materialize(sequences, context_lengths, priorities, step_length_, adjust);
 
     if (outcome.allocation || outcome.swap_in || outcome.swap_out) {
         dbg(outcome);
@@ -558,7 +565,8 @@ void LlamaBatch<T>::Initialize(GenerationState& g)
         // Prepare intermediate buffers
         h_cu_block_counts_[0] = 0;
 
-        auto block_ptrs = h_block_ptrs_;
+        auto k_ptrs = h_k_block_ptrs_;
+        auto v_ptrs = h_v_block_ptrs_;
 
         const int batch_size = state_->active_size;
 
@@ -568,17 +576,22 @@ void LlamaBatch<T>::Initialize(GenerationState& g)
             // cumulative num of blocks
             h_cu_block_counts_[i + 1] = h_cu_block_counts_[i] + seq.blocks.size();
 
-            block_ptrs = std::transform(seq.blocks.cbegin(), seq.blocks.cend(), block_ptrs, [&](int block_id) {
-                return reinterpret_cast<uintptr_t>(sequence_manager_->GetBlockPtr(block_id));
+            FT_CHECK_WITH_INFO(h_cu_block_counts_[i + 1] <= sequence_manager_->max_block_count(),
+                               std::to_string(h_cu_block_counts_[i + 1]));
+
+            k_ptrs = std::transform(seq.blocks.cbegin(), seq.blocks.cend(), k_ptrs, [&](int block_id) {
+                return reinterpret_cast<uintptr_t>(sequence_manager_->GetKeyPtr(block_id));
+            });
+            v_ptrs = std::transform(seq.blocks.cbegin(), seq.blocks.cend(), v_ptrs, [&](int block_id) {
+                return reinterpret_cast<uintptr_t>(sequence_manager_->GetValPtr(block_id));
             });
         }
 
         static_assert(sizeof(uintptr_t) == sizeof(void*));
 
         Copy(h_cu_block_counts_, batch_size + 1, cu_block_counts_);
-        Copy(h_block_ptrs_, h_cu_block_counts_[batch_size], block_ptrs_);
-        // Copy(h_k_block_ptrs_, h_cu_block_counts_[batch_size], k_block_ptrs_);
-        // Copy(h_v_block_ptrs_, h_cu_block_counts_[batch_size], v_block_ptrs_);
+        Copy(h_k_block_ptrs_, h_cu_block_counts_[batch_size], k_block_ptrs_);
+        Copy(h_v_block_ptrs_, h_cu_block_counts_[batch_size], v_block_ptrs_);
     }
 
     const int batch_size = state_->active_size;
@@ -609,22 +622,30 @@ void LlamaBatch<T>::Initialize(GenerationState& g)
     Copy(state_->h_finished, batch_size, finished_buf_);
     Copy(state_->h_rope_theta, batch_size, rope_theta_);
 
+    // used for dispatching split-k decoding kernels
+    const int sum_seq_len =
+        std::accumulate(state_->h_context_length, state_->h_context_length + batch_size, -batch_size);
+    const int max_seq_len = *std::max_element(state_->h_context_length, state_->h_context_length + batch_size) - 1;
+
+    // TM_LOG_INFO(
+    //     "[init] batch_size = %d, max_ctx_len = %d, partial = %d", (int)batch_size, (int)max_context_len, partial);
+
     bool skip_init_sampling = std::equal(g.unique_ids.begin(),  //
                                          g.unique_ids.end() - g.partial,
                                          unique_ids.begin(),
                                          unique_ids.end() - partial);
 
+    g.sum_seq_len            = sum_seq_len;
+    g.max_seq_len            = max_seq_len;
     g.partial                = partial;
     g.partial_context_legnth = partial_len;
     g.unique_ids             = std::move(unique_ids);
     g.finished_count         = 0;
-    g.skip_init_sampling     = skip_init_sampling;
-
-    // TM_LOG_ERROR("[Initialize] batch size: %d, active size: %d", state_->size, state_->active_size);
 
     if (!skip_init_sampling) {
         g.max_init_ctx_len = max_context_len;
         g.step             = max_context_len;
+        InitializeSampling(g);
     }
 }
 
@@ -690,7 +711,7 @@ void LlamaBatch<T>::CopyState(const std::vector<std::tuple<BatchState*, BatchSta
 }
 
 template<typename T>
-void LlamaBatch<T>::AllocateBuffer(size_t batch_size, size_t session_len, int cache_block_seq_len)
+void LlamaBatch<T>::AllocateBuffer(size_t batch_size, size_t session_len)
 {
     TM_LOG_DEBUG(__PRETTY_FUNCTION__);
     const size_t batchxbeam = batch_size;
@@ -700,13 +721,22 @@ void LlamaBatch<T>::AllocateBuffer(size_t batch_size, size_t session_len, int ca
     const size_t head_dim          = model_->size_per_head_;
     const size_t local_kv_head_num = model_->local_kv_head_num_;
     // +1 padding, BlockIterator does not use predicate
-    const size_t max_batch_block_count =
-        batch_size * ((session_len + cache_block_seq_len - 1) / cache_block_seq_len) + 1;
+    const size_t max_block_count = sequence_manager_->max_block_count() + 1;
 
     context_decoder_input_buf_ =
-        (T*)allocator_->reMalloc(context_decoder_input_buf_, sizeof(T) * max_forward_token_num_ * hidden_units, false);
+        (T*)allocator_->reMalloc(context_decoder_input_buf_, sizeof(T) * max_context_token_num_ * hidden_units, false);
+    context_decoder_output_buf_ =
+        (T*)allocator_->reMalloc(context_decoder_output_buf_, sizeof(T) * max_context_token_num_ * hidden_units, false);
     context_decoder_ids_buf_ =
-        (int*)allocator_->reMalloc(context_decoder_ids_buf_, sizeof(int) * max_forward_token_num_, false);
+        (int*)allocator_->reMalloc(context_decoder_ids_buf_, sizeof(int) * max_context_token_num_, false);
+
+    tmp_k_cache_buf_ = (T*)allocator_->reMalloc(
+        tmp_k_cache_buf_, sizeof(T) * max_context_token_num_ * local_kv_head_num * head_dim, false);
+    tmp_v_cache_buf_ = (T*)allocator_->reMalloc(
+        tmp_v_cache_buf_, sizeof(T) * max_context_token_num_ * local_kv_head_num * head_dim, false);
+
+    tmp_k_ptrs_ = (void**)allocator_->reMalloc(tmp_k_ptrs_, sizeof(void*) * batch_size, false);
+    tmp_v_ptrs_ = (void**)allocator_->reMalloc(tmp_v_ptrs_, sizeof(void*) * batch_size, false);
 
     decoder_input_buf_  = (T*)allocator_->reMalloc(decoder_input_buf_, sizeof(T) * batchxbeam * hidden_units, false);
     decoder_output_buf_ = (T*)allocator_->reMalloc(decoder_output_buf_, sizeof(T) * batchxbeam * hidden_units, false);
@@ -719,16 +749,11 @@ void LlamaBatch<T>::AllocateBuffer(size_t batch_size, size_t session_len, int ca
     sequence_lengths_ = (int*)allocator_->reMalloc(sequence_lengths_, sizeof(int) * batchxbeam, false);
 
     cu_block_counts_ = (int*)allocator_->reMalloc(cu_block_counts_, sizeof(int) * (batch_size + 1));
-    block_ptrs_      = (uintptr_t*)allocator_->reMalloc(block_ptrs_, sizeof(uintptr_t) * max_batch_block_count);
+    k_block_ptrs_    = (uintptr_t*)allocator_->reMalloc(k_block_ptrs_, sizeof(uintptr_t) * max_block_count);
+    v_block_ptrs_    = (uintptr_t*)allocator_->reMalloc(v_block_ptrs_, sizeof(uintptr_t) * max_block_count);
 
-    if (!logits_buf_) {  // may be alias of local_logits_buf_
-        logits_buf_ = (T*)allocator_->reMalloc(logits_buf_, sizeof(T) * batchxbeam * vocab_size, false);
-    }
-
-    sampled_logprobs_ = (T*)allocator_->reMalloc(sampled_logprobs_, sizeof(T) * batchxbeam * kMaxLogProb, false);
-    sampled_indexes_ =
-        (uint32_t*)allocator_->reMalloc(sampled_indexes_, sizeof(uint32_t) * batchxbeam * kMaxLogProb, false);
-    sampled_nums_ = (uint32_t*)allocator_->reMalloc(sampled_nums_, sizeof(uint32_t) * batchxbeam, false);
+    logits_buf_       = (float*)allocator_->reMalloc(logits_buf_, sizeof(float) * batchxbeam * vocab_size, false);
+    local_logits_buf_ = (float*)allocator_->reMalloc(local_logits_buf_, sizeof(float) * batchxbeam * vocab_size, false);
 
     token_ids_buf_ = (int*)allocator_->reMalloc(token_ids_buf_, sizeof(int) * batchxbeam * session_len * 2, true);
 
@@ -741,21 +766,18 @@ void LlamaBatch<T>::AllocateBuffer(size_t batch_size, size_t session_len, int ca
 }
 
 template<typename T>
-void LlamaBatch<T>::AllocatePersistantBuffer(size_t max_batch_size, int cache_block_seq_len)
+void LlamaBatch<T>::AllocatePersistantBuffer(size_t max_batch_size)
 {
-    d_stop_words_ =
-        (int*)allocator_->reMalloc(d_stop_words_, sizeof(int) * max_batch_size * 2 * kMaxStopBadWordsLen, true);
-    d_bad_words_ =
-        (int*)allocator_->reMalloc(d_bad_words_, sizeof(int) * max_batch_size * 2 * kMaxStopBadWordsLen, true);
+    d_stop_words_ = (int*)allocator_->reMalloc(d_stop_words_, sizeof(int) * max_batch_size * kMaxStopBadWordsLen, true);
+    d_bad_words_  = (int*)allocator_->reMalloc(d_bad_words_, sizeof(int) * max_batch_size * kMaxStopBadWordsLen, true);
     h_stop_words_ =
-        (int*)allocator_->reMalloc(h_stop_words_, sizeof(int) * max_batch_size * 2 * kMaxStopBadWordsLen, true, true);
+        (int*)allocator_->reMalloc(h_stop_words_, sizeof(int) * max_batch_size * kMaxStopBadWordsLen, true, true);
     h_bad_words_ =
-        (int*)allocator_->reMalloc(h_bad_words_, sizeof(int) * max_batch_size * 2 * kMaxStopBadWordsLen, true, true);
+        (int*)allocator_->reMalloc(h_bad_words_, sizeof(int) * max_batch_size * kMaxStopBadWordsLen, true, true);
 
     h_min_length_    = (int*)allocator_->reMalloc(h_min_length_, sizeof(int) * max_batch_size, true, true);
     h_runtime_top_k_ = (int*)allocator_->reMalloc(h_runtime_top_k_, sizeof(int) * max_batch_size, true, true);
     h_runtime_top_p_ = (float*)allocator_->reMalloc(h_runtime_top_p_, sizeof(float) * max_batch_size, true, true);
-    h_runtime_min_p_ = (float*)allocator_->reMalloc(h_runtime_min_p_, sizeof(float) * max_batch_size, true, true);
     h_temperature_   = (float*)allocator_->reMalloc(h_temperature_, sizeof(float) * max_batch_size, true, true);
     h_repetition_penalty_ =
         (float*)allocator_->reMalloc(h_repetition_penalty_, sizeof(float) * max_batch_size, true, true);
@@ -770,9 +792,18 @@ void LlamaBatch<T>::AllocatePersistantBuffer(size_t max_batch_size, int cache_bl
     d_curand_state_ =
         (curandState_t*)allocator_->reMalloc(d_curand_state_, sizeof(curandState_t) * max_batch_size, true, false);
 
-    d_end_ids_buf_ = (int*)allocator_->reMalloc(d_end_ids_buf_, sizeof(int) * max_batch_size * kMaxEndIdsSize, false);
-    h_end_ids_buf_ =
-        (int*)allocator_->reMalloc(h_end_ids_buf_, sizeof(int) * max_batch_size * kMaxEndIdsSize, false, true);
+    d_end_ids_buf_ = (int*)allocator_->reMalloc(d_end_ids_buf_, sizeof(int) * max_batch_size, false);
+    h_end_ids_buf_ = (int*)allocator_->reMalloc(h_end_ids_buf_, sizeof(int) * max_batch_size, false, true);
+
+    sampling_params_ = {
+        {"stop_words_list", (std::byte*)h_stop_words_, (std::byte*)d_stop_words_},
+        {"bad_words_list", (std::byte*)h_bad_words_, (std::byte*)d_bad_words_},
+        {"min_length", (std::byte*)h_min_length_, nullptr},
+        {"runtime_top_k", (std::byte*)h_runtime_top_k_, nullptr},
+        {"runtime_top_p", (std::byte*)h_runtime_top_p_, nullptr},
+        {"temperature", (std::byte*)h_temperature_, nullptr},
+        {"repetition_penalty", (std::byte*)h_repetition_penalty_, nullptr},
+    };
 
     for (auto& s : states_) {
         s.output_ids = (int*)allocator_->reMalloc(s.output_ids, sizeof(int) * max_batch_size * session_len_, true);
@@ -780,19 +811,24 @@ void LlamaBatch<T>::AllocatePersistantBuffer(size_t max_batch_size, int cache_bl
             (curandState_t*)allocator_->reMalloc(s.curand_state, sizeof(curandState_t) * max_batch_size, true);
     }
 
-    const size_t max_batch_block_count =
-        max_batch_size * ((session_len_ + cache_block_seq_len - 1) / cache_block_seq_len);
+    const size_t max_block_count = sequence_manager_->max_block_count();
 
     {
+        NcclGuard barrier(model_->tensor_para_, stream_, true);
         h_input_ids_buf_ =
             (int*)allocator_->reMalloc(h_input_ids_buf_, sizeof(int) * max_batch_size * session_len_, false, true);
         h_input_length_buf_ =
             (int*)allocator_->reMalloc(h_input_length_buf_, sizeof(int) * max_batch_size, false, true);
 
+        h_tmp_k_ptrs_ = (void**)allocator_->reMalloc(h_tmp_k_ptrs_, sizeof(void*) * max_batch_size, false, true);
+        h_tmp_v_ptrs_ = (void**)allocator_->reMalloc(h_tmp_v_ptrs_, sizeof(void*) * max_batch_size, false, true);
+
         h_cu_block_counts_ =
             (int*)allocator_->reMalloc(h_cu_block_counts_, sizeof(int) * (max_batch_size + 1), false, true);
-        h_block_ptrs_ =
-            (uintptr_t*)allocator_->reMalloc(h_block_ptrs_, sizeof(uintptr_t) * max_batch_block_count, false, true);
+        h_k_block_ptrs_ =
+            (uintptr_t*)allocator_->reMalloc(h_k_block_ptrs_, sizeof(uintptr_t) * max_block_count, false, true);
+        h_v_block_ptrs_ =
+            (uintptr_t*)allocator_->reMalloc(h_v_block_ptrs_, sizeof(uintptr_t) * max_block_count, false, true);
 
         for (auto& s : states_) {
             s.h_prompt_length =
@@ -810,52 +846,7 @@ void LlamaBatch<T>::AllocatePersistantBuffer(size_t max_batch_size, int cache_bl
             (int*)allocator_->reMalloc(h_output_ids_, sizeof(int) * max_batch_size * session_len_, false, true);
     }
 
-    h_sampled_logprobs_ =
-        (T*)allocator_->reMalloc(h_sampled_logprobs_, sizeof(T) * max_batch_size * kMaxLogProb, false, true);
-    h_sampled_indexes_ = (uint32_t*)allocator_->reMalloc(
-        h_sampled_indexes_, sizeof(uint32_t) * max_batch_size * kMaxLogProb, false, true);
-    h_sampled_nums_ = (uint32_t*)allocator_->reMalloc(h_sampled_nums_, sizeof(uint32_t) * max_batch_size, false, true);
-
     is_allocate_persistant_buffer_ = true;
-}
-
-template<class T>
-void LlamaBatch<T>::AllocCommBuffers()
-{
-    const size_t hidden_units      = model_->hidden_units_;
-    const size_t vocab_size_padded = model_->vocab_size_padded_;
-
-    // Native comm fuses allreduce & rmsnorm in token granularity
-    const size_t max_fwd_token_num = ((size_t)max_forward_token_num_ + tp_size_ - 1) / tp_size_ * tp_size_;
-
-    // TODO: rename this to hidden_states
-    context_decoder_output_buf_ =
-        (T*)CommBufAlloc(sizeof(T) * param_.attn_dp_size * max_fwd_token_num * hidden_units, true);
-
-    local_logits_buf_ = (T*)CommBufAlloc(sizeof(T) * max_batch_size_ * vocab_size_padded, true);
-    if (model_->use_allgather_2d_) {
-        logits_buf_ = local_logits_buf_;
-    }
-}
-
-template<class T>
-void LlamaBatch<T>::FreeCommBuffers()
-{
-    CommBufFree((void**)&context_decoder_output_buf_, true);
-
-    if (local_logits_buf_) {
-        if (logits_buf_ == local_logits_buf_) {
-            logits_buf_ = {};
-        }
-        CommBufFree((void**)&local_logits_buf_, true);
-    }
-
-    if (local_context_logits_buf_) {
-        if (context_logits_buf_ == local_context_logits_buf_) {
-            context_logits_buf_ = {};
-        }
-        CommBufFree((void**)&local_context_logits_buf_, true);
-    }
 }
 
 template<typename T>
@@ -864,9 +855,13 @@ void LlamaBatch<T>::FreeBuffer()
     TM_LOG_DEBUG(__PRETTY_FUNCTION__);
     if (is_allocate_buffer_) {
         allocator_->free((void**)&context_decoder_input_buf_);
-
+        allocator_->free((void**)&context_decoder_output_buf_);
         allocator_->free((void**)&context_decoder_ids_buf_);
-        allocator_->free((void**)&lora_mask_buf_);
+
+        allocator_->free((void**)&tmp_k_cache_buf_);
+        allocator_->free((void**)&tmp_v_cache_buf_);
+        allocator_->free((void**)&tmp_k_ptrs_);
+        allocator_->free((void**)&tmp_v_ptrs_);
 
         allocator_->free((void**)&decoder_input_buf_);
         allocator_->free((void**)&decoder_output_buf_);
@@ -879,10 +874,14 @@ void LlamaBatch<T>::FreeBuffer()
         allocator_->free((void**)&sequence_lengths_);
 
         allocator_->free((void**)&cu_block_counts_);
-        allocator_->free((void**)&block_ptrs_);
+        allocator_->free((void**)&k_block_ptrs_);
+        allocator_->free((void**)&v_block_ptrs_);
 
-        if (logits_buf_) {
-            allocator_->free((void**)&logits_buf_);
+        allocator_->free((void**)&logits_buf_);
+        allocator_->free((void**)&local_logits_buf_);
+
+        if (local_context_logits_buf_) {
+            allocator_->free((void**)&local_context_logits_buf_);
         }
         if (context_logits_buf_) {
             allocator_->free((void**)&context_logits_buf_);
@@ -897,10 +896,6 @@ void LlamaBatch<T>::FreeBuffer()
         allocator_->free((void**)&seq_limit_len_);
 
         allocator_->free((void**)&rope_theta_);
-
-        allocator_->free((void**)&sampled_logprobs_);
-        allocator_->free((void**)&sampled_indexes_);
-        allocator_->free((void**)&sampled_nums_);
 
         is_allocate_buffer_ = false;
     }
@@ -923,99 +918,59 @@ void LlamaBatch<T>::FreeBuffer()
             allocator_->free((void**)&s.output_ids);
             allocator_->free((void**)&s.curand_state);
         }
+        allocator_->free((void**)&h_tmp_k_ptrs_, true);
+        allocator_->free((void**)&h_tmp_v_ptrs_, true);
         allocator_->free((void**)&h_cu_block_counts_, true);
-        allocator_->free((void**)&h_block_ptrs_, true);
+        allocator_->free((void**)&h_k_block_ptrs_, true);
+        allocator_->free((void**)&h_v_block_ptrs_, true);
         allocator_->free((void**)&h_input_ids_buf_, true);
         allocator_->free((void**)&h_input_length_buf_, true);
         allocator_->free((void**)&h_seq_limit_len_, true);
 
         allocator_->free((void**)&h_output_ids_, true);
 
-        allocator_->free((void**)&h_sampled_logprobs_);
-        allocator_->free((void**)&h_sampled_indexes_);
-        allocator_->free((void**)&h_sampled_nums_);
-
         is_allocate_persistant_buffer_ = false;
     }
 }
 
 template<typename T>
-LlamaBatch<T>::~LlamaBatch()
-{
-    TM_LOG_DEBUG("~LlamaBatch()");
-
-    internal_thread_.join();
-
-    // The dtor maybe called from unknown thread, set device id before CUDA calls
-    cudaSetDevice(device_id_);
-    cudaStreamSynchronize(stream_);
-
-    FreeBuffer();
-
-    model_.reset();
-    sequence_manager_.reset();
-    context_.reset();  // This destroy all objects in context except for `stream`
-}
-
-template<typename T>
-LlamaBatch<T>::LlamaBatch(const EngineParam&          param,
-                          std::unique_ptr<LlamaV2<T>> model,  // ! This is moved
-                          std::unique_ptr<Context<T>> ctx,    // ! This is moved
-                          std::shared_ptr<Gateway>    gateway,
-                          int                         device_id,
-                          int                         dp_rank):
-    param_(param),
-    gateway_(gateway),
-    max_batch_size_(param.max_batch_size),
-    max_forward_token_num_(param.max_prefill_token_num + param.max_batch_size),
-    max_context_token_num_(param.max_context_token_num),
-    num_tokens_per_iter_(param.num_tokens_per_iter),
-    max_prefill_iters_(param.max_prefill_iters),
-    device_id_(device_id),
-    dp_rank_(dp_rank),
-    tp_size_(model->tp_size_),
-    tp_rank_(model->tp_rank_),
+LlamaBatch<T>::LlamaBatch(const EngineParams& params, int cache_block_seq_len, int quant_policy, LlamaV2<T>* model):
+    max_batch_size_(params.max_batch_size),
+    max_context_token_num_(params.max_context_token_num),
+    session_len_(params.session_len),
+    rank_(model->tensor_para_.rank_),
+    debug_(model->debug_),
+    step_length_(params.step_length),
+    model_(model),
     data_type_(getTensorType<T>()),
-    debug_(isDebug()),
-    stream_(ctx->stream),
-    allocator_(ctx->allocator.get()),
-    cublas_wrapper_(ctx->cublas_wrapper.get()),
-    context_(std::move(ctx)),
-    model_(std::move(model)),
-    comm_(context_->comm),
-    session_len_(param.session_len)
+    num_tokens_per_iter_(params.num_tokens_per_iter),
+    extra_tokens_per_iter_(params.extra_tokens_per_iter),
+    max_prefill_iters_(params.max_prefill_iters)
 {
-    const auto cache_block_seq_len = model_->attn_param_.cache_block_seq_len;
+    stream_         = model_->stream_;
+    allocator_      = model_->allocator_;
+    cublas_wrapper_ = model_->cublas_wrapper_;
 
-    const auto quant_policy = model_->param_.quant_policy;
-    const int  elem_bits    = quant_policy ? quant_policy : bitsof<T>;
+    const size_t elem_bits = (quant_policy & QuantPolicy::kCacheKVInt8) ? 8 : sizeof(T) * 8;
 
-    SequenceManager::BlockConfig block_config{
-        (int)model_->size_per_head_,
-        (int)model_->local_kv_head_num_,
-        cache_block_seq_len,
-        elem_bits == bitsof<T> ? 0 : bitsof<T>,
-        elem_bits,
+    auto get_free_size = [&] {
+        return GetSyncFreeMemSize(*model_->shared_state_->barrier, model_->shared_state_->free_size);
     };
 
-    const auto get_free_size = [&] {  //
-        size_t free{}, total{};
-        check_cuda_error(cudaMemGetInfo(&free, &total));
-        return AllReduce(model_->comm_->h_tp_group, free, comm::RedOp::kMin);
-    };
-
-    sequence_manager_.reset(new SequenceManager{model_->layer_num_,
-                                                block_config,
-                                                param.cache_max_block_count,
-                                                param.cache_chunk_size,
-                                                param.enable_prefix_caching,
-                                                tp_rank_,
+    sequence_manager_.reset(new SequenceManager{model_->num_layer_,
+                                                model_->local_kv_head_num_,
+                                                model_->size_per_head_,
+                                                (size_t)cache_block_seq_len,
+                                                params.cache_max_block_count,
+                                                params.cache_chunk_size,
+                                                elem_bits,
+                                                model->tensor_para_.rank_,
                                                 allocator_,
                                                 get_free_size});
 
     const size_t max_session_len = sequence_manager_->max_block_count() * cache_block_seq_len;
     if (max_session_len < session_len_) {
-        if (tp_rank_ == 0) {
+        if (rank_ == 0) {
             TM_LOG_WARNING("No enough blocks for `session_len` (%d), `session_len` truncated to %d.",
                            session_len_,
                            max_session_len);
@@ -1024,26 +979,19 @@ LlamaBatch<T>::LlamaBatch(const EngineParam&          param,
     }
 
     FT_CHECK(max_context_token_num_ >= session_len_);
-    FT_CHECK(max_forward_token_num_ >= max_batch_size_);
 
     for (auto& s : states_) {
         s.requests.resize(max_batch_size_);
         s.sequences.resize(max_batch_size_);
         s.seq_len_limit.resize(max_batch_size_);
-        s.errors.resize(max_batch_size_);
     }
 
     state_    = &states_[0];
     back_     = &states_[1];
     incoming_ = &states_[2];
 
-    AllocCommBuffers();
-
-    AllocateBuffer(max_batch_size_, session_len_, cache_block_seq_len);
-    AllocatePersistantBuffer(max_batch_size_, cache_block_seq_len);
-
-    // Wait for allocations
-    check_cuda_error(cudaStreamSynchronize(stream_));
+    AllocateBuffer(max_batch_size_, session_len_);
+    AllocatePersistantBuffer(max_batch_size_);
 }
 
 template<typename T>
@@ -1067,7 +1015,7 @@ void LlamaBatch<T>::InitializeSampling(const GenerationState& g)
     sync_check_cuda_error();
 
     Clear(token_ids_buf_, batch_size * session_len_);
-    invokeTranspose2D(token_ids_buf_, state_->output_ids, batch_size, session_len_, stream_);
+    invokeTransposeAxis01(token_ids_buf_, state_->output_ids, batch_size, session_len_, 1, stream_);
     sync_check_cuda_error();
 
     // token_ids_buf_[s, b]
@@ -1086,79 +1034,40 @@ void LlamaBatch<T>::InitializeSampling(const GenerationState& g)
     Copy(h_seq_limit_len_, batch_size, seq_limit_len_);
 
     TensorMap inputs;
-
-    auto member_to_tensor = [&](auto getter, auto key, auto dest, auto init) {
-        int count = 0;
+    for (const auto& [name, h_ptr, d_ptr] : sampling_params_) {
+        // find an exemplar that matches the param name
+        const Tensor* ptr{};
         for (int i = 0; i < batch_size; ++i) {
-            // `std::invoke`
-            dest[i] = state_->requests[i]->gen_cfg.*getter;
-            count += dest[i] != init;
-        }
-        if (count) {
-            inputs.insert(key, {MEMORY_CPU, getTensorType<decltype(init)>(), {(size_t)batch_size}, dest});
-        }
-    };
-
-    using G = GenerationConfig;
-    member_to_tensor(&G::top_k, "runtime_top_k", h_runtime_top_k_, 0);
-    member_to_tensor(&G::top_p, "runtime_top_p", h_runtime_top_p_, 0);
-    member_to_tensor(&G::min_p, "runtime_min_p", h_runtime_min_p_, 0);
-    member_to_tensor(&G::temperature, "temperature", h_temperature_, 1.f);
-    member_to_tensor(&G::repetition_penalty, "repetition_penalty", h_repetition_penalty_, 1.f);
-    member_to_tensor(&G::min_new_tokens, "min_length", h_min_length_, 0);
-
-    auto init_stop_bad_words = [&](auto getter, auto key, auto h_buf, auto d_buf) {
-        int                                     max_length = 0;
-        std::vector<std::pair<const int*, int>> copy_tokens(batch_size);
-        std::vector<std::pair<const int*, int>> copy_offsets(batch_size);
-        for (int i = 0; i < batch_size; ++i) {
-            const auto& [token_ids, offsets] = std::invoke(getter, state_->requests[i]->gen_cfg);
-            if (offsets.size() == 0 || token_ids.size() == 0) {
-                continue;
+            if (state_->requests[i]->inputs[rank_].isExist(name)) {
+                ptr = &state_->requests[i]->inputs[rank_].at(name);
+                break;
             }
-            FT_CHECK(offsets.back() == token_ids.size());
-            if (offsets.back() <= kMaxStopBadWordsLen) {
-                copy_tokens[i]  = std::make_pair(token_ids.data(), (int)token_ids.size());
-                copy_offsets[i] = std::make_pair(offsets.data(), (int)offsets.size());
-                max_length      = std::max(max_length, (int)token_ids.size());
-            }
-            else {
-                auto trunc_offset_size =
-                    std::upper_bound(offsets.begin(),
-                                     offsets.begin() + std::min(kMaxStopBadWordsLen, (int)offsets.size()),
-                                     kMaxStopBadWordsLen)
-                    - offsets.begin();
-                TM_LOG_WARNING("[InitializeSampling] [%ld] %s length (%d) exceeds %d, truncated to %d",
-                               state_->requests[i]->id,
-                               key,
-                               offsets.back(),
-                               kMaxStopBadWordsLen,
-                               trunc_offset_size);
-                if (trunc_offset_size > 0) {
-                    int trunc_token_size = offsets[trunc_token_size - 1];
-                    copy_tokens[i]       = std::make_pair(token_ids.data(), trunc_token_size);
-                    copy_offsets[i]      = std::make_pair(offsets.data(), trunc_offset_size);
-                    max_length           = std::max(max_length, trunc_token_size);
+        }
+        // fill the batch of the param
+        if (ptr) {
+            const auto& ref   = *ptr;
+            auto        shape = ref.shape;
+            FT_CHECK(shape[0] == 1);
+            shape[0]                = batch_size;
+            const int size_in_bytes = ref.sizeBytes();
+            memset(h_ptr, 0, size_in_bytes * batch_size);
+            for (int i = 0; i < batch_size; ++i) {
+                FT_CHECK(state_->requests[i] != nullptr);
+                if (state_->requests[i]->inputs[rank_].isExist(name)) {
+                    Tensor& src = state_->requests[i]->inputs[rank_].at(name);
+                    FT_CHECK(ref.shape == src.shape);
+                    std::copy_n(src.getPtr<std::byte>(), size_in_bytes, h_ptr + size_in_bytes * i);
                 }
             }
-        }
-        if (!max_length) {
-            return;
-        }
-        std::fill_n(h_buf, batch_size * 2 * max_length, -1);
-        for (int i = 0; i < batch_size; ++i) {
-            if (copy_tokens[i].first != nullptr) {
-                std::copy_n(copy_tokens[i].first, copy_tokens[i].second, h_buf + i * 2 * max_length);
+            if (d_ptr) {
+                Copy(h_ptr, batch_size * size_in_bytes, d_ptr);
             }
-            if (copy_offsets[i].first != nullptr) {
-                std::copy_n(copy_offsets[i].first, copy_offsets[i].second, h_buf + i * 2 * max_length + max_length);
+            inputs.insert({name, {d_ptr ? MEMORY_GPU : MEMORY_CPU, ref.type, shape, d_ptr ? d_ptr : h_ptr}});
+            if (debug_ && rank_ == 0) {
+                TM_LOG_INFO("[initializeSampling] %s", format({name, inputs.at(name)}).c_str());
             }
         }
-        Copy(h_buf, batch_size * 2 * max_length, d_buf);
-        inputs.insert(key, {MEMORY_GPU, TYPE_INT32, {(size_t)batch_size, (size_t)2, (size_t)max_length}, d_buf});
-    };
-    init_stop_bad_words(&G::stop_ids, "stop_words_list", h_stop_words_, d_stop_words_);
-    init_stop_bad_words(&G::bad_ids, "bad_words_list", h_bad_words_, d_bad_words_);
+    }
 
     // MinLengthPenalty
     if (inputs.isExist("min_length")) {
@@ -1167,224 +1076,92 @@ void LlamaBatch<T>::InitializeSampling(const GenerationState& g)
     }
 
     // init for eos
-    auto init_for_eos = [&] {
-        int max_length = 0;
-        for (int i = 0; i < batch_size; ++i) {
-            max_length = std::max(max_length, (int)state_->requests[i]->gen_cfg.eos_ids.size());
-        }
-        if (max_length) {
-            max_length     = std::min(max_length, kMaxEndIdsSize);
-            int* h_end_ids = h_end_ids_buf_;
-            std::fill(h_end_ids, h_end_ids + std::min(kMaxEndIdsSize, max_length) * batch_size, -1);
-            for (int i = 0; i < batch_size; ++i) {
-                const auto& eos_ids = state_->requests[i]->gen_cfg.eos_ids;
-                if (eos_ids.size() == 0) {
-                    continue;
-                }
-                if (eos_ids.size() > kMaxEndIdsSize) {
-                    TM_LOG_WARNING("[InitializeSampling] [%ld] eos length (%d) exceeds %d, truncated to %d",
-                                   (long)state_->requests[i]->id,
-                                   (int)eos_ids.size(),
-                                   kMaxEndIdsSize,
-                                   kMaxEndIdsSize);
-                }
-                std::copy_n(eos_ids.begin(), std::min((int)eos_ids.size(), kMaxEndIdsSize), h_end_ids);
-                h_end_ids += max_length;
-            }
-            Copy(h_end_ids_buf_, batch_size * max_length, d_end_ids_buf_);
-            inputs.insert("end_ids",
-                          {MEMORY_GPU, TYPE_INT32, {(size_t)batch_size, (size_t)max_length}, d_end_ids_buf_});
-        }
-    };
-    init_for_eos();
+    std::fill_n(h_end_ids_buf_, batch_size, model_->end_id_);
+    Copy(h_end_ids_buf_, batch_size, d_end_ids_buf_);
+    inputs.insert({"end_id", {MEMORY_GPU, TYPE_INT32, {(size_t)batch_size}, d_end_ids_buf_}});
 
     inputs_ = std::move(inputs);
 
+    model_->dynamic_decode_layer_->setup(batch_size, 1, &inputs_);
+}
+
+template<typename T>
+void LlamaBatch<T>::OutputContextLogits(T*                                  context_decoder_output,
+                                        const std::vector<int>&             indices,
+                                        const std::vector<int>&             lengths,
+                                        const std::vector<const Sequence*>& sequences)
+{
+    std::vector<float*> output_logits;
+    int                 num_token = 0;
     {
-        NvtxScope setup("DynamicDecodeLayer.setup");
-        model_->dynamic_decode_layer_->setup(batch_size, 1, &inputs_);
-    }
-
-    TensorMap outputs;
-    for (int i = 0; i < batch_size; i++) {
-        if (state_->requests[i]->gen_cfg.output_logprobs) {
-            outputs.insert({"sampled_logprobs",
-                            {MEMORY_GPU, getTensorType<T>(), {(size_t)batch_size, 1, kMaxLogProb}, sampled_logprobs_}});
-            outputs.insert(
-                {"sampled_indexes", {MEMORY_GPU, TYPE_UINT32, {(size_t)batch_size, 1, kMaxLogProb}, sampled_indexes_}});
-            outputs.insert({"sampled_nums", {MEMORY_GPU, TYPE_UINT32, {(size_t)batch_size, 1}, sampled_nums_}});
-
-            break;
-        }
-    }
-    outputs_ = std::move(outputs);
-    sync_check_cuda_error();
-}
-
-template<class T>
-void LlamaBatch<T>::ComputeAndOutputLogits(T* hidden_states, int first, int last)
-{
-    int  token_num = 0;
-    bool found     = false;
-    for (int i = first; i < last; ++i) {
-        if (state_->requests[i]->gen_cfg.output_logits == GenerationConfig::kAll) {
-            const auto& s = *state_->sequences[i];
-            // Skip when the seq is filling missed cache only
-            if (s.cache_len + h_input_length_buf_[i] > s.tokens.size()) {
-                found = true;
+        bool is_return_logits = false;
+        for (int k = 0; k < indices.size(); ++k) {
+            auto& request = state_->requests[indices[k]];
+            auto  logits  = request->outputs[rank_].getPtr<float>("logits", nullptr);
+            if (logits && sequences[k]->cache_len + lengths[k] <= sequences[k]->tokens.size()) {
+                logits = nullptr;
+            }
+            output_logits.push_back(logits);
+            num_token += lengths[k];
+            if (output_logits.back()) {
+                is_return_logits = true;
             }
         }
-        token_num += h_input_length_buf_[i];
-    }
-
-    if (!found) {
-        return;
-    }
-
-    if (tp_size_ > 1) {
-        FT_CHECK(model_->vocab_size_padded_ % tp_size_ == 0);
-        const size_t byte_size = sizeof(T) * model_->vocab_size_padded_ * token_num;
-
-        if (local_context_logits_buf_size_ < byte_size) {
-            check_cuda_error(cudaStreamSynchronize(stream_));
-            comm_.h_tp_group->Sync();
-
-            CommBufFree((void**)&local_context_logits_buf_, true);
-            local_context_logits_buf_      = (T*)CommBufAlloc(byte_size, true);
-            local_context_logits_buf_size_ = byte_size;
-
-            check_cuda_error(cudaStreamSynchronize(stream_));
-            comm_.h_tp_group->Sync();
+        if (!is_return_logits) {
+            return;
         }
     }
 
-    if (model_->use_allgather_2d_) {
-        // No intermediate transpose needed
-        context_logits_buf_ = local_context_logits_buf_;
-    }
-    else {
+    if (context_logits_buf_ == nullptr) {
+        NcclGuard guard(model_->tensor_para_, stream_, true);
         context_logits_buf_ =
-            (T*)allocator_->reMalloc(context_logits_buf_, sizeof(T) * model_->vocab_size_padded_ * token_num, false);
-    }
-
-    model_->postDecodeEmbedding(context_logits_buf_, local_context_logits_buf_, hidden_states, token_num);
-
-    if (tp_rank_ != 0) {
-        return;
-    }
-
-    OutputLogits(context_logits_buf_, first, last, GenerationConfig::kAll);
-}
-
-template<typename T>
-void LlamaBatch<T>::OutputLogits(const T* logits, int first, int last, GenerationConfig::OutType out_type)
-{
-    // when `is_all` is true, logits only contains last token of the sequences
-    const bool is_all = out_type == GenerationConfig::kAll;
-
-    for (int i = first; i < last; ++i) {
-
-        const int input_len = h_input_length_buf_[i];  // input lenght for this iter
-        const T*  src_ptr   = logits;
-
-        logits += (is_all ? input_len : 1) * model_->vocab_size_padded_;
-
-        if (state_->requests[i]->gen_cfg.output_logits == out_type) {
-
-            auto dst_ptr = state_->requests[i]->outputs.getPtr<T>("logits");
-
-            const int cache_len   = state_->sequences[i]->cache_len;
-            const int history_len = state_->sequences[i]->tokens.size();
-
-            // ----------H------I-------P-----------
-            //      C        C      C         C
-
-            // offset to the last token prompt
-            const int offset = is_all ? 0 : state_->requests[i]->inputs.at("input_ids").shape[0] - 1;
-
-            int diff = (history_len + offset) - cache_len;
-
-            const int valid_len = input_len - std::max(0, (history_len + offset) - cache_len);
-
-            // TM_LOG_ERROR("%d %d   %d %d  %d  %d %d",
-            //              history_len,
-            //              offset,
-            //              cache_len,
-            //              input_len,
-            //              valid_len,
-            //              std::max(0, diff),
-            //              std::max(0, -diff));
-
-            if (valid_len <= 0) {
-                continue;
-            }
-
-            if (is_all) {
-                // Skip invalid tokens caused by cache miss
-                src_ptr += std::max(0, (history_len + offset) - cache_len) * model_->vocab_size_padded_;
-            }
-            // Skip previous chunks
-            dst_ptr += std::max(0, cache_len - (history_len + offset)) * model_->vocab_size_;
-
-            check_cuda_error(cudaMemcpy2DAsync(dst_ptr,
-                                               sizeof(T) * model_->vocab_size_,
-                                               src_ptr,
-                                               sizeof(T) * model_->vocab_size_padded_,
-                                               sizeof(T) * model_->vocab_size_,
-                                               valid_len,
-                                               cudaMemcpyDefault,
-                                               stream_));
+            (float*)allocator_->malloc(sizeof(float) * model_->vocab_size_padded_ * max_context_token_num_);
+        const auto tp = model_->tensor_para_.world_size_;
+        if (tp > 1) {
+            FT_CHECK(model_->vocab_size_padded_ % tp == 0);
+            const auto local_vocab_size = model_->vocab_size_padded_ / tp;
+            local_context_logits_buf_ =
+                (float*)allocator_->malloc(sizeof(float) * model_->vocab_size_padded_ * max_context_token_num_);
         }
     }
-}
 
-template<class T>
-void LlamaBatch<T>::OutputLastHiddenState(const T* hidden_states, int first, int last)
-{
-    for (int i = first; i < last; ++i) {
+    model_->postDecodeEmbedding(context_logits_buf_, local_context_logits_buf_, context_decoder_output, num_token);
 
-        const int input_len = h_input_length_buf_[i];  // input lenght for this iter
-        const T*  src_ptr   = hidden_states;
+    auto logits = context_logits_buf_;
 
-        hidden_states += input_len * model_->hidden_units_;
-
-        if (auto out_type = state_->requests[i]->gen_cfg.output_last_hidden_state) {
-
-            const bool is_all = out_type == GenerationConfig::kAll;
-
-            T* dst_ptr = state_->requests[i]->outputs.getPtr<T>("last_hidden_state");
-
-            const int cache_len   = state_->sequences[i]->cache_len;
-            const int history_len = state_->sequences[i]->tokens.size();
-
-            // offset to the last prompt token
-            const int offset = is_all ? 0 : state_->requests[i]->inputs.at("input_ids").shape[0] - 1;
-
-            const int valid_len = input_len - std::max(0, (history_len + offset) - cache_len);
-
-            // TM_LOG_ERROR("%d %d %d %d %d", history_len, offset, cache_len, input_len, valid_len);
-
-            if (valid_len <= 0) {
-                continue;
+    for (int k = 0; k < indices.size(); ++k) {
+        if (output_logits[k]) {
+            auto src_ptr       = logits;
+            auto dst_ptr       = output_logits[k];
+            int  num_new_token = 0;
+            if (sequences[k]->cache_len < sequences[k]->tokens.size()) {
+                num_new_token = sequences[k]->cache_len + lengths[k] - sequences[k]->tokens.size();
+                src_ptr += (lengths[k] - num_new_token) * model_->vocab_size_padded_;
             }
-
-            // Skip invalid tokens caused by cache miss
-            src_ptr += std::max(0, (history_len + offset) - cache_len) * model_->hidden_units_;
-            // Skip previous chunks
-            dst_ptr += std::max(0, cache_len - (history_len + offset)) * model_->hidden_units_;
-
-            Copy(src_ptr, valid_len * model_->hidden_units_, dst_ptr);
+            else {
+                num_new_token = lengths[k];
+                dst_ptr += (sequences[k]->cache_len - sequences[k]->tokens.size()) * model_->vocab_size_;
+            }
+            if (model_->vocab_size_padded_ == model_->vocab_size_) {
+                Copy(src_ptr, model_->vocab_size_ * num_new_token, dst_ptr);
+            }
+            else {
+                for (int tok = 0; tok < num_new_token; tok++) {
+                    Copy(src_ptr, model_->vocab_size_, dst_ptr);
+                    src_ptr += model_->vocab_size_padded_;
+                    dst_ptr += model_->vocab_size_;
+                }
+            }
         }
+        logits += model_->vocab_size_padded_ * lengths[k];
     }
 }
 
 template<typename T>
-void LlamaBatch<T>::Finish(GenerationState& g, std::vector<Signal>& signals)
+auto LlamaBatch<T>::Finish(GenerationState& g) -> std::vector<Signal>
 {
     NvtxScope scope("Finish");
     const int batch_size = state_->active_size;
-
-    signals.reserve(batch_size);
 
     if (batch_size - g.partial) {
         FT_CHECK(g.step >= 0);
@@ -1401,22 +1178,9 @@ void LlamaBatch<T>::Finish(GenerationState& g, std::vector<Signal>& signals)
         sync_check_cuda_error();
     }
 
-    Copy(token_ids_buf_ + (g.step - 1) * (batch_size - g.partial), batch_size - g.partial, h_output_ids_);
+    Copy(state_->output_ids, batch_size * session_len_, h_output_ids_);
     Copy(finished_buf_, batch_size, state_->h_finished);
     Copy(sequence_lengths_, batch_size, state_->h_context_length);
-
-    bool output_logprobs = false;
-    for (int i = 0; i < batch_size - g.partial; ++i) {
-        if (state_->requests[i]->gen_cfg.output_logprobs) {
-            output_logprobs = true;
-            break;
-        }
-    }
-    if (output_logprobs) {
-        Copy(sampled_logprobs_, batch_size * kMaxLogProb, h_sampled_logprobs_);
-        Copy(sampled_indexes_, batch_size * kMaxLogProb, h_sampled_indexes_);
-        Copy(sampled_nums_, batch_size, h_sampled_nums_);
-    }
 
     check_cuda_error(cudaStreamSynchronize(stream_));
 
@@ -1426,74 +1190,22 @@ void LlamaBatch<T>::Finish(GenerationState& g, std::vector<Signal>& signals)
         ++state_->h_context_length[i];
     }
 
-    // ! Only rank-0 writes to output
-    if (tp_rank_ == 0 && output_logprobs) {
-        NvtxScope scope("logprobs");
-        // output logprobs, should be set before sequence_length
-        T*        sampled_logprobs_ptr = h_sampled_logprobs_;
-        uint32_t* sampled_indexes_ptr  = h_sampled_indexes_;
-        uint32_t* sampled_nums_ptr     = h_sampled_nums_;
+    {  // set output tokens ids and sequence length
+        int* output_ptr = h_output_ids_;
         for (int i = 0; i < batch_size - g.partial; ++i) {
-            if (state_->requests[i] && state_->requests[i]->gen_cfg.output_logprobs) {
-                auto logprob_vals    = state_->requests[i]->outputs.getPtr<T>("logprob_vals");
-                auto logprob_indexes = state_->requests[i]->outputs.getPtr<uint32_t>("logprob_indexes");
-                auto logprob_nums    = state_->requests[i]->outputs.getPtr<uint32_t>("logprob_nums");
-
-                int offset = state_->h_context_length[i] - state_->h_prompt_length[i] - 1;
-                std::copy(sampled_logprobs_ptr,
-                          sampled_logprobs_ptr + *sampled_nums_ptr,
-                          logprob_vals + offset * kMaxLogProb);
-                std::copy(sampled_indexes_ptr,
-                          sampled_indexes_ptr + *sampled_nums_ptr,
-                          logprob_indexes + offset * kMaxLogProb);
-                *(logprob_nums + offset) = *sampled_nums_ptr;
+            if (state_->requests[i] && (state_->requests[i]->stream_cb || state_->h_finished[i])) {
+                auto      output_ids = state_->requests[i]->outputs[rank_].getPtr<int>("output_ids");
+                auto      output_len = state_->requests[i]->outputs[rank_].getPtr<int>("sequence_length");
+                const int count      = state_->h_context_length[i];
+                // TODO: sync history output tokens at when receiving the request and copy the last token here
+                std::copy(output_ptr, output_ptr + count, output_ids);
+                *output_len = count;
             }
-            sampled_logprobs_ptr += kMaxLogProb;
-            sampled_indexes_ptr += kMaxLogProb;
-            sampled_nums_ptr++;
+            output_ptr += session_len_;
         }
     }
 
-    // ! Only rank-0 writes to output
-    if (tp_rank_ == 0) {
-        NvtxScope scope("output_ids");
-        if constexpr (0) {
-            // set output tokens ids and sequence length
-            int* output_ptr = h_output_ids_;
-            for (int i = 0; i < batch_size - g.partial; ++i) {
-                if (auto& r = state_->requests[i]) {
-                    auto      output_ids = static_cast<int*>(r->output_ids.data);
-                    auto      output_len = static_cast<int*>(r->sequence_length.data);
-                    const int count      = state_->h_context_length[i];
-                    if (r->stream_output) {
-                        output_ids[count - 1] = output_ptr[count - 1];
-                        *output_len           = count;
-                    }
-                    else if (state_->h_finished[i]) {
-                        std::copy(output_ptr, output_ptr + count, output_ids);
-                        *output_len = count;
-                    }
-                }
-                output_ptr += session_len_;
-            }
-        }
-        else {
-            for (int i = 0; i < batch_size - g.partial; ++i) {
-                if (auto& r = state_->requests[i]) {
-                    auto      output_ids  = static_cast<int*>(r->output_ids.data);
-                    auto      output_len  = static_cast<int*>(r->sequence_length.data);
-                    const int count       = state_->h_context_length[i];
-                    output_ids[count - 1] = h_output_ids_[i];
-                    *output_len           = count;
-                }
-            }
-        }
-    }
-
-    // Cache computed blocks to block trie
-    sequence_manager_->CacheIfEnabled(state_->sequences, batch_size);
-
-    if (debug_ && tp_rank_ == 0) {
+    if (debug_ && rank_ == 0) {
         for (int i = 0; i < batch_size; ++i) {
             // ss << (i ? ", " : "") << "(" << state_->h_context_length[i] << "," << state_->h_finished[i] << ")";
             std::vector<int> tokens(state_->h_context_length[i]);
@@ -1507,46 +1219,30 @@ void LlamaBatch<T>::Finish(GenerationState& g, std::vector<Signal>& signals)
         }
     }
 
-    {
-        NvtxScope _("count and sync");
-        bool      need_sync = false;
-        for (int i = 0; i < batch_size - g.partial; ++i) {
-            if (state_->h_finished[i]) {
-                ++g.finished_count;
-                if (!state_->requests[i]->session.end_flag) {
-                    need_sync = true;
-                }
-            }
-        }
-        if (need_sync) {
-            // Release updates on request output buffers to all ranks (`Interrupt` will use it)
-            comm_.h_tp_group->Sync();
-        }
-    }
-
+    std::vector<Signal> signals;
     {
         NvtxScope _("stream_and_completion_signal");
         for (int i = 0; i < batch_size - g.partial; ++i) {
-            auto& r = state_->requests[i];
-            if (state_->h_finished[i]) {
-                // Interrupt finished sequences and move the request handle into the signal closure
-                signals.push_back(Interrupt(i));
-                // Interrupt should reset r
-                FT_CHECK(!r);
-            }
-            else if (r->stream_output && tp_rank_ == 0) {
-                const auto seq_len = r->sequence_length.getVal<int>();
-                // Create signals by copying the request handles for non-finished streaming requests
-                signals.push_back([this, r, seq_len] {  //
-                    UpdateState(*r, Request::kOk, seq_len);
-                });
+            if (state_->requests[i]) {
+                if (state_->h_finished[i]) {
+                    // Interrupt finished sequences and move the request handle into the signal closure
+                    signals.push_back(Interrupt(i));
+                    ++g.finished_count;
+                }
+                else if (state_->requests[i]->stream_cb) {
+                    // Create signals by copying the request handles for non-finished streaming requests
+                    signals.push_back([this, r = state_->requests[i]] {
+                        if (rank_ == 0) {
+                            r->stream_cb(&r->outputs[rank_].get());
+                        }
+                    });
+                }
             }
         }
-    }
-
-    if (g.finished_count) {
-        // synchronize for interrupted sequences
-        check_cuda_error(cudaStreamSynchronize(stream_));
+        if (g.finished_count) {
+            // synchronize for interrupted sequences
+            check_cuda_error(cudaStreamSynchronize(stream_));
+        }
     }
 
     if (g.partial) {
@@ -1554,20 +1250,18 @@ void LlamaBatch<T>::Finish(GenerationState& g, std::vector<Signal>& signals)
         // recover full context length of partial
         state_->h_context_length[i] = g.partial_context_legnth;
     }
+
+    return signals;
 }
 
 template<typename T>
 auto LlamaBatch<T>::Interrupt(int index, bool force_stop, bool force_end) -> Signal
 {
-    if (tp_rank_ == 0) {
-        TM_LOG_INFO("[Interrupt] slot %d, request %lu, stop %d, end %d",
-                    index,
-                    (long)state_->requests[index]->id,
-                    force_stop,
-                    force_end);
+    if (rank_ == 0) {
+        TM_LOG_INFO("[Interrupt] slot = %d, id = %lu", index, (long)state_->requests[index]->id);
     }
 
-    if (debug_ && tp_rank_ == 0) {
+    if (debug_ && rank_ == 0) {
         std::vector<int> tokens(state_->h_context_length[index]);
         Copy(state_->output_ids + index * session_len_, tokens.size(), tokens.data());
         cudaStreamSynchronize(stream_);
@@ -1578,7 +1272,7 @@ auto LlamaBatch<T>::Interrupt(int index, bool force_stop, bool force_end) -> Sig
         TM_LOG_INFO("[Interrupt] slot %d, tokens [%s]", index, ss.str().c_str());
     }
 
-    if (state_->requests[index]->session.end_flag || force_end) {
+    if (state_->requests[index]->end_flag || force_end) {
         // Sequence is ending this round or a stop request is issued to end it
         FT_CHECK(sequence_manager_->Erase(state_->requests[index]->id));
     }
@@ -1588,10 +1282,8 @@ auto LlamaBatch<T>::Interrupt(int index, bool force_stop, bool force_end) -> Sig
 
         // Update token IDs
         seq.tokens.resize(output_len);
-
-        // output_ids is updated & synced in `Finish`
-        const auto output_ids = state_->requests[index]->output_ids.getPtr<int>();
-        std::copy_n(output_ids, output_len, seq.tokens.data());
+        const auto output_ids_data = state_->requests[index]->outputs[rank_].at("output_ids").getPtr<int>();
+        std::copy_n(output_ids_data, output_len, seq.tokens.data());
 
         // Save random state in host memory
         seq.random_state.resize(sizeof(curandState_t));
@@ -1604,131 +1296,153 @@ auto LlamaBatch<T>::Interrupt(int index, bool force_stop, bool force_end) -> Sig
 
     state_->sequences[index] = nullptr;
 
-    auto ec = std::exchange(state_->errors[index], Request::kOk);
-
-    const auto len = state_->requests[index]->sequence_length.getVal<int>();
     // move the request handle into the signal
-    return [this, len, force_stop, r = std::move(state_->requests[index])] {  //
-        UpdateState(*r, force_stop ? Request::kCancel : Request::kFinish, len);
+    return [this, r = std::move(state_->requests[index])] {
+        if (rank_ == 0) {
+            r->signal.set_value(0);
+        }
     };
 }
 
-namespace {
-
-struct RequestData {
-    std::vector<std::shared_ptr<Request>> infer;  // incoming inference request
-    std::vector<std::shared_ptr<Request>> kill;   // incoming kill request
-
-    std::vector<int> cancel;  // canceled indices in current batch
-    bool             abort;
-};
-
-}  // namespace
-
 template<typename T>
-void LlamaBatch<T>::InternalThreadEntry()
+void LlamaBatch<T>::InternalThreadEntry(int device_id)
 {
     // TM_LOG_INFO("[InternalThreadEntry] %d", (int)rank_);
-    check_cuda_error(cudaSetDevice(device_id_));
+    check_cuda_error(cudaSetDevice(device_id));
 
-    // Initialize `AnomalyHandler`
-    AnomalyHandler::instance().Init(tp_rank_, model_->vocab_size_padded_, 0, max_batch_size_, stream_);
+    auto& shared_state = model_->shared_state_;
+
+    auto& request_queue  = shared_state->request_queue;
+    auto& infer_requests = shared_state->infer_requests;
+    auto& stop_requests  = shared_state->stop_requests;
 
     GenerationState g{};
 
+    constexpr int request_interval = 1;
+    long          request_counter  = 0;
+
     while (1) {
-
-        std::shared_ptr<RequestData> req;
-
-        if (tp_rank_ == 0) {
-            req = std::make_shared<RequestData>();
-            {
-                NvtxScope  _("pop");
-                const int  free_slot_count = max_batch_size_ - state_->size + g.finished_count;
-                const bool is_empty        = (free_slot_count == max_batch_size_);
-                // Block if batch is empty AND no silbings are ready
-                gateway_->pop(req->infer, req->kill, free_slot_count, is_empty, req->abort, dp_rank_);
+        if (rank_ == 0) {
+            const int  free_slot_count = max_batch_size_ - state_->size + g.finished_count;
+            const bool is_empty        = (free_slot_count == max_batch_size_);
+            stop_requests.clear();
+            infer_requests.clear();
+            if (is_empty || request_counter % request_interval == 0) {
+                // Block if batch is empty
+                request_queue.dequeue(stop_requests, infer_requests, free_slot_count, is_empty, shared_state->abort);
+                if (!shared_state->abort) {
+                    RejectInvalidRequests(stop_requests, infer_requests);
+                }
             }
-            // Mark reqs to the same session_id as invalid (which are dangerous to the engine)
-            DisableInvalidRequests(req->infer, req->kill);
-            FindCanceledIndices(req->cancel);
         }
 
         NvtxScope scope("mainloop");
 
-        // 1. Wait while rank-0 is dequeueing
-        // 2. Broadcast `ec` from rank-0
-        // shared_state_->barrier->wait();
-        // comm_.h_comm->Sync(comm_.h_comm_tp_group);
+        // wait while rank-0 is dequeueing
+        shared_state->barrier->wait();
 
-        Broadcast(comm_.h_tp_group, req, 0);
-
-        if (req->abort) {
+        if (shared_state->abort) {
             TM_LOG_INFO("[InternalThreadEntry] stop requested.");
-            break;
+            return;
         }
 
-        std::vector<Signal> signals;
-
-        ProcessKillRequests(req->kill, signals);
+        auto signals = ProcessStopRequests(stop_requests);
 
         // Shared `priority` field will be assigned by rank-0
-        ProcessInferRequests(req->infer, signals);
+        ProcessInferRequests(infer_requests);
 
-        // 1. Wait while shared `requests` is being used
-        // 2. Broadcast modifcations from rank-0
-        // comm_.h_comm->Sync(comm_.h_comm_tp_group);
+        // Wait while shared `requests` is being used
+        shared_state->barrier->wait();
 
-        ProcessCancelRequests(req->cancel, signals);
-
-        if (tp_rank_ == 0) {
-            gateway_->notify(std::move(signals));
-        }
+        SendSignals(std::move(signals));
 
         Initialize(g);
 
-        const int n_active = AllReduce(comm_.h_dp_group, state_->active_size, comm::RedOp::kSum);
+        FT_CHECK(step_length_ == 1);
 
-        if (n_active) {
-            //
-            Forward(g);
-
-            Finish(g, signals);
-
-            if (g.finished_count) {
-                // Finished requests and corresponding output tensors will be released when notified
-                // wait for all ranks to ensure no rank (except for output thread) will access related
-                // resources
-                comm_.h_tp_group->Sync();
-            }
-
-            if (tp_rank_ == 0) {
-                gateway_->notify(std::move(signals));
+        if (state_->active_size) {
+            for (int i = 0; i < step_length_; ++i) {
+                //
+                auto cont = Forward(g, i);
+                //
+                if (auto signals = Finish(g); !signals.empty()) {
+                    if (g.finished_count) {
+                        // Finished requests and corresponding output tensors will be released when notified
+                        // wait for all ranks to ensure no rank (except for output thread) will access related
+                        // resources
+                        shared_state->barrier->wait();
+                    }
+                    SendSignals(std::move(signals));
+                }
+                if (!cont) {  // early exit
+                    break;
+                }
             }
         }
+
+        ++request_counter;
     }
 
-    // barrier synchronization inside
-    DestroyCommunicators();
+    FT_CHECK(0);
+}
+
+template<typename T>
+void LlamaBatch<T>::SendSignals(std::vector<Signal> signals)
+{
+    if (rank_ != 0 || signals.empty()) {
+        return;
+    }
+    {
+        std::lock_guard lock{output_mutex_};
+        output_signals_.insert(output_signals_.end(),  //
+                               std::move_iterator{signals.begin()},
+                               std::move_iterator{signals.end()});
+    }
+    output_cv_.notify_one();
 }
 
 template<typename T>
 void LlamaBatch<T>::Start()
 {
     TM_LOG_INFO("LlamaBatch<T>::Start()");
-    internal_thread_ = std::thread([this] {
-        try {
-            InternalThreadEntry();
-        }
-        catch (const std::exception& e) {
-            TM_LOG_ERROR("[Engine] %s", e.what());
-            std::abort();
-        }
-    });
+    int device_id = -1;
+    check_cuda_error(cudaGetDevice(&device_id));
+    internal_thread_ = std::thread(&LlamaBatch::InternalThreadEntry, this, device_id);
+    if (rank_ == 0) {
+        output_thread_ = std::thread(&LlamaBatch::OutputThreadEntry, this);
+    }
 }
 
 template<typename T>
-bool LlamaBatch<T>::Forward(GenerationState& g)
+void LlamaBatch<T>::OutputThreadEntry()
+{
+    while (true) {
+        std::vector<Signal> signals;
+        {
+            // Wait for signals to come
+            std::unique_lock lock(output_mutex_);
+            output_cv_.wait(lock, [&] { return !output_signals_.empty() || output_stop_token_; });
+            if (output_stop_token_) {
+                TM_LOG_INFO("[OutputThreadEntry] stop requested.");
+                return;
+            }
+            signals = std::move(output_signals_);
+        }
+        if (rank_ == 0 && model_->ffi_lock_) {
+            model_->ffi_lock_(1);
+        }
+        // invoke stream cbs & signals
+        for (const auto& s : signals) {
+            s();
+        }
+        if (rank_ == 0 && model_->ffi_lock_) {
+            model_->ffi_lock_(0);
+        }
+    }
+}
+
+template<typename T>
+bool LlamaBatch<T>::Forward(GenerationState& g, int iter)
 {
     NvtxScope _("Forward");
 
@@ -1737,24 +1451,33 @@ bool LlamaBatch<T>::Forward(GenerationState& g)
     const int active_size = state_->active_size;
 
     constexpr int kLogInterval = 10;
-    if (tp_rank_ == 0 && (g.step - 1) % kLogInterval == 0) {
+    if (rank_ == 0 && (g.step - 1) % kLogInterval == 0) {
         TM_LOG_INFO("------------------------- step = %d -------------------------", g.step - 1);
     }
 
     int               pf_offset = -1;
     std::vector<int*> input_d_ptrs(active_size);
 
-    for (int i = 0; i < active_size; ++i) {
-        const auto& seq = *state_->sequences[i];
-        // const int   missing = state_->h_context_length[i] - seq.cache_len;
-        FT_CHECK(seq.input_length >= 1);
-        h_input_length_buf_[i] = seq.input_length;
-        input_d_ptrs[i]        = state_->output_ids + i * session_len_ + seq.cache_len;
-        if (seq.input_length > 1 && pf_offset < 0) {
-            pf_offset = i;
+    if (iter == 0) {  // The first iter may have pre-fill tokens
+        for (int i = 0; i < active_size; ++i) {
+            const auto& seq = *state_->sequences[i];
+            // const int   missing    = state_->h_context_length[i] - seq.cache_len;
+            FT_CHECK(seq.input_length >= 1);
+            h_input_length_buf_[i] = seq.input_length;
+            input_d_ptrs[i]        = state_->output_ids + i * session_len_ + seq.cache_len;
+            if (seq.input_length > 1 && pf_offset < 0) {
+                pf_offset = i;
+            }
+        }
+        if (pf_offset < 0) {
+            pf_offset = active_size;
         }
     }
-    if (pf_offset < 0) {
+    else {
+        for (int i = 0; i < active_size; ++i) {
+            h_input_length_buf_[i] = 1;
+            input_d_ptrs[i]        = state_->output_ids + i * session_len_ + state_->h_context_length[i] - 1;
+        }
         pf_offset = active_size;
     }
 
@@ -1766,129 +1489,161 @@ bool LlamaBatch<T>::Forward(GenerationState& g)
 
     // Find mini-batch offsets: input length > 1 ? prefill() : decode()
     // Constraints on mini-batches
-    //   sum(Q) <= `max_forward_token_num` && sum(K) <= `max_context_token_num`
+    // - `context_decoder_input` and `context_decoder_output` can hold `max_context_token_num_` tokens w/o padding
+    // - prefill() use `tmp_k_cache_buf_` and `tmp_k_cache_buf_`, they can hold `max_context_token_num_` tokens
+    //     but each sequence is padded to the maximum context length in the batch
     std::vector<int> offsets{0};
+    std::vector<int> max_context_cnts;
     // initialize first mini-batch with decode tokens
-    int sum_q = pf_offset;
-    int sum_k = 0;  // only for prefill
+    int accum_size        = pf_offset;
+    int accum_token_count = pf_offset;
+    int max_context_count = 0;
     for (int i = pf_offset; i < active_size; ++i) {
-        FT_CHECK(h_input_length_buf_[i] <= max_forward_token_num_);
-        const int q = sum_q + h_input_length_buf_[i];
-        const int k = sum_k + state_->h_context_length[i];
-        if (q <= max_forward_token_num_ && k <= max_context_token_num_) {
-            sum_q = q;
-            sum_k = k;
+        FT_CHECK(iter == 0);
+        int size          = accum_size + 1;
+        int input_count   = accum_token_count + h_input_length_buf_[i];
+        int context_count = std::max(max_context_count, state_->h_context_length[i]);
+        // correct pre-fill batch size for the first batch
+        int pf_size = offsets.size() == 1 ? size - pf_offset : size;
+        // we have `cu_seqlens` on q so no padding for input is needed
+        // prefill kernels are expecting uniform k/v cache length -> `max_context_count * size <=
+        // max_context_token_num_`
+        if (input_count <= max_context_token_num_ && context_count * pf_size <= max_context_token_num_) {
+            accum_size        = size;
+            accum_token_count = input_count;
+            max_context_count = context_count;
         }
         else {
             offsets.push_back(i);
-            sum_q = h_input_length_buf_[i];
-            sum_k = state_->h_context_length[i];
+            max_context_cnts.push_back(max_context_count);
+            accum_size        = 1;
+            accum_token_count = h_input_length_buf_[i];
+            max_context_count = state_->h_context_length[i];
         }
     }
     offsets.push_back(active_size);
-
-    // Synchronize mini batch count with sync DP ranks
-    int n_batches = AllReduce(comm_.h_dp_group, (int)offsets.size(), comm::RedOp::kMax);
-
-    // Populate empty batches
-    while (offsets.size() < n_batches) {
-        offsets.push_back(offsets.back());
-    }
+    max_context_cnts.push_back(max_context_count);
 
     // forward on mini-batches
     for (int p = 0; p < (int)offsets.size() - 1; ++p) {
-        const int first           = offsets[p];
-        const int last            = offsets[p + 1];
-        const int mini_batch_size = last - first;
-        int*      input_ids       = context_decoder_ids_buf_;
+        int  first           = offsets[p];
+        int  last            = offsets[p + 1];
+        int  mini_batch_size = last - first;
+        T*   k_ptr           = tmp_k_cache_buf_;
+        T*   v_ptr           = tmp_v_cache_buf_;
+        int  max_input_len{};
+        auto input_ids = context_decoder_ids_buf_;
+        //
+        std::vector<int> decode_indices{};
+        std::vector<int> decode_lengths{};
+
+        std::vector<const Sequence*> sequences;
 
         BatchedCopy batched_copy;
-        int         sum_k = 0;
         for (int i = first; i < last; ++i) {
             input_ids = batched_copy.Add(input_d_ptrs[i], h_input_length_buf_[i], input_ids);
-            if (h_input_length_buf_[i] > 1) {
-                sum_k += state_->h_context_length[i];
+            dbg(i, h_input_length_buf_[i]);
+            // allocate tmp k/v buffer for pre-fill sequences
+            if (i < pf_offset) {
+                h_tmp_k_ptrs_[i] = h_tmp_v_ptrs_[i] = nullptr;
             }
+            else {
+                h_tmp_k_ptrs_[i] = k_ptr;
+                h_tmp_v_ptrs_[i] = v_ptr;
+                k_ptr += model_->local_kv_head_num_ * max_context_cnts[p] * model_->size_per_head_;
+                v_ptr += model_->local_kv_head_num_ * max_context_cnts[p] * model_->size_per_head_;
+            }
+            decode_indices.push_back(i);
+            decode_lengths.push_back(h_input_length_buf_[i]);
+            sequences.push_back(state_->sequences[i]);
+            max_input_len = std::max(max_input_len, h_input_length_buf_[i]);
         }
-        int sum_q = input_ids - context_decoder_ids_buf_;
+        int token_count = input_ids - context_decoder_ids_buf_;
 
         batched_copy.Submit(stream_);
+
+        Copy(h_tmp_k_ptrs_ + first, mini_batch_size, tmp_k_ptrs_ + first);
+        Copy(h_tmp_v_ptrs_ + first, mini_batch_size, tmp_v_ptrs_ + first);
 
         const int dc_batch_size = p ? 0 : pf_offset;
         const int pf_batch_size = mini_batch_size - dc_batch_size;
 
-        if (tp_rank_ == 0) {
+        if (rank_ == 0) {
             if (pf_batch_size) {
-                const auto max_q = *std::max_element(h_input_length_buf_ + first, h_input_length_buf_ + last);
-                const auto max_k = *std::max_element(state_->h_context_length + first, state_->h_context_length + last);
-                TM_LOG_INFO("[Forward] [%d, %d), dc=%d, pf=%d, sum_q=%d, sum_k=%d, max_q=%d, max_k=%d",
+                TM_LOG_INFO("[Forward] [%d, %d), dc_bsz = %d, pf_bsz = %d, n_tok = %d, max_q = %d, max_k = %d",
                             first,
                             last,
                             dc_batch_size,
                             pf_batch_size,
-                            sum_q,
-                            sum_k,
-                            max_q,
-                            max_k);
+                            token_count,
+                            max_input_len,
+                            max_context_cnts[p]);
             }
         }
-
-        // Synchronize batch token num with sync DP ranks
-        auto local_token_nums = AllGather(comm_.h_dp_group, sum_q);
-
-        // if (comm_.h_comm->rank() == 0) {
-        //     std::stringstream ss;
-        //     for (auto x : local_token_nums) {
-        //         ss << x << " ";
-        //     }
-        //     TM_LOG_ERROR("%s", ss.str().c_str());
-        // }
 
         model_->forwardUnified(decoder_output_buf_ + first * model_->hidden_units_,
                                context_decoder_output_buf_,  // temp
                                context_decoder_input_buf_,   // temp
-                               (void**)block_ptrs_,
-                               cu_block_counts_ + first,
+                               (void**)k_block_ptrs_,
+                               (void**)v_block_ptrs_,
                                context_decoder_ids_buf_,  // temp
-                               h_input_length_buf_ + first,
-                               state_->h_context_length + first,
+                               cu_block_counts_ + first,
                                rope_theta_ + first,
                                finished_buf_ + first,
-                               sum_q,
-                               local_token_nums.data(),
+                               input_length_buf_ + first,
+                               context_length_buf_ + first,
+                               (T**)tmp_k_ptrs_ + first,
+                               (T**)tmp_v_ptrs_ + first,
+                               token_count,
                                dc_batch_size,
+                               g.step,
+                               g.sum_seq_len,
+                               g.max_seq_len,
                                pf_batch_size,
-                               lora_mask_buf_,
-                               state_->sequences.data() + first);
+                               max_input_len,
+                               max_context_cnts[p],
+                               max_context_cnts[p],
+                               h_input_length_buf_ + first,
+                               sequences.data());
 
-        ComputeAndOutputLogits(context_decoder_output_buf_, first, last);
-        OutputLastHiddenState(context_decoder_output_buf_, first, last);
+        if (iter == 0) {
+            // compute logits of inputs if requested
+            OutputContextLogits(context_decoder_output_buf_, decode_indices, decode_lengths, sequences);
+        }
     }
+
+    std::fill(h_input_length_buf_, h_input_length_buf_ + active_size, 0);
+
+    // `SequenceManager` needs real-time value of cache length
+    for (int i = 0; i < active_size; ++i) {
+        if (state_->requests[i]) {
+            FT_CHECK(state_->sequences[i]);
+            state_->sequences[i]->cache_len += state_->sequences[i]->input_length;
+        }
+    }
+
+    bool should_stop{};
 
     if (active_size > g.partial) {
         model_->postDecodeEmbedding(logits_buf_, local_logits_buf_, decoder_output_buf_, active_size - g.partial);
 
-        AnomalyHandler::instance().FixLogits(logits_buf_, active_size - g.partial, 1);
-
-        OutputLogits(logits_buf_, 0, active_size - g.partial, GenerationConfig::kGeneration);
-
         FT_CHECK(g.step >= 0);
 
-        if (!g.skip_init_sampling) {
-            InitializeSampling(g);
-        }
+        // TM_LOG_INFO("dyn decode bsz %d, partial %d", active_size, g.partial);
+
         // stop-words & bad-words require the matched tokens to be contiguous, so item size > 1 is
         // not supported yet.
         model_->dynamicDecode(token_ids_buf_,
                               finished_buf_,
                               sequence_lengths_,
-                              nullptr,
+                              &should_stop,
                               state_->curand_state,
                               &inputs_,
                               &outputs_,
                               logits_buf_,
                               seq_limit_len_,
                               init_context_length_,
+                              d_end_ids_buf_,
                               g.step,
                               0,
                               g.max_init_ctx_len,
@@ -1896,27 +1651,7 @@ bool LlamaBatch<T>::Forward(GenerationState& g)
                               active_size - g.partial);
     }
 
-    std::fill(h_input_length_buf_, h_input_length_buf_ + active_size, 0);
-
-    // `SequenceManager` needs real-time value of cache length
-    for (int i = 0; i < active_size; ++i) {
-        FT_CHECK((bool)state_->requests[i]);
-        FT_CHECK(state_->sequences[i]);
-        state_->sequences[i]->cache_len += state_->sequences[i]->input_length;
-    }
-
-    AnomalyHandler::instance().Summarize([&](const int* is_anomaly, int batch_size) {
-        for (int i = 0; i < batch_size; ++i) {
-            if (is_anomaly[i]) {
-                TM_LOG_WARNING("[Forward] Abnormal logits detected for request (%s)",
-                               std::to_string(state_->sequences[i]->id).c_str());
-                state_->errors[i] = Request::kFail;
-            }
-        }
-    });
-    AnomalyHandler::instance().Reset();
-
-    if (debug_ && tp_rank_ == 0) {
+    if (debug_ && rank_ == 0) {
         std::vector<int> curr(active_size);
         Copy(token_ids_buf_ + g.step * active_size, active_size, curr.data());
         cudaStreamSynchronize(stream_);
@@ -1932,189 +1667,16 @@ bool LlamaBatch<T>::Forward(GenerationState& g)
     ////////////////////////////////////////////////
     /// ! increase the counters
     g.step += 1;
+    g.max_seq_len += 1;
+    g.sum_seq_len += state_->active_size;
 
     // PrintDecodeTokens(token_ids_buf_, g.step, active_size, stream_, "Forward");
 
-    return true;
-}
-
-namespace {
-
-template<class First, class Last>
-std::string Join(First first, Last last, const std::string& delim)
-{
-    if (first == last) {
-        return {};
-    }
-    std::ostringstream oss;
-    oss << *first++;
-    while (first != last) {
-        oss << delim << *first++;
-    }
-    return oss.str();
-}
-
-template<class T>
-struct TuningContext {
-    LlamaLinear<T>& linear_;
-    cudaStream_t    stream_;
-    TuningContext(LlamaLinear<T>& linear, cudaStream_t stream): linear_{linear}, stream_{stream}
-    {
-        isTuning() = true;
-        linear_.set_measure(true);
-    }
-    ~TuningContext()
-    {
-        linear_.set_measure(false);
-        isTuning() = false;
-    }
-};
-
-}  // namespace
-
-template<class T>
-void LlamaBatch<T>::Warmup()
-{
-    auto& linear = *context_->linear;
-    if (auto str = std::getenv("TM_GEMM_IMPORT")) {
-        std::ifstream ifs(str);
-        const int     n_imported = linear.Import(ifs);
-        if (tp_rank_ == 0) {
-            TM_LOG_INFO("[Gemm2] %d records imported", n_imported);
-        }
-        return;
-    }
-
-    std::vector<int> bss = linear.GetTuningSeq();
-    if (bss.empty()) {
-        bss = gemm::GenerateTuningSequence(gemm::GetDefaultTuningGenerators());
-    }
-
-    // remove bs that is too large
-    bss.erase(std::remove_if(bss.begin(), bss.end(), [&](auto x) { return x > max_forward_token_num_; }), bss.end());
-
-    if (tp_rank_ == 0) {
-        auto str = Join(bss.begin(), bss.end(), ", ");
-        TM_LOG_INFO("[Gemm2] Tuning sequence: %s", str.c_str());
-    }
-
-    if (!bss.empty()) {
-        const auto                         max_bs = *std::max_element(bss.begin(), bss.end());
-        std::vector<int>                   input_ids(max_bs);
-        std::mt19937                       g{};
-        std::uniform_int_distribution<int> d{0, (int)model_->vocab_size_ - 1};
-        for (auto& x : input_ids) {
-            x = d(g);
-        }
-        Copy(input_ids.data(), max_bs, context_decoder_ids_buf_);
-        check_cuda_error(cudaStreamSynchronize(stream_));
-
-        TuningContext context{linear, stream_};
-
-        auto tick = std::chrono::steady_clock::now();
-
-        /// NOTE: No explicit barrier can be used here as internal threads are waiting on it now
-        for (auto bs : bss) {
-            if (tp_rank_ == 0) {
-                TM_LOG_INFO("[Gemm2] %d", bs);
-            }
-            const int input_length     = bs;
-            auto      local_token_nums = AllGather(comm_.h_dp_group, bs);
-
-            model_->forwardUnified(decoder_output_buf_,
-                                   context_decoder_output_buf_,
-                                   context_decoder_input_buf_,
-                                   (void**)block_ptrs_,  // invalid data
-                                   cu_block_counts_,     // invalid data
-                                   context_decoder_ids_buf_,
-                                   &input_length,
-                                   &input_length,
-                                   rope_theta_,    // invalid data
-                                   finished_buf_,  // invalid data
-                                   bs,
-                                   local_token_nums.data(),
-                                   0,
-                                   1,
-                                   nullptr,
-                                   nullptr);
-        }
-
-        auto tock = std::chrono::steady_clock::now();
-
-        if (tp_rank_ == 0) {
-            TM_LOG_INFO("[Gemm2] Tuning finished in %.2f seconds.",
-                        std::chrono::duration<float, std::ratio<1, 1>>(tock - tick).count());
-        }
-    }
-
-    // This will catch async errors during tuning
-    check_cuda_error(cudaStreamSynchronize(stream_));
-
-    // Only rank-0 exports the dispatch cache
-    if (tp_rank_ == 0) {
-        if (auto path = std::getenv("TM_GEMM_EXPORT")) {
-            std::ofstream ofs(path);
-            const auto    n_records = context_->linear->Export(ofs);
-            TM_LOG_INFO("[Gemm2] %d records exported.", n_records);
-        }
-    }
-}
-
-template<class T>
-void* LlamaBatch<T>::CommBufAlloc(size_t size, bool register_)
-{
-    if (auto& comm = model_->comm_->d_comm) {
-        auto ptr = comm->Allocate(size);
-        if (register_) {
-            comm->Register(ptr, size);
-        }
-        return ptr;
-    }
-    else {
-        return allocator_->malloc(size);
-    }
-}
-
-template<class T>
-void LlamaBatch<T>::CommBufFree(void** ptr, bool deregister)
-{
-    if (!ptr) {
-        return;
-    }
-    if (auto& comm = model_->comm_->d_comm) {
-        if (deregister) {
-            comm->Deregister(*ptr);
-        }
-        comm->Free(*ptr);
-        *ptr = {};
-    }
-    else {
-        return allocator_->free(ptr);
-    }
-}
-
-template<class T>
-void LlamaBatch<T>::DestroyCommunicators()
-{
-    if (comm_.d_comm) {
-        cudaStreamSynchronize(stream_);
-        comm_.h_comm->Sync();
-
-        FreeCommBuffers();
-        comm_.h_comm->Sync();
-
-        // Destroy device communicator
-        comm_.d_comm = {};
-
-        cudaStreamSynchronize(stream_);
-        comm_.h_comm->Sync();
-    }
+    return !should_stop;
 }
 
 template class LlamaBatch<half>;
-#ifdef ENABLE_FP32
 template class LlamaBatch<float>;
-#endif
 #ifdef ENABLE_BF16
 template class LlamaBatch<__nv_bfloat16>;
 #endif

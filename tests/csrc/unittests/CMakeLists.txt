@@ -32,12 +32,12 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 add_executable(unittest
+    test_attention_kernels.cu
     test_logprob_kernels.cu
     test_penalty_kernels.cu
     test_sampling_kernels.cu
     test_sampling_layer.cu
-    test_tensor.cu
-)
+    test_tensor.cu)
 
 # automatic discovery of unit tests
 target_link_libraries(unittest PUBLIC "${TORCH_LIBRARIES}" gtest_main)
@@ -64,11 +64,20 @@ target_link_libraries(  # Libs for test_sampling_layer
   unittest PUBLIC
     CUDA::cublas CUDA::cublasLt CUDA::cudart
     cublasMMWrapper memory_utils
-    DynamicDecodeLayer tensor cuda_utils logger
-)
+    DynamicDecodeLayer TopKSamplingLayer TopPSamplingLayer tensor cuda_utils logger)
 target_link_libraries(  # Libs for test_tensor
   unittest PUBLIC tensor cuda_utils logger)
 
 remove_definitions(-DTORCH_CUDA=1)
 add_executable(test_gemm test_gemm.cu)
 target_link_libraries(test_gemm PUBLIC CUDA::cublas CUDA::cudart CUDA::curand gemm cublasMMWrapper tensor cuda_utils logger)
+
+add_executable(test_gpt_kernels test_gpt_kernels.cu)
+target_link_libraries(test_gpt_kernels PUBLIC
+                      gpt_kernels memory_utils tensor cuda_utils logger)
+
+add_executable(test_context_attention_layer test_context_attention_layer.cu)
+target_link_libraries(test_context_attention_layer PUBLIC
+                      Llama CUDA::cublas CUDA::cublasLt CUDA::cudart
+                      unfused_attention_kernels
+                      memory_utils tensor cublasMMWrapper cuda_utils logger)

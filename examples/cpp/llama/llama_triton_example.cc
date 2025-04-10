@@ -18,7 +18,7 @@
 // Modified from
 // https://github.com/NVIDIA/FasterTransformer/blob/main/examples/cpp/multi_gpu_gpt/multi_gpu_gpt_triton_example.cc
 
-#include <yaml-cpp/yaml.h>
+#include "3rdparty/INIReader.h"
 #include <chrono>
 #include <memory>
 #include <thread>
@@ -31,6 +31,7 @@
 #include "src/turbomind/utils/mpi_utils.h"
 #include "src/turbomind/utils/nccl_utils.h"
 #include "src/turbomind/utils/nvtx_utils.h"
+#include "src/turbomind/utils/word_list.h"
 
 namespace ft = turbomind;
 
@@ -114,14 +115,14 @@ broadCastRequest(const std::vector<int>& v_start_ids,
         }
         else {
             // conditional case.
-            ft::deviceMalloc(&d_input_ids, size_1, nullptr, false);
+            ft::deviceMalloc(&d_input_ids, size_1, false);
             // ft::deviceMalloc(&d_input_lengths, size_2, false);
             ft::cudaH2Dcpy(d_input_ids, v_input_ids.data(), size_1);
             // ft::cudaH2Dcpy(d_input_lengths, v_input_lengths.data(), size_2);
         }
 
         if (!v_input_bad_words.empty()) {
-            ft::deviceMalloc(&d_input_bad_words, size_bad_words, nullptr, false);
+            ft::deviceMalloc(&d_input_bad_words, size_bad_words, false);
             ft::cudaH2Dcpy(d_input_bad_words, v_input_bad_words.data(), size_bad_words);
         }
         else {
@@ -163,7 +164,7 @@ broadCastRequest(const std::vector<int>& v_start_ids,
                                 request_output_len_ptr}},
                 {"bad_words_list",
                  triton::Tensor{
-                     triton::MEMORY_GPU, triton::TYPE_INT32, {1, 2, v_input_bad_words.size() / 2}, d_input_bad_words}},
+                     triton::MEMORY_GPU, triton::TYPE_INT32, {2, v_input_bad_words.size() / 2}, d_input_bad_words}},
                 {"start_id",
                  triton::Tensor{triton::MEMORY_CPU, triton::TYPE_INT32, {(size_t)request_batch_size}, start_ids_ptr}},
                 {"end_id",
@@ -254,24 +255,20 @@ int read_start_ids(size_t            batch_size,
                    std::string       file_name);
 
 std::vector<std::shared_ptr<std::unordered_map<std::string, triton::Tensor>>>
-prepareRequest(std::string config_file, const int node_id, const int gpu_count, std::vector<void*>* pointer_record, const std::string& csv_name)
+prepareRequest(std::string ini_name, const int node_id, const int gpu_count, std::vector<void*>* pointer_record, const std::string& csv_name)
 {
-    YAML::Node reader;
-    try {
-        reader = YAML::Load(config_file);
-    }
-    catch (const YAML::Exception& e) {
-        std::cerr << "Error reading YAML config: " << e.what() << std::endl;
+    INIReader reader = INIReader(ini_name);
+    if (reader.ParseError() < 0) {
+        std::cout << "[ERROR] Can't load '" << ini_name << "'\n";
         ft::FT_CHECK(false);
     }
-    auto request = reader["request"];
 
-    const size_t request_batch_size = request["request_batch_size"].as<int>();
+    const size_t request_batch_size = reader.GetInteger("request", "request_batch_size");
     std::cerr << "request_batch_size=" << request_batch_size << "\n";
 
-    const int start_id      = request["start_id"].as<int>();
-    const int end_id        = request["end_id"].as<int>();
-    const int max_input_len = request["max_input_len"].as<int>();
+    const int start_id      = reader.GetInteger("request", "start_id");
+    const int end_id        = reader.GetInteger("request", "end_id");
+    const int max_input_len = reader.GetInteger("request", "max_input_len");
 
     std::vector<int> v_start_ids;
     std::vector<int> v_start_lengths;
@@ -291,18 +288,19 @@ prepareRequest(std::string config_file, const int node_id, const int gpu_count, 
     std::cerr << "max_input_len=" << max_input_len << "\n";
 
     std::vector<int> v_bad_words;
+    // ft::read_word_list("../examples/cpp/llama/bad_words.csv", v_bad_words);
 
     RequestParam param;
-    param.beam_width                 = request["beam_width"].as<int>();
-    param.request_output_len         = request["request_output_len"].as<int>();
-    param.beam_search_diversity_rate = request["beam_search_diversity_rate"].as<float>();
-    param.runtime_top_k              = request["top_k"].as<int>();
-    param.runtime_top_p              = request["top_p"].as<float>();
-    param.temperature                = request["temperature"].as<float>();
-    param.len_penalty                = request["len_penalty"].as<float>();
-    param.repetition_penalty         = request["repetition_penalty"].as<float>(1.0f);
-    param.presence_penalty           = request["presence_penalty"].as<float>(0.0f);
-    param.min_length                 = request["min_length"].as<int>(0);
+    param.beam_width                 = reader.GetInteger("request", "beam_width");
+    param.request_output_len         = reader.GetInteger("request", "request_output_len");
+    param.beam_search_diversity_rate = reader.GetFloat("request", "beam_search_diversity_rate");
+    param.runtime_top_k              = reader.GetInteger("request", "top_k");
+    param.runtime_top_p              = reader.GetFloat("request", "top_p");
+    param.temperature                = reader.GetFloat("request", "temperature");
+    param.len_penalty                = reader.GetFloat("request", "len_penalty");
+    param.repetition_penalty         = reader.GetFloat("request", "repetition_penalty", 1.0f);
+    param.presence_penalty           = reader.GetFloat("request", "presence_penalty", 0.0f);
+    param.min_length                 = reader.GetInteger("request", "min_length", 0);
     param.random_seed                = (unsigned long long int)0;
     param.start_id                   = start_id;
     param.end_id                     = end_id;
@@ -365,11 +363,11 @@ int main(int argc, char* argv[])
     // Note: Only supports that all nodes have same gpu count
     const int   gpu_count  = ft::getDeviceCount();
     const int   world_size = node_num * gpu_count;
-    printf("Recommend to specify the first parameter on the command line as the path to llama_config.yaml\n");
-    std::string config_file   = argc >= 2 ? std::string(argv[1]) : "../examples/cpp/llama/llama_config.yaml";
+    printf("Recommend to specify the first parameter on the command line as the path to llama_config.ini\n");
+    std::string ini_name   = argc >= 2 ? std::string(argv[1]) : "../examples/cpp/llama/llama_config.ini";
 
     // step 1: Create model
-    std::shared_ptr<AbstractTransformerModel> model              = AbstractTransformerModel::createLlamaModel(config_file);
+    std::shared_ptr<AbstractTransformerModel> model              = AbstractTransformerModel::createLlamaModel(ini_name);
     int                                       tensor_para_size   = model->getTensorParaSize();
     int                                       pipeline_para_size = model->getPipelineParaSize();
     printf(
@@ -410,7 +408,7 @@ int main(int argc, char* argv[])
     std::vector<void*> pointer_record;  // Used to prevent the pointers are
                                         // release after leaving functions
     std::vector<std::shared_ptr<std::unordered_map<std::string, triton::Tensor>>> request_list =
-        prepareRequest(config_file, node_id, gpu_count, &pointer_record, csv_name);
+        prepareRequest(ini_name, node_id, gpu_count, &pointer_record, csv_name);
     printf("[INFO] request is created \n");
 
     // step 5: Forward

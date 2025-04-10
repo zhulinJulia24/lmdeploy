@@ -7,12 +7,10 @@ from typing import Dict, Sequence
 import psutil
 
 
-def get_gpu_memory(device_id: int = None) -> int:
+def get_gpu_memory(id: int = 0) -> int:
     """Returns the free and total physical memory of the GPU in bytes."""
     import torch
-    if device_id is None:
-        device_id = torch.cuda.current_device()
-    return torch.cuda.mem_get_info(device_id)
+    return torch.cuda.mem_get_info(id)
 
 
 def get_cpu_memory() -> int:

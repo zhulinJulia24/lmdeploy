@@ -48,7 +48,7 @@ BlockManager::BlockManager(
         chunk_size_ = chunk_size;
     }
 
-    TM_LOG_INFO("[BlockManager] block_size = %.3f MB", (float)block_size_ / (1 << 20));
+    TM_LOG_INFO("[BlockManager] block_size = %lu MB", (unsigned long)block_size_ >> 20);
     TM_LOG_INFO("[BlockManager] max_block_count = %d", max_block_count_);
     TM_LOG_INFO("[BlockManager] chunk_size = %d", chunk_size_);
 
@@ -222,6 +222,7 @@ int BlockManager::Lock(const BlockIds& ids)
 
     for (const auto& i : ids) {
         auto& b = blocks_[i];
+        FT_CHECK_WITH_INFO(is_cached(b), to_string(b));
         if (++b.use_count == 1) {
             lock.push_back(i);
             FT_CHECK(is_active(b));

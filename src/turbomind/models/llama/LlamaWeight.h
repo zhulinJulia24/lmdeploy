@@ -16,54 +16,55 @@
  */
 
 // Modified from
-// https://github.com/NVIDIA/FasterTransformer/blob/main/src/fastertransformer/models/multi_gpu_gpt/ParallelGptWeight.h
+// https://github.com/NVIDIA/FasterTransformer/blob/main/src/turbomind/models/multi_gpu_gpt/ParallelGptWeight.h
 
 #pragma once
 
 #include "src/turbomind/models/llama/LlamaDecoderLayerWeight.h"
-#include "src/turbomind/models/llama/llama_params.h"
+#include "src/turbomind/utils/memory_utils.h"
 
 namespace turbomind {
 
 template<typename T>
 struct LlamaWeight {
     LlamaWeight() = default;
-
-    LlamaWeight(const ModelParam&  model_param,
-                const EngineParam& engine_param,
-                const LoraParam&   lora_param,
-                const MoeParam&    moe_param);
+    LlamaWeight(size_t     head_num,
+                size_t     kv_head_num,
+                size_t     size_per_head,
+                size_t     inter_size,
+                size_t     vocab_size,
+                size_t     num_layer,
+                bool       attn_bias,
+                WeightType weight_type,
+                int        group_size,
+                size_t     tensor_para_size,
+                size_t     tensor_para_rank);
 
     ~LlamaWeight();
 
-    LlamaWeight(const LlamaWeight&) = delete;
-    LlamaWeight& operator=(const LlamaWeight&) = delete;
+    LlamaWeight(const LlamaWeight& other) = delete;
+    LlamaWeight& operator=(const LlamaWeight& other) = delete;
 
     void loadModel(std::string dir_path);
 
     TensorMap getParams();
 
-    void prepare(const cudaDeviceProp& prop);
-
     std::vector<LlamaDecoderLayerWeight<T>*> decoder_layer_weights;
-
-    T* pre_decoder_embedding_table{};
-    T* output_norm_weight{};
-    T* post_decoder_embedding_kernel{};
+    const T*                                 pre_decoder_embedding_table{};
+    const T*                                 output_norm_weight{};
+    const T*                                 post_decoder_embedding_kernel{};
 
 private:
+    void mallocWeights();
+
     size_t     hidden_units_;
+    size_t     inter_size_;
     size_t     vocab_size_;
     size_t     vocab_size_padded_;
-    size_t     embedding_size_;
     size_t     num_layer_;
     WeightType weight_type_;
-    size_t     tp_size_;  // this will follow attn tp param
-    size_t     tp_rank_;
-
-    std::vector<int> inter_size_;
-
-    cudaStream_t stream_;
+    size_t     tensor_para_size_;
+    size_t     tensor_para_rank_;
 };
 
 }  // namespace turbomind

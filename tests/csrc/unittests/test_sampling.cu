@@ -134,6 +134,7 @@ void testCumLogProbComputation(TestCase tc)
 
     DynamicDecodeLayer<T>* dynamic_decode_layer = new DynamicDecodeLayer<T>(vocab_size,
                                                                             vocab_size,
+                                                                            end_id,
                                                                             stream,
                                                                             cublas_wrapper,
                                                                             allocator,
@@ -349,6 +350,7 @@ private:
             cublas_handle, cublaslt_handle, stream, &cublas_algo_map, cublas_wrapper_mutex, allocator);
         dynamic_decode_layer = new DynamicDecodeLayer<T>(vocab_size,
                                                          vocab_size,
+                                                         end_id,
                                                          stream,
                                                          cublas_wrapper,
                                                          allocator,
@@ -1337,6 +1339,7 @@ void testSamplingLayerCurandInit(TestCase tc)
         new cublasMMWrapper(cublas_handle, cublaslt_handle, stream, &cublas_algo_map, cublas_wrapper_mutex, allocator);
     DynamicDecodeLayer<T>* dynamic_decode_layer = new DynamicDecodeLayer<T>(vocab_size,
                                                                             vocab_size,
+                                                                            end_id,
                                                                             stream,
                                                                             cublas_wrapper,
                                                                             allocator,

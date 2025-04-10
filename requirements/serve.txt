@@ -1,4 +1,3 @@
-gradio
-partial_json_parser
+gradio<4.0.0
 protobuf
 tritonclient[grpc]

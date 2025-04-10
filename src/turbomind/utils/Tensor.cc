@@ -349,7 +349,12 @@ Tensor Tensor::slice(std::vector<size_t> shape, size_t offset) const
 TensorMap::TensorMap(const std::unordered_map<std::string, Tensor>& tensor_map)
 {
     for (auto& kv : tensor_map) {
-        insert(kv.first, kv.second);
+        if (isValid(kv.second)) {
+            insert(kv.first, kv.second);
+        }
+        else {
+            TM_LOG_DEBUG(fmtstr("%s is not a valid tensor, skipping insert into TensorMap", kv.first.c_str()));
+        }
     }
 }
 
@@ -363,7 +368,12 @@ TensorMap::TensorMap(const std::vector<Tensor>& tensor_map)
 TensorMap::TensorMap(std::initializer_list<std::pair<std::string, Tensor>> tensor_map)
 {
     for (auto& pair : tensor_map) {
-        insert(pair.first, pair.second);
+        if (isValid(pair.second)) {
+            insert(pair.first, pair.second);
+        }
+        else {
+            TM_LOG_DEBUG(fmtstr("%s is not a valid tensor, skipping insert into TensorMap", pair.first.c_str()));
+        }
     }
 }
 
