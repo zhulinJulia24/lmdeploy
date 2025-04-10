@@ -1,12 +1,11 @@
-# yapf: disable
 import pytest
 import torch
 
 from lmdeploy.pytorch.messages import SchedulerSession
-from lmdeploy.pytorch.paging.block_manager import DefaultBlockManager, WindowBlockManager
-from lmdeploy.pytorch.paging.block_manager.base_block_manager import LogicalAllocator
-
-# yapf: enable
+from lmdeploy.pytorch.paging.block_manager import (DefaultBlockManager,
+                                                   WindowBlockManager)
+from lmdeploy.pytorch.paging.block_manager.base_block_manager import \
+    LogicalAllocator  # noqa: E501
 
 
 class TestAllocator:
@@ -38,7 +37,8 @@ class TestAllocator:
         blocks = allocator.allocate(block_size, 'gpu')
         assert len(blocks) == block_size
         assert allocator.get_num_free_blocks() == num_blocks - block_size
-        assert gpu_allocator.get_num_free_blocks() == num_gpu_blocks - block_size
+        assert gpu_allocator.get_num_free_blocks(
+        ) == num_gpu_blocks - block_size
 
         # test free
         allocator.add_ref_count(blocks, 1)
@@ -109,29 +109,10 @@ class TestDefaultBlockManager:
         assert block_mgr.get_num_free_gpu_blocks() == num_gpu_blocks
 
         # alloc over limit
-        token_ids = torch.zeros((num_gpu_blocks * block_size + 1, ), dtype=torch.int64)
+        token_ids = torch.zeros((num_gpu_blocks * block_size + 1, ),
+                                dtype=torch.int64)
         msg = sess.add_sequence(token_ids)
         assert not block_mgr.can_allocate(msg)
-
-    def test_num_required_blocks(self, block_mgr, block_size, num_gpu_blocks):
-        from lmdeploy.pytorch.messages import InputEmbeddings
-        sess = SchedulerSession(0, block_size)
-
-        token_ids = torch.tensor([1])
-        msg = sess.add_sequence(token_ids)
-        num_required = block_mgr.num_required_blocks(msg)
-        assert num_required == 1
-
-        embedding = InputEmbeddings(None, 0, block_size * 2)
-        msg = sess.add_sequence(token_ids, input_embeddings=[embedding])
-        num_required = block_mgr.num_required_blocks(msg)
-        assert num_required == 1
-
-        token_ids = torch.tensor([1] * block_size * 3)
-        embedding = InputEmbeddings(None, 0, block_size * 2)
-        msg = sess.add_sequence(token_ids, input_embeddings=[embedding])
-        num_required = block_mgr.num_required_blocks(msg)
-        assert num_required == 3
 
     def test_append_slot(self, block_mgr, block_size, num_gpu_blocks):
         sess = SchedulerSession(0, block_size)
@@ -145,18 +126,44 @@ class TestDefaultBlockManager:
 
         # no new logical block
         msg.update_token_ids(torch.tensor([1] * (block_size - 1)))
-        assert block_mgr.can_allocate(msg)
-        block_mgr.allocate(msg)
+        assert block_mgr.can_append_slot(msg)
+        block_mgr.append_slot(msg)
         block_table = block_mgr.get_block_table(msg)
         assert len(block_table) == 1
         assert block_mgr.get_num_free_gpu_blocks() == num_gpu_blocks - 1
 
         # with new logical block
         msg.update_token_ids(torch.tensor([1]))
-        block_mgr.allocate(msg)
+        block_mgr.append_slot(msg)
         block_table = block_mgr.get_block_table(msg)
         assert len(block_table) == 2
         assert block_mgr.get_num_free_gpu_blocks() == num_gpu_blocks - 2
+
+    def test_fork(self, block_mgr, block_size, num_gpu_blocks):
+        sess = SchedulerSession(0, block_size)
+
+        token_ids = torch.tensor([1] * (block_size * 2 + 1))
+        from_msg = sess.add_sequence(token_ids)
+        block_mgr.allocate(from_msg)
+        from_block_table = block_mgr.get_block_table(from_msg)
+        assert len(from_block_table) == 3
+
+        to_msg = sess.fork_sequence(torch.tensor([1]), from_msg)
+
+        # fork
+        assert block_mgr.can_fork(from_msg)
+        copy_map = block_mgr.fork(from_msg, to_msg)
+        block_table = block_mgr.get_block_table(to_msg)
+        assert len(block_table) == 3
+        assert block_mgr.get_num_free_gpu_blocks() == num_gpu_blocks - 4
+        assert block_table[0] == from_block_table[0]
+        assert block_table[1] == from_block_table[1]
+        assert block_table[2] != from_block_table[2]
+        assert len(copy_map) == 1
+        assert copy_map[from_block_table[2]] == block_table[2]
+
+        # can not fork
+        assert not block_mgr.can_fork(from_msg)
 
     def test_swap(self, block_mgr, block_size, num_gpu_blocks):
         sess = SchedulerSession(0, block_size)
@@ -239,11 +246,13 @@ class TestWindowBlockManager:
         assert block_mgr.get_num_free_gpu_blocks() == num_gpu_blocks
 
         # alloc over limit
-        token_ids = torch.zeros((num_gpu_blocks * block_size + 1, ), dtype=torch.int64)
+        token_ids = torch.zeros((num_gpu_blocks * block_size + 1, ),
+                                dtype=torch.int64)
         msg = sess.add_sequence(token_ids)
         assert not block_mgr.can_allocate(msg)
 
-    def test_win_alloc(self, block_mgr, block_size, num_gpu_blocks, window_size):
+    def test_win_alloc(self, block_mgr, block_size, num_gpu_blocks,
+                       window_size):
         sess = SchedulerSession(0, block_size)
 
         # 2 win block

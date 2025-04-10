@@ -17,8 +17,7 @@ enum QuantPolicy
     kReserve1 = 0x01,
     kReserve2 = 0x02,
     // quantize cache kv
-    kCacheKVInt8 = 0x08,
-    kCacheKVInt4 = 0x04,
+    kCacheKVInt8 = 0x04,
 };
 
 enum CmpMode
@@ -81,7 +80,5 @@ struct NvtxScope {
 };
 
 int64_t& gSequenceIds(int batch_idx);
-
-bool& isTuning();
 
 }  // namespace turbomind

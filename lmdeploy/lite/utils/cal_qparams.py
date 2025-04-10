@@ -17,7 +17,9 @@ def precise_round(x):
 
 
 @torch.no_grad()
-def cal_qparams_per_channel_absmax(w: torch.Tensor, n_bits: int, return_stats: bool = False) -> QParams:
+def cal_qparams_per_channel_absmax(w: torch.Tensor,
+                                   n_bits: int,
+                                   return_stats: bool = False) -> QParams:
     """Calculate quantization parameters for each channel using absolute max
     value."""
     float_w = w.float()
@@ -33,7 +35,9 @@ def cal_qparams_per_channel_absmax(w: torch.Tensor, n_bits: int, return_stats: b
 
 
 @torch.no_grad()
-def cal_qparams_per_channel_minmax(w: torch.Tensor, n_bits: int, return_stats: bool = False) -> QParams:
+def cal_qparams_per_channel_minmax(w: torch.Tensor,
+                                   n_bits: int,
+                                   return_stats: bool = False) -> QParams:
     """Calculate quantization parameters for each channel using min and max
     values."""
 
@@ -55,7 +59,10 @@ def cal_qparams_per_channel_minmax(w: torch.Tensor, n_bits: int, return_stats: b
 
 
 @torch.no_grad()
-def cal_qparams_per_group_absmax(w: torch.Tensor, n_bits: int, group_size: int, return_stats: bool = False) -> QParams:
+def cal_qparams_per_group_absmax(w: torch.Tensor,
+                                 n_bits: int,
+                                 group_size: int,
+                                 return_stats: bool = False) -> QParams:
     """Calculate quantization parameters for each group using absolute max
     value."""
 
@@ -66,7 +73,8 @@ def cal_qparams_per_group_absmax(w: torch.Tensor, n_bits: int, group_size: int, 
         'Input channels should be divisible by group_size.'
 
     float_w = w.float()
-    absmax = float_w.abs().reshape(outc, -1, group_size).max(dim=-1, keepdim=True)[0]
+    absmax = float_w.abs().reshape(outc, -1, group_size).max(dim=-1,
+                                                             keepdim=True)[0]
     q_max = 2**(n_bits - 1) - 1
     scales = absmax.div(q_max)
     if return_stats:
@@ -76,7 +84,10 @@ def cal_qparams_per_group_absmax(w: torch.Tensor, n_bits: int, group_size: int, 
 
 
 @torch.no_grad()
-def cal_qparams_per_group_minmax(w: torch.Tensor, n_bits: int, group_size: int, return_stats: bool = False) -> QParams:
+def cal_qparams_per_group_minmax(w: torch.Tensor,
+                                 n_bits: int,
+                                 group_size: int,
+                                 return_stats: bool = False) -> QParams:
     """Calculate quantization parameters for each group using min and max
     values."""
 
@@ -102,7 +113,9 @@ def cal_qparams_per_group_minmax(w: torch.Tensor, n_bits: int, group_size: int, 
 
 
 @torch.no_grad()
-def cal_qparams_per_tensor_minmax(w: torch.Tensor, n_bits: int, return_stats: bool = False) -> QParams:
+def cal_qparams_per_tensor_minmax(w: torch.Tensor,
+                                  n_bits: int,
+                                  return_stats: bool = False) -> QParams:
     """Calculate quantization parameters for the entire tensor using min and
     max values."""
 
@@ -122,7 +135,9 @@ def cal_qparams_per_tensor_minmax(w: torch.Tensor, n_bits: int, return_stats: bo
 
 
 @torch.no_grad()
-def cal_qparams_per_tensor_absmax(w: torch.Tensor, n_bits: int, return_stats: bool = False) -> QParams:
+def cal_qparams_per_tensor_absmax(w: torch.Tensor,
+                                  n_bits: int,
+                                  return_stats: bool = False) -> QParams:
     """Calculate quantization parameters for the entire tensor using absolute
     max value."""
     float_w = w.float()

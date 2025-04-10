@@ -13,16 +13,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Modified from https://github.com/NVIDIA/FasterTransformer/blob/main/src/fastertransformer/triton_backend/multi_gpu_gpt/CMakeLists.txt
+# Modified from https://github.com/NVIDIA/FasterTransformer/blob/main/src/turbomind/triton_backend/multi_gpu_gpt/CMakeLists.txt
 
 cmake_minimum_required(VERSION 3.8)
 
 set(llama_triton_backend_files
     LlamaTritonModel.cc
+    LlamaTritonModelInstance.cc
 )
 
 find_package(CUDAToolkit REQUIRED)
 add_library(LlamaTritonBackend STATIC ${llama_triton_backend_files})
 set_property(TARGET LlamaTritonBackend PROPERTY POSITION_INDEPENDENT_CODE  ON)
-target_link_libraries(LlamaTritonBackend PUBLIC TransformerTritonBackend Llama tensor memory_utils CUDA::cublasLt yaml-cpp::yaml-cpp)
+target_link_libraries(LlamaTritonBackend PUBLIC TransformerTritonBackend Llama tensor memory_utils CUDA::cublasLt)
 target_compile_features(LlamaTritonBackend PRIVATE cxx_std_14)

@@ -16,11 +16,11 @@
 
 #pragma once
 
+#include "3rdparty/INIReader.h"
 #include "src/turbomind/macro.h"
 #include "src/turbomind/utils/cuda_bf16_wrapper.h"
 #include "src/turbomind/utils/logger.h"
 
-#include <algorithm>
 #include <cublasLt.h>
 #include <cublas_v2.h>
 #include <cuda_runtime.h>
@@ -306,8 +306,7 @@ inline std::string getDeviceName()
     return std::string(props.name);
 }
 
-template<class T>
-inline T div_up(T a, T n)
+inline int div_up(int a, int n)
 {
     return (a + n - 1) / n;
 }
@@ -384,6 +383,8 @@ struct getTypeFromCudaDataType<BFLOAT16_DATATYPE> {
     using Type = __nv_bfloat16;
 };
 #endif
+
+FtCudaDataType getModelFileType(std::string ini_file, std::string section_name);
 
 // clang-format off
 template<typename T> struct packed_type;
@@ -481,27 +482,6 @@ void compareTwoTensor(
     delete[] h_pred;
     delete[] h_ref;
 }
-
-bool is_16xx_series(const char* name);
-
-class CudaDeviceGuard {
-public:
-    CudaDeviceGuard(int device)
-    {
-        cudaGetDevice(&last_device_id_);
-        if (device != last_device_id_) {
-            cudaSetDevice(device);
-        }
-    }
-
-    ~CudaDeviceGuard()
-    {
-        cudaSetDevice(last_device_id_);
-    }
-
-private:
-    int last_device_id_{-1};
-};
 
 /* ************************** end of common utils ************************** */
 }  // namespace turbomind

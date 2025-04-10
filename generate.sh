@@ -1,5 +1,4 @@
-#!/bin/bash
-WORKSPACE_PATH=$(dirname "$(readlink -f "$0")")
+#!/bin/sh
 
 builder="-G Ninja"
 
@@ -10,7 +9,7 @@ fi
 cmake ${builder} .. \
     -DCMAKE_BUILD_TYPE=RelWithDebInfo \
     -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
-    -DCMAKE_INSTALL_PREFIX=${WORKSPACE_PATH}/install \
+    -DCMAKE_INSTALL_PREFIX=./install \
     -DBUILD_PY_FFI=ON \
     -DBUILD_MULTI_GPU=ON \
     -DCMAKE_CUDA_FLAGS="-lineinfo" \

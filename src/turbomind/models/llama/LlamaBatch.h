@@ -2,30 +2,22 @@
 
 #pragma once
 
-#include <curand_kernel.h>
-
-#include "src/turbomind/engine/gateway.h"
-#include "src/turbomind/engine/request.h"
-
+// #include "src/turbomind/models/llama/LlamaCacheManager.h"
+#include "src/turbomind/layers/sampling_layers/BaseSamplingLayer.h"
 #include "src/turbomind/models/llama/Barrier.h"
+#include "src/turbomind/models/llama/LlamaNcclGuard.h"
+#include "src/turbomind/models/llama/Request.h"
 #include "src/turbomind/models/llama/SequenceManager.h"
-#include "src/turbomind/models/llama/context.h"
 #include "src/turbomind/models/llama/llama_kernels.h"
 #include "src/turbomind/models/llama/llama_params.h"
-
 #include "src/turbomind/utils/allocator.h"
 #include "src/turbomind/utils/cublasMMWrapper.h"
 #include "src/turbomind/utils/cuda_utils.h"
+#include <condition_variable>
+#include <mutex>
+#include <type_traits>
 
 namespace turbomind {
-
-struct SharedState {
-    std::vector<std::shared_ptr<Request>> infer_reqs;
-    std::vector<std::shared_ptr<Request>> kill_reqs;
-    std::shared_ptr<Barrier>              barrier;
-    bool                                  abort;
-    std::atomic<size_t>                   free_size{std::numeric_limits<size_t>::max()};
-};
 
 struct BatchState {
     int*  h_prompt_length;  // history + input, ignore generated
@@ -42,8 +34,6 @@ struct BatchState {
     std::vector<const Sequence*>          sequences;
     std::vector<std::shared_ptr<Request>> requests;
 
-    std::vector<int> errors;
-
     // |<-- existing -->|<-- swap-in -->|
     // |<----------- active ----------->|<-- inactive -->|
     int active_size;
@@ -57,14 +47,17 @@ struct GenerationState {
     int max_init_ctx_len;
     int step;
 
+    int sum_seq_len;
+    int max_seq_len;
+
     int partial;
     int partial_context_legnth;
 
     std::vector<uint64_t> unique_ids;
 
-    bool skip_init_sampling;
+    int max_input_count1;
+    int max_input_count2;
 
-    // min tokens per iter for satisfying `max_prefill_iters` constraint
     std::deque<int> min_input_count;
 
     int finished_count;
@@ -73,72 +66,69 @@ struct GenerationState {
 template<typename T>
 class LlamaBatch {
 public:
-    void AllocateBuffer(size_t batch_size, size_t session_len, int cache_block_seq_len);
-    void AllocatePersistantBuffer(size_t max_batch_size, int cache_block_seq_len);
+    void AllocateBuffer(size_t batch_size, size_t session_len);
+    void AllocatePersistantBuffer(size_t max_batch_size);
     void FreeBuffer();
 
     using Requests = std::vector<std::shared_ptr<Request>>;
     using Signal   = std::function<void()>;
 
-    void DisableConflictRequests(Requests& infer_reqs, Requests& kill_reqs);
+    void RejectInvalidRequests(Requests& stop_reqs, Requests& infer_reqs);
 
-    void ProcessKillRequests(const Requests& reqs, std::vector<Signal>& signals);
+    [[nodiscard]] auto ProcessStopRequests(const Requests& requests) -> std::vector<Signal>;
 
-    void ProcessInferRequests(const Requests& reqs, std::vector<Signal>& signals);
+    void ProcessInferRequests(const Requests& requests);
 
-    int AdjustMaxInputCount(GenerationState&                    g,
-                            const std::vector<const Sequence*>& sequences,
-                            const std::vector<int>&             context_length);
+    void AdjustMaxInputCount(GenerationState&                    g,
+                             const std::vector<const Sequence*>& sequences,
+                             const std::vector<int>&             context_length);
 
     void Initialize(GenerationState& g);
 
     void InitializeSampling(const GenerationState& g);
 
-    bool Forward(GenerationState& g);
+    [[nodiscard]] bool Forward(GenerationState& g, int iter);
 
-    void Finish(GenerationState& g, std::vector<Signal>& signals);
+    [[nodiscard]] auto Finish(GenerationState& g) -> std::vector<Signal>;
 
     [[nodiscard]] Signal Interrupt(int index, bool force_stop = false, bool force_end = false);
 
-    void ComputeAndOutputLogits(T* hidden_states, int first, int last);
+    void OutputContextLogits(T*                                  context_decoder_output,
+                             const std::vector<int>&             indices,
+                             const std::vector<int>&             lengths,
+                             const std::vector<const Sequence*>& sequences);
 
-    void OutputLogits(const float* logits, int first, int last, GenerationConfig::OutType out_type);
+    explicit LlamaBatch(const EngineParams& params, int cache_block_seq_len, int quant_policy, LlamaV2<T>* model);
 
-    void OutputLastHiddenState(const T* hidden_states, int first, int last);
+    ~LlamaBatch()
+    {
+        TM_LOG_INFO("~LlamaBatch()");
+        model_->shared_state_->request_queue.close();
 
-    explicit LlamaBatch(const EngineParam&           param,
-                        std::unique_ptr<LlamaV2<T>>  model,
-                        std::unique_ptr<Context<T>>  ctx,
-                        std::shared_ptr<SharedState> state,
-                        std::shared_ptr<Gateway>     gateway,
-                        int                          device_id);
+        internal_thread_.join();
 
-    ~LlamaBatch();
+        if (output_thread_.joinable()) {
+            {
+                std::lock_guard lock{output_mutex_};
+                output_stop_token_ = true;
+            }
+            output_cv_.notify_one();
+            output_thread_.join();
+        }
+
+        FreeBuffer();
+    }
 
     void Start();
 
-    LlamaV2<T>& model() noexcept
-    {
-        return *model_;
-    }
-
-    int session_len() const noexcept
-    {
-        return session_len_;
-    }
-
-    void tune();
-
 private:
-    void BroadcastCancelFlags();
-
-    void ProcessCancelRequests(std::vector<Signal>& signals);
-
-    void InternalThreadEntry();
+    void InternalThreadEntry(int device_id);
 
     void OutputThreadEntry();
 
     void CopyState(const std::vector<std::tuple<BatchState*, BatchState*, int, int>>& desc);
+
+    void SendSignals(std::vector<Signal> signals);
 
     // analogs to `std::copy_n`
     template<typename U>
@@ -197,37 +187,22 @@ private:
     }
 
 private:
-    const EngineParam param_;
+    const int  max_batch_size_;
+    const int  max_context_token_num_;
+    int        session_len_;
+    const int  rank_;
+    const bool debug_;
+    const int  step_length_;
 
-    const std::shared_ptr<Gateway>     gateway_;
-    const std::shared_ptr<SharedState> shared_state_;
+    LlamaV2<T>* const model_;
 
-    const int      max_batch_size_;
-    const int      max_forward_token_num_;
-    const int      max_context_token_num_;
-    const int      num_tokens_per_iter_;
-    const int      max_prefill_iters_;
-    const int      device_id_;
-    const int      rank_;
-    const DataType data_type_;
-    const bool     debug_;
-
-    // Refs into `Context<T>`
-    cudaStream_t const     stream_{};
-    cublasMMWrapper* const cublas_wrapper_{};
-    IAllocator* const      allocator_{};
-    IAllocator* const      peer_allocator_{};
-
-    int session_len_;  // May be truncated in ctor
-
-    std::unique_ptr<Context<T>>      context_;
-    std::unique_ptr<LlamaV2<T>>      model_;
     std::unique_ptr<SequenceManager> sequence_manager_;
 
     ///////////////////////////////////////////////////////////////////
     // k/v cache block buffers
     int*       cu_block_counts_{};
-    uintptr_t* block_ptrs_{};
+    uintptr_t* k_block_ptrs_{};
+    uintptr_t* v_block_ptrs_{};
 
     ////////////////////////////////////////////////////////////////////
     // context decoding temp buffers
@@ -239,24 +214,23 @@ private:
     int* input_length_buf_{};    // input + cache missed length
     int* context_length_buf_{};  // history length + input_length
     int* init_context_length_{};
+    // temp buffers used for block->linear kv-cache conversion
+    T*     tmp_k_cache_buf_{};
+    T*     tmp_v_cache_buf_{};
+    void** tmp_k_ptrs_{};
+    void** tmp_v_ptrs_{};
+    void** h_tmp_k_ptrs_{};
+    void** h_tmp_v_ptrs_{};
 
     T*   decoder_input_buf_{};
     T*   decoder_output_buf_{};
     int* sequence_lengths_{};  // current sequence length
     int* init_ctx_lens_{};
-    int* lora_mask_buf_{};  // lora
 
     float* logits_buf_{};        // combined logits
     float* local_logits_buf_{};  // tensor parallel local logits
     float* context_logits_buf_{};
     float* local_context_logits_buf_{};
-
-    float*    sampled_logprobs_{};
-    uint32_t* sampled_indexes_{};
-    uint32_t* sampled_nums_{};
-    float*    h_sampled_logprobs_{};
-    uint32_t* h_sampled_indexes_{};
-    uint32_t* h_sampled_nums_{};
 
     float* rope_theta_{};
 
@@ -272,12 +246,12 @@ private:
     int*       h_input_length_buf_{};
     uint32_t*  h_seq_limit_len_{};
     int*       h_cu_block_counts_{};
-    uintptr_t* h_block_ptrs_{};
+    uintptr_t* h_k_block_ptrs_{};
+    uintptr_t* h_v_block_ptrs_{};
 
     int*   h_min_length_{};
     int*   h_runtime_top_k_{};
     float* h_runtime_top_p_{};
-    float* h_runtime_min_p_{};
     float* h_temperature_{};
     float* h_repetition_penalty_{};
     int*   h_stop_words_{};  // [batch_size, 2, kMaxStopWordsLen]
@@ -302,6 +276,8 @@ private:
     // hard limits for persistent buffers
     static constexpr int kMaxStopBadWordsLen = 32;
 
+    const DataType data_type_{};
+
     bool is_allocate_persistant_buffer_ = false;
     bool is_allocate_buffer_            = false;
 
@@ -310,12 +286,24 @@ private:
 
     std::vector<std::tuple<std::string, std::byte*, std::byte*>> sampling_params_;
 
+    cudaStream_t     stream_{};
+    cublasMMWrapper* cublas_wrapper_{};
+    IAllocator*      allocator_{};
+
     std::thread internal_thread_;
 
-    int* h_output_ids_{};
-};
+    // async stream callback utils
+    std::thread             output_thread_;
+    std::mutex              output_mutex_;
+    std::condition_variable output_cv_;
+    std::vector<Signal>     output_signals_;
+    bool                    output_stop_token_{false};
 
-template<class T>
-using Engine = LlamaBatch<T>;
+    int* h_output_ids_{};
+
+    const int num_tokens_per_iter_;
+    const int extra_tokens_per_iter_;
+    const int max_prefill_iters_;
+};
 
 }  // namespace turbomind

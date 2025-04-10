@@ -1,25 +1,42 @@
 // Copyright (c) OpenMMLab. All rights reserved.
 
+#include "src/turbomind/kernels/reduce_kernel_utils.cuh"
+#include "src/turbomind/models/llama/llama_utils.h"
+#include "src/turbomind/utils/cuda_utils.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <type_traits>
-#include <vector>
-
 #include <cuda_fp16.h>
 #include <curand_kernel.h>
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 #include <thrust/host_vector.h>
-
-#include "src/turbomind/models/llama/llama_utils.h"
-#include "src/turbomind/utils/cuda_utils.h"
+#include <vector>
 
 namespace turbomind {
 
-CmpMode compare_mode = kCmpRead;
-// CmpMode compare_mode = kCmpWrite;
+CmpMode compare_mode = kCmpNone;
+
+template<typename T>
+struct abs_diff_t {
+    using type = T;
+};
+
+template<>
+struct abs_diff_t<half> {
+    using type = float;
+};
+
+template<typename T>
+struct abs_diff: public thrust::unary_function<thrust::tuple<T, T>, typename abs_diff_t<T>::type> {
+    __host__ __device__ float operator()(thrust::tuple<T, T> x) const
+    {
+        using R = typename abs_diff_t<T>::type;
+        auto r  = R(thrust::get<0>(x)) - R(thrust::get<1>(x));
+        return r < R(0) ? -r : r;
+    }
+};
 
 template<typename T>
 void CheckNan(const T* ptr, size_t size, std::string key, cudaStream_t stream)
@@ -41,8 +58,10 @@ void CheckNan(const T* ptr, size_t size, std::string key, cudaStream_t stream)
 template<typename T>
 void CmpRead(T* ptr, size_t size, std::string key, cudaStream_t stream)
 {
+    // wait for b
+    check_cuda_error(cudaStreamSynchronize(stream));
     // read a from file
-    std::vector<T> h_a(size);
+    thrust::host_vector<T> h_a(size);
     {
         const auto    filename = "tmp/" + key + ".cmp";
         std::ifstream ifs(filename, std::ios::binary);
@@ -61,30 +80,15 @@ void CmpRead(T* ptr, size_t size, std::string key, cudaStream_t stream)
         }
         ifs.read((char*)h_a.data(), sizeof(T) * h_a.size());
     }
-    std::vector<T> h_b(size);
-    check_cuda_error(cudaMemcpyAsync(h_b.data(), ptr, sizeof(T) * size, cudaMemcpyDefault, stream));
-    check_cuda_error(cudaStreamSynchronize(stream));
-
-    using Tacc         = std::conditional_t<std::is_integral_v<T>, int64_t, float>;
-    constexpr Tacc eps = std::is_integral_v<T> ? 1 : 1e-8f;
-
-    Tacc asum{};
-    Tacc rsum{};
-    Tacc amean{};
-    for (size_t i = 0; i < size; ++i) {
-        Tacc x        = (Tacc)h_b[i];
-        Tacc r        = (Tacc)h_a[i];
-        Tacc abs_diff = std::abs(x - r);
-        Tacc rel_diff = abs_diff / std::max(std::max(std::abs(r), std::abs(x)), eps);
-        asum += abs_diff;
-        rsum += rel_diff;
-        amean += std::abs(r);
-    }
-
-    std::cerr << key << ": " << amean / size << " " << asum << " " << asum / size << " " << rsum / size << "\n";
-
-    check_cuda_error(cudaMemcpyAsync(ptr, h_a.data(), sizeof(T) * h_a.size(), cudaMemcpyDefault, stream));
-    check_cuda_error(cudaStreamSynchronize(stream));
+    // copy a to device
+    thrust::device_vector<T> a = h_a;
+    // create abs(a - b) iterator
+    thrust::device_ptr<T> dev_ptr(ptr);
+    auto                  zip_iter       = thrust::make_zip_iterator(thrust::make_tuple(a.begin(), dev_ptr));
+    auto                  transform_iter = thrust::make_transform_iterator(zip_iter, abs_diff<T>{});
+    // sum(abs(a - b))
+    auto asum = thrust::reduce(thrust::device, transform_iter, transform_iter + size);
+    std::cerr << key << ": " << asum << " " << asum / size << "\n";
 }
 
 template<typename T>
@@ -119,7 +123,6 @@ void Compare(T* ptr, size_t size, std::string key, CmpMode mode, cudaStream_t st
 template void Compare(int* ptr, size_t size, std::string key, CmpMode mode, cudaStream_t stream);
 template void Compare(float* ptr, size_t size, std::string key, CmpMode mode, cudaStream_t stream);
 template void Compare(half* ptr, size_t size, std::string key, CmpMode mode, cudaStream_t stream);
-template void Compare(__nv_bfloat16* ptr, size_t size, std::string key, CmpMode mode, cudaStream_t stream);
 
 template void CheckNan(const float* ptr, size_t size, std::string key, cudaStream_t stream);
 template void CheckNan(const half* ptr, size_t size, std::string key, cudaStream_t stream);
@@ -161,12 +164,6 @@ int64_t& gSequenceIds(int batch_idx)
         ids.resize(batch_idx + 1, -1);
     }
     return ids.at(batch_idx);
-}
-
-bool& isTuning()
-{
-    thread_local bool value{};
-    return value;
 }
 
 }  // namespace turbomind

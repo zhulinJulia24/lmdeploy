@@ -22,7 +22,6 @@ set(_INSTALL_CUDA_RPATH
     "\$ORIGIN/../../nvidia/nccl/lib/"
     "\$ORIGIN/../../nvidia/cuda_runtime/lib/"
     "\$ORIGIN/../../nvidia/cublas/lib/"
-    "\$ORIGIN/../../nvidia/curand/lib/"
 )
 set_target_properties(${PROJECT_NAME} PROPERTIES
     BUILD_RPATH "\$ORIGIN"

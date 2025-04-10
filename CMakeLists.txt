@@ -43,30 +43,19 @@ option(BUILD_PY_FFI "Build python ffi" ON)
 option(BUILD_TEST "Build tests" OFF)
 
 include(FetchContent)
-if (BUILD_TEST)
-  FetchContent_Declare(
-    repo-cutlass
-    GIT_REPOSITORY https://github.com/NVIDIA/cutlass.git
-    GIT_TAG        6f47420213f757831fae65c686aa471749fa8d60
-    GIT_SHALLOW ON
-  )
-
-  set(CUTLASS_ENABLE_HEADERS_ONLY ON CACHE BOOL "Enable only the header library")
-
-  FetchContent_MakeAvailable(repo-cutlass)
-
-  set(CUTLASS_HEADER_DIR ${PROJECT_SOURCE_DIR}/3rdparty/cutlass/include)
-  set(CUTLASS_EXTENSIONS_DIR ${PROJECT_SOURCE_DIR}/src/turbomind/cutlass_extensions/include)
-endif()
 
 FetchContent_Declare(
-  yaml-cpp
-  GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
-  GIT_TAG 0.8.0
+  repo-cutlass
+  GIT_REPOSITORY https://github.com/NVIDIA/cutlass.git
+  GIT_TAG        6f47420213f757831fae65c686aa471749fa8d60
 )
-set(YAML_BUILD_SHARED_LIBS OFF CACHE BOOL "Build static library of yaml-cpp")
-FetchContent_MakeAvailable(yaml-cpp)
 
+set(CUTLASS_ENABLE_HEADERS_ONLY ON CACHE BOOL "Enable only the header library")
+
+FetchContent_MakeAvailable(repo-cutlass)
+
+set(CUTLASS_HEADER_DIR ${PROJECT_SOURCE_DIR}/3rdparty/cutlass/include)
+set(CUTLASS_EXTENSIONS_DIR ${PROJECT_SOURCE_DIR}/src/turbomind/cutlass_extensions/include)
 
 option(SPARSITY_SUPPORT "Build project with Ampere sparsity feature support" OFF)
 
@@ -140,24 +129,62 @@ set(CMAKE_C_FLAGS    "${CMAKE_C_FLAGS}")
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler -Wall -ldl") # -Xptxas -v
 
-# TODO: build for sm_72 & sm_87 on aarch64 platform (Jetson devices)
-if (NOT CMAKE_CUDA_ARCHITECTURES)
-  set(CMAKE_CUDA_ARCHITECTURES 70-real 75-real)
-  if (${CUDA_VERSION} VERSION_GREATER_EQUAL "11")
-    list(APPEND CMAKE_CUDA_ARCHITECTURES 80-real)
-  endif ()
-  if (${CUDA_VERSION} VERSION_GREATER_EQUAL "11.1")
-    list(APPEND CMAKE_CUDA_ARCHITECTURES 86-real)
-  endif ()
-  if (${CUDA_VERSION} VERSION_GREATER_EQUAL "11.8")
-    list(APPEND CMAKE_CUDA_ARCHITECTURES 89-real 90-real)
-  endif ()
-  if (MSVC)
-    list(REMOVE_ITEM CMAKE_CUDA_ARCHITECTURES 80-real 90-real)
-  endif ()
-endif ()
+set(SM_SETS 52 60 61 70 75 80 86 89 90)
+set(USING_WMMA False)
+set(FIND_SM False)
 
-message(STATUS "Building with CUDA archs: ${CMAKE_CUDA_ARCHITECTURES}")
+foreach(SM_NUM IN LISTS SM_SETS)
+  string(FIND "${SM}" "${SM_NUM}" SM_POS)
+  if(SM_POS GREATER -1)
+    if(FIND_SM STREQUAL False)
+      set(ENV{TORCH_CUDA_ARCH_LIST} "")
+    endif()
+    set(FIND_SM True)
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -gencode=arch=compute_${SM_NUM},code=\\\"sm_${SM_NUM},compute_${SM_NUM}\\\"")
+
+    if (SM_NUM STREQUAL 70 OR SM_NUM STREQUAL 75 OR SM_NUM STREQUAL 80 OR SM_NUM STREQUAL 86 OR SM_NUM STREQUAL 89 OR SM_NUM STREQUAL 90)
+      set(USING_WMMA True)
+    endif()
+
+    if(BUILD_PYT)
+      string(SUBSTRING ${SM_NUM} 0 1 SM_MAJOR)
+      string(SUBSTRING ${SM_NUM} 1 1 SM_MINOR)
+      set(ENV{TORCH_CUDA_ARCH_LIST} "$ENV{TORCH_CUDA_ARCH_LIST}\;${SM_MAJOR}.${SM_MINOR}")
+    endif()
+
+    list(APPEND CMAKE_CUDA_ARCHITECTURES ${SM_NUM})
+    message("-- Assign GPU architecture (sm=${SM_NUM})")
+  endif()
+endforeach()
+
+if(USING_WMMA STREQUAL True)
+  set(CMAKE_C_FLAGS    "${CMAKE_C_FLAGS}    -DWMMA")
+  set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}  -DWMMA")
+  set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -DWMMA")
+  message("-- Use WMMA")
+endif()
+
+if(NOT (FIND_SM STREQUAL True))
+  set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}  \
+                        -gencode=arch=compute_70,code=\\\"sm_70,compute_70\\\" \
+                        -gencode=arch=compute_75,code=\\\"sm_75,compute_75\\\" \
+                        -gencode=arch=compute_80,code=\\\"sm_80,compute_80\\\" \
+                        -gencode=arch=compute_86,code=\\\"sm_86,compute_86\\\" \
+                        ")
+  #                      -rdc=true")
+  set(CMAKE_C_FLAGS    "${CMAKE_C_FLAGS}    -DWMMA")
+  set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}  -DWMMA")
+  set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -DWMMA")
+  if(BUILD_PYT)
+    set(ENV{TORCH_CUDA_ARCH_LIST} "7.0;7.5;8.0;8.6")
+  endif()
+  set(CMAKE_CUDA_ARCHITECTURES 70 75 80 86)
+  message("-- Assign GPU architecture (sm=70,75,80,86)")
+endif()
+
+if(BUILD_PYT)
+  set(TORCH_CUDA_ARCH_LIST $ENV{TORCH_CUDA_ARCH_LIST})
+endif()
 
 set(CMAKE_CUDA_RUNTIME_LIBRARY Shared)
 set(CMAKE_C_FLAGS_DEBUG    "${CMAKE_C_FLAGS_DEBUG}    -Wall -O0")
@@ -304,7 +331,7 @@ link_directories(
 
 # add_subdirectory(3rdparty)
 add_subdirectory(src)
-# add_subdirectory(examples)
+add_subdirectory(examples)
 
 if(BUILD_TEST)
     add_subdirectory(tests/csrc)
@@ -330,18 +357,26 @@ endif()
 ########################################
 
 add_library(transformer-shared SHARED
+  $<TARGET_OBJECTS:BaseSamplingLayer>
   $<TARGET_OBJECTS:DynamicDecodeLayer>
+  $<TARGET_OBJECTS:llama_fmha>
+  $<TARGET_OBJECTS:flash_attention2>
   $<TARGET_OBJECTS:Llama>
   $<TARGET_OBJECTS:LlamaTritonBackend>
+  $<TARGET_OBJECTS:gemm_s4_f16>
+  $<TARGET_OBJECTS:TopKSamplingLayer>
+  $<TARGET_OBJECTS:TopPSamplingLayer>
   $<TARGET_OBJECTS:TransformerTritonBackend>
   $<TARGET_OBJECTS:activation_kernels>
   $<TARGET_OBJECTS:ban_bad_words>
+  $<TARGET_OBJECTS:bert_preprocess_kernels>
   $<TARGET_OBJECTS:cublasAlgoMap>
   $<TARGET_OBJECTS:cublasMMWrapper>
   $<TARGET_OBJECTS:cuda_utils>
   $<TARGET_OBJECTS:custom_ar_comm>
   $<TARGET_OBJECTS:custom_ar_kernels>
-  $<TARGET_OBJECTS:attention>
+  $<TARGET_OBJECTS:decoder_multihead_attention>
+  $<TARGET_OBJECTS:decoder_masked_multihead_attention>
   $<TARGET_OBJECTS:decoding_kernels>
   $<TARGET_OBJECTS:gpt_kernels>
   $<TARGET_OBJECTS:logprob_kernels>
@@ -350,13 +385,13 @@ add_library(transformer-shared SHARED
   $<TARGET_OBJECTS:mpi_utils>
   $<TARGET_OBJECTS:nccl_utils>
   $<TARGET_OBJECTS:nvtx_utils>
-  $<TARGET_OBJECTS:anomaly_handler>
   $<TARGET_OBJECTS:sampling_penalty_kernels>
   $<TARGET_OBJECTS:sampling_topk_kernels>
   $<TARGET_OBJECTS:sampling_topp_kernels>
   $<TARGET_OBJECTS:stop_criteria>
   $<TARGET_OBJECTS:tensor>
   $<TARGET_OBJECTS:unfused_attention_kernels>
+  $<TARGET_OBJECTS:word_list>
 )
 
 if (BUILD_MULTI_GPU)

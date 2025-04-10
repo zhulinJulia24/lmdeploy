@@ -17,8 +17,6 @@
 #include <assert.h>
 #include <float.h>
 
-#include "src/turbomind/kernels/core/array_ops.h"
-#include "src/turbomind/kernels/core/common.h"
 #include "src/turbomind/kernels/sampling_penalty_kernels.h"
 
 namespace turbomind {
@@ -107,7 +105,7 @@ template void invokeApplyTemperaturePenalty(float*       logits,
                                             const int    vocab_size,
                                             const int    vocab_size_padd,
                                             cudaStream_t stream);
-#if 0
+
 template void invokeApplyTemperaturePenalty(half*        logits,
                                             const half*  bias,
                                             const float  temperature,
@@ -115,7 +113,7 @@ template void invokeApplyTemperaturePenalty(half*        logits,
                                             const int    vocab_size,
                                             const int    vocab_size_padd,
                                             cudaStream_t stream);
-#endif
+
 template<typename T>
 __global__ void batchApplyTemperaturePenalty(T*           logits,
                                              const T*     bias,
@@ -214,7 +212,7 @@ template void invokeBatchApplyTemperaturePenalty(float*       logits,
                                                  const int    vocab_size,
                                                  const int    vocab_size_padd,
                                                  cudaStream_t stream);
-#if 0
+
 template void invokeBatchApplyTemperaturePenalty(half*        logits,
                                                  const half*  bias,
                                                  const float* temperatures,
@@ -222,81 +220,6 @@ template void invokeBatchApplyTemperaturePenalty(half*        logits,
                                                  const int    vocab_size,
                                                  const int    vocab_size_padd,
                                                  cudaStream_t stream);
-#endif
-
-template<int vec_size>
-__global__ void batchApplyTemperaturePenalty_v2(float*       logits,
-                                                const float* bias,
-                                                const float* temperatures,
-                                                const int    batch_size,
-                                                const int    vocab_size,
-                                                const int    vocab_size_padded)
-{
-    const int vi = blockIdx.x * blockDim.x + threadIdx.x;
-    const int bi = blockIdx.y;
-
-    __shared__ float shared_scale;
-
-    if (threadIdx.x == 0) {
-        shared_scale = fdividef(1.f, temperatures[bi] + 1e-6f);
-    }
-
-    __syncthreads();
-
-    const float scale = shared_scale;
-
-    logits += (size_t)bi * vocab_size_padded;
-
-    const int step = gridDim.x * blockDim.x * vec_size;
-
-    for (int i = vi * vec_size; i < vocab_size_padded; i += step) {
-        Array<float, vec_size> vec;
-        Load(vec, logits + i);
-        PRAGMA_UNROLL
-        for (int c = 0; c < vec_size; ++c) {
-            if (i + c < vocab_size) {
-                vec[c] *= scale;
-            }
-            else {
-                vec[c] = -FLT_MAX;
-            }
-        }
-        Store(logits + i, vec);
-    }
-}
-
-void invokeBatchApplyTemperaturePenalty_v2(float*       logits,
-                                           const float* bias,
-                                           const float* temperatures,
-                                           const int    batch_size,
-                                           const int    vocab_size,
-                                           const int    vocab_size_padded,
-                                           cudaStream_t stream)
-{
-
-    auto invoke = [&](auto vec_size) {
-        constexpr int threads        = 256;
-        const int     blocks_per_tok = (vocab_size_padded + threads * vec_size - 1) / (threads * vec_size);
-        const dim3    blocks(blocks_per_tok, batch_size);
-        batchApplyTemperaturePenalty_v2<vec_size.value><<<blocks, threads, 0, stream>>>(  //
-            logits,
-            bias,
-            temperatures,
-            batch_size,
-            vocab_size,
-            vocab_size_padded);
-    };
-
-    if (vocab_size_padded % 4 == 0) {
-        invoke(std::integral_constant<int, 4>{});
-    }
-    else if (vocab_size_padded % 2 == 0) {
-        invoke(std::integral_constant<int, 2>{});
-    }
-    else {
-        invoke(std::integral_constant<int, 1>{});
-    }
-}
 
 template<typename T, RepetitionPenaltyType penalty_type>
 __global__ void applyRepetitionPenalty(T*          logits,
@@ -426,7 +349,7 @@ template void invokeApplyRepetitionPenalty(float*                      logits,
                                            const int                   step,
                                            const RepetitionPenaltyType penalty_type,
                                            cudaStream_t                stream);
-#if 0
+
 template void invokeApplyRepetitionPenalty(half*                       logits,
                                            const float                 penalty,
                                            const int*                  start_ids,
@@ -440,7 +363,7 @@ template void invokeApplyRepetitionPenalty(half*                       logits,
                                            const int                   step,
                                            const RepetitionPenaltyType penalty_type,
                                            cudaStream_t                stream);
-#endif
+
 template<typename T, RepetitionPenaltyType penalty_type>
 __global__ void batchApplyRepetitionPenalty(T*           logits,
                                             const float* penalties,
@@ -488,8 +411,6 @@ __global__ void batchApplyRepetitionPenalty(T*           logits,
             assert(false);
         }
     }
-
-    __syncthreads();
 
     // Phase 2. Replace a logit value by the penalized one.
     for (int index = threadIdx.x; index < step; index += blockDim.x) {
@@ -563,7 +484,7 @@ template void invokeBatchApplyRepetitionPenalty(float*                logits,
                                                 const int             step,
                                                 RepetitionPenaltyType penalty_type,
                                                 cudaStream_t          stream);
-#if 0
+
 template void invokeBatchApplyRepetitionPenalty(half*                 logits,
                                                 const float*          penalties,
                                                 int*                  penalty_workspace,
@@ -576,7 +497,7 @@ template void invokeBatchApplyRepetitionPenalty(half*                 logits,
                                                 const int             step,
                                                 RepetitionPenaltyType penalty_type,
                                                 cudaStream_t          stream);
-#endif
+
 template<typename T>
 __global__ void batchApplyMinLengthPenalty(T*         logits,
                                            const int* min_lengths,
@@ -618,7 +539,7 @@ template void invokeMinLengthPenalty(float*       logits,
                                      const int    batch_size,
                                      const int    vocab_size_padded,
                                      cudaStream_t stream);
-#if 0
+
 template void invokeMinLengthPenalty(half*        logits,
                                      const int*   min_lengths,
                                      const int*   end_ids,
@@ -627,5 +548,5 @@ template void invokeMinLengthPenalty(half*        logits,
                                      const int    batch_size,
                                      const int    vocab_size_padded,
                                      cudaStream_t stream);
-#endif
+
 }  // namespace turbomind

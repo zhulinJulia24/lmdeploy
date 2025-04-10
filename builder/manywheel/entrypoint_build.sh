@@ -11,7 +11,6 @@ source /opt/conda/bin/activate
 conda activate $PYTHON_VERSION
 
 cd lmdeploy
-rm -rf lmdeploy/lib
 mkdir -p build && cd build && rm -rf *
 bash ../generate.sh make
 make -j$(nproc) && make install

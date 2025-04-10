@@ -2,7 +2,6 @@ import pytest
 import torch
 
 from lmdeploy.pytorch.kernels import apply_rotary_pos_emb
-from lmdeploy.utils import is_bf16_supported
 
 
 def _rotate_half(x):
@@ -10,10 +9,6 @@ def _rotate_half(x):
     x1 = x[..., :x.shape[-1] // 2]
     x2 = x[..., x.shape[-1] // 2:]
     return torch.cat((-x2, x1), dim=-1)
-
-
-def _bf16_mark():
-    return pytest.mark.skipif(not is_bf16_supported(), reason='bf16 not supported.')
 
 
 class TestApplyRotary:
@@ -48,15 +43,25 @@ class TestApplyRotary:
 
     @pytest.fixture
     def q_states(self, seq_length, num_heads_q, feature_dim, dtype):
-        yield torch.rand(seq_length.sum(), num_heads_q, feature_dim, dtype=dtype, device='cuda')
+        yield torch.rand(seq_length.sum(),
+                         num_heads_q,
+                         feature_dim,
+                         dtype=dtype,
+                         device='cuda')
 
     @pytest.fixture
     def k_states(self, seq_length, num_heads_k, feature_dim, dtype):
-        yield torch.rand(seq_length.sum(), num_heads_k, feature_dim, dtype=dtype, device='cuda')
+        yield torch.rand(seq_length.sum(),
+                         num_heads_k,
+                         feature_dim,
+                         dtype=dtype,
+                         device='cuda')
 
     @pytest.fixture
     def position_ids_1d(self, seq_length, max_seqlen):
-        yield torch.randint(0, max_seqlen.item(), (seq_length.sum().item(), ), device='cuda')
+        yield torch.randint(0,
+                            max_seqlen.item(), (seq_length.sum().item(), ),
+                            device='cuda')
 
     @pytest.fixture
     def cached_cos(self, max_seqlen, feature_dim, dtype):
@@ -67,26 +72,25 @@ class TestApplyRotary:
         yield torch.rand(max_seqlen, feature_dim, dtype=dtype, device='cuda')
 
     @pytest.fixture
-    def cos(self, cached_cos, position_ids_1d):
-        yield cached_cos[position_ids_1d, None, :]
-
-    @pytest.fixture
-    def sin(self, cached_sin, position_ids_1d):
-        yield cached_sin[position_ids_1d, None, :]
-
-    @pytest.fixture
-    def gt(self, q_states, k_states, cos, sin, position_ids_1d):
+    def gt(self, q_states, k_states, cached_cos, cached_sin, position_ids_1d):
+        cos = cached_cos[position_ids_1d, None, :]
+        sin = cached_sin[position_ids_1d, None, :]
 
         q_embed = q_states * cos + _rotate_half(q_states) * sin
         k_embed = k_states * cos + _rotate_half(k_states) * sin
 
         yield q_embed, k_embed
 
-    @pytest.mark.parametrize('dtype', [pytest.param(torch.bfloat16, marks=_bf16_mark()), torch.float16, torch.float32],
+    @pytest.mark.parametrize('dtype',
+                             [torch.bfloat16, torch.float16, torch.float32],
                              indirect=True)
-    @pytest.mark.parametrize(('num_heads_q', 'num_heads_k'), [(8, 8), (8, 4)], indirect=True)
-    def test_apply_rotary(self, q_states, k_states, cos, sin, gt):
-        q_embed, k_embed = apply_rotary_pos_emb(q_states, k_states, cos, sin)
+    @pytest.mark.parametrize(('num_heads_q', 'num_heads_k'), [(8, 8), (8, 4)],
+                             indirect=True)
+    def test_apply_rotary(self, q_states, k_states, cached_cos, cached_sin,
+                          position_ids_1d, gt):
+        q_embed, k_embed = apply_rotary_pos_emb(q_states, k_states, cached_cos,
+                                                cached_sin, None,
+                                                position_ids_1d)
         q_gt, k_gt = gt
 
         rtol = None

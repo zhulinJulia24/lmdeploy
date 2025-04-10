@@ -1,12 +1,12 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-
 import random
 from threading import Lock
 from typing import Literal, Optional, Sequence, Union
 
 import gradio as gr
 
-from lmdeploy.messages import GenerationConfig, PytorchEngineConfig, TurbomindEngineConfig
+from lmdeploy.messages import (GenerationConfig, PytorchEngineConfig,
+                               TurbomindEngineConfig)
 from lmdeploy.model import ChatTemplateConfig
 from lmdeploy.serve.async_engine import AsyncEngine
 from lmdeploy.serve.gradio.constants import CSS, THEME, disable_btn, enable_btn
@@ -18,8 +18,10 @@ class InterFace:
     lock = Lock()
 
 
-async def chat_stream_local(instruction: str, state_chatbot: Sequence, cancel_btn: gr.Button, reset_btn: gr.Button,
-                            session_id: int, top_p: float, temperature: float, request_output_len: int):
+async def chat_stream_local(instruction: str, state_chatbot: Sequence,
+                            cancel_btn: gr.Button, reset_btn: gr.Button,
+                            session_id: int, top_p: float, temperature: float,
+                            request_output_len: int):
     """Chat with AI assistant.
 
     Args:
@@ -36,17 +38,18 @@ async def chat_stream_local(instruction: str, state_chatbot: Sequence, cancel_bt
                                   top_p=top_p,
                                   top_k=40,
                                   temperature=temperature,
-                                  random_seed=random.getrandbits(64) if len(state_chatbot) == 1 else None)
+                                  random_seed=random.getrandbits(64)
+                                  if len(state_chatbot) == 1 else None)
 
-    async for outputs in InterFace.async_engine.generate(instruction,
-                                                         session_id,
-                                                         gen_config=gen_config,
-                                                         stream_response=True,
-                                                         sequence_start=(len(state_chatbot) == 1),
-                                                         sequence_end=False):
+    async for outputs in InterFace.async_engine.generate(
+            instruction,
+            session_id,
+            gen_config=gen_config,
+            stream_response=True,
+            sequence_start=(len(state_chatbot) == 1),
+            sequence_end=False):
         response = outputs.response
-        if outputs.finish_reason == 'length' and \
-                outputs.generate_token_len == 0:
+        if outputs.finish_reason == 'length':
             gr.Warning('WARNING: exceed session max length.'
                        ' Please restart the session by reset button.')
         if outputs.generate_token_len < 0:
@@ -55,13 +58,16 @@ async def chat_stream_local(instruction: str, state_chatbot: Sequence, cancel_bt
         if state_chatbot[-1][-1] is None:
             state_chatbot[-1] = (state_chatbot[-1][0], response)
         else:
-            state_chatbot[-1] = (state_chatbot[-1][0], state_chatbot[-1][1] + response)  # piece by piece
+            state_chatbot[-1] = (state_chatbot[-1][0],
+                                 state_chatbot[-1][1] + response
+                                 )  # piece by piece
         yield (state_chatbot, state_chatbot, enable_btn, disable_btn)
 
     yield (state_chatbot, state_chatbot, disable_btn, enable_btn)
 
 
-async def reset_local_func(instruction_txtbox: gr.Textbox, state_chatbot: Sequence, session_id: int):
+async def reset_local_func(instruction_txtbox: gr.Textbox,
+                           state_chatbot: Sequence, session_id: int):
     """reset the session.
 
     Args:
@@ -71,11 +77,12 @@ async def reset_local_func(instruction_txtbox: gr.Textbox, state_chatbot: Sequen
     """
     state_chatbot = []
     # end the session
-    await InterFace.async_engine.end_session(session_id)
-    return (state_chatbot, state_chatbot, instruction_txtbox)
+    InterFace.async_engine.end_session(session_id)
+    return (state_chatbot, state_chatbot, gr.Textbox.update(value=''))
 
 
-async def cancel_local_func(state_chatbot: Sequence, cancel_btn: gr.Button, reset_btn: gr.Button, session_id: int):
+async def cancel_local_func(state_chatbot: Sequence, cancel_btn: gr.Button,
+                            reset_btn: gr.Button, session_id: int):
     """stop the session.
 
     Args:
@@ -86,12 +93,12 @@ async def cancel_local_func(state_chatbot: Sequence, cancel_btn: gr.Button, rese
         session_id (int): the session id
     """
     yield (state_chatbot, disable_btn, disable_btn)
-    await InterFace.async_engine.stop_session(session_id)
+    InterFace.async_engine.stop_session(session_id)
     # pytorch backend does not support resume chat history now
     if InterFace.async_engine.backend == 'pytorch':
         yield (state_chatbot, disable_btn, enable_btn)
     else:
-        await InterFace.async_engine.end_session(session_id)
+        InterFace.async_engine.end_session(session_id)
         messages = []
         for qa in state_chatbot:
             messages.append(dict(role='user', content=qa[0]))
@@ -111,12 +118,12 @@ async def cancel_local_func(state_chatbot: Sequence, cancel_btn: gr.Button, rese
 def run_local(model_path: str,
               model_name: Optional[str] = None,
               backend: Literal['turbomind', 'pytorch'] = 'turbomind',
-              backend_config: Optional[Union[PytorchEngineConfig, TurbomindEngineConfig]] = None,
+              backend_config: Optional[Union[PytorchEngineConfig,
+                                             TurbomindEngineConfig]] = None,
               chat_template_config: Optional[ChatTemplateConfig] = None,
               server_name: str = '0.0.0.0',
               server_port: int = 6006,
-              share: bool = False,
-              max_log_len: int = None,
+              tp: int = 1,
               **kwargs):
     """chat with AI assistant through web ui.
 
@@ -147,17 +154,16 @@ def run_local(model_path: str,
             "0.0.0.0". For huggingface space demo, it should be
             "huggingface-space".
         server_port (int): the port of gradio server
-        share (bool): whether to create a publicly shareable link for the app
-        max_log_len (int): Max number of prompt characters or prompt tokens
-            being printed in log. Default: Unlimited
+        tp (int): tensor parallel for Turbomind
     """
-    InterFace.async_engine = AsyncEngine(model_path=model_path,
-                                         backend=backend,
-                                         backend_config=backend_config,
-                                         chat_template_config=chat_template_config,
-                                         model_name=model_name,
-                                         max_log_len=max_log_len,
-                                         **kwargs)
+    InterFace.async_engine = AsyncEngine(
+        model_path=model_path,
+        backend=backend,
+        backend_config=backend_config,
+        chat_template_config=chat_template_config,
+        model_name=model_name,
+        tp=tp,
+        **kwargs)
 
     with gr.Blocks(css=CSS, theme=THEME) as demo:
         state_chatbot = gr.State([])
@@ -166,30 +172,47 @@ def run_local(model_path: str,
         with gr.Column(elem_id='container'):
             gr.Markdown('## LMDeploy Playground')
 
-            chatbot = gr.Chatbot(elem_id='chatbot', label=InterFace.async_engine.model_name)
-            instruction_txtbox = gr.Textbox(placeholder='Please input the instruction', label='Instruction')
+            chatbot = gr.Chatbot(
+                elem_id='chatbot',
+                label=InterFace.async_engine.engine.model_name)
+            instruction_txtbox = gr.Textbox(
+                placeholder='Please input the instruction',
+                label='Instruction')
             with gr.Row():
                 cancel_btn = gr.Button(value='Cancel', interactive=False)
                 reset_btn = gr.Button(value='Reset')
             with gr.Row():
-                request_output_len = gr.Slider(1, 2048, value=512, step=1, label='Maximum new tokens')
+                request_output_len = gr.Slider(1,
+                                               2048,
+                                               value=512,
+                                               step=1,
+                                               label='Maximum new tokens')
                 top_p = gr.Slider(0.01, 1, value=0.8, step=0.01, label='Top_p')
-                temperature = gr.Slider(0.01, 1.5, value=0.7, step=0.01, label='Temperature')
+                temperature = gr.Slider(0.01,
+                                        1.5,
+                                        value=0.7,
+                                        step=0.01,
+                                        label='Temperature')
 
-        instruction_txtbox.submit(chat_stream_local, [
-            instruction_txtbox, state_chatbot, cancel_btn, reset_btn, state_session_id, top_p, temperature,
-            request_output_len
+        send_event = instruction_txtbox.submit(chat_stream_local, [
+            instruction_txtbox, state_chatbot, cancel_btn, reset_btn,
+            state_session_id, top_p, temperature, request_output_len
         ], [state_chatbot, chatbot, cancel_btn, reset_btn])
         instruction_txtbox.submit(
-            lambda: instruction_txtbox.postprocess(value=''),
+            lambda: gr.Textbox.update(value=''),
             [],
             [instruction_txtbox],
         )
-        cancel_btn.click(cancel_local_func, [state_chatbot, cancel_btn, reset_btn, state_session_id],
-                         [state_chatbot, cancel_btn, reset_btn])
+        cancel_btn.click(
+            cancel_local_func,
+            [state_chatbot, cancel_btn, reset_btn, state_session_id],
+            [state_chatbot, cancel_btn, reset_btn],
+            cancels=[send_event])
 
-        reset_btn.click(reset_local_func, [instruction_txtbox, state_chatbot, state_session_id],
-                        [state_chatbot, chatbot, instruction_txtbox])
+        reset_btn.click(reset_local_func,
+                        [instruction_txtbox, state_chatbot, state_session_id],
+                        [state_chatbot, chatbot, instruction_txtbox],
+                        cancels=[send_event])
 
         def init():
             with InterFace.lock:
@@ -200,15 +223,18 @@ def run_local(model_path: str,
         demo.load(init, inputs=None, outputs=[state_session_id])
 
     if server_name == 'huggingface-space':
-        demo.queue(default_concurrency_limit=InterFace.async_engine.instance_num, max_size=100).launch(share=share)
+        demo.queue(concurrency_count=InterFace.async_engine.instance_num,
+                   max_size=100).launch()
     else:
         print(f'server is gonna mount on: http://{server_name}:{server_port}')
-        demo.queue(default_concurrency_limit=InterFace.async_engine.instance_num, max_size=100, api_open=False).launch(
-            max_threads=10,
-            share=share,
-            server_port=server_port,
-            server_name=server_name,
-        )
+        demo.queue(concurrency_count=InterFace.async_engine.instance_num,
+                   max_size=100,
+                   api_open=True).launch(
+                       max_threads=10,
+                       share=True,
+                       server_port=server_port,
+                       server_name=server_name,
+                   )
 
 
 if __name__ == '__main__':

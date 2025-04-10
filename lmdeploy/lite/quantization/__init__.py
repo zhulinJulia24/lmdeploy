@@ -1,6 +1,9 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from .activation import ActivationObserver, KVCacheObserver
-from .calibration import CalibrationContext, CalibrationContextV2
+from .calibration import CalibrationContext
 from .weight import WeightQuantizer
 
-__all__ = ['WeightQuantizer', 'ActivationObserver', 'KVCacheObserver', 'CalibrationContext', 'CalibrationContextV2']
+__all__ = [
+    'WeightQuantizer', 'ActivationObserver', 'KVCacheObserver',
+    'CalibrationContext'
+]
