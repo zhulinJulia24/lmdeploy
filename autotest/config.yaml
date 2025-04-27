@@ -321,17 +321,7 @@ longtext_model:
     - internlm/internlm3-8b-instruct
 
 benchmark_model:
-    - meta-llama/Llama-2-7b-chat-hf
-    - meta-llama/Meta-Llama-3-1-8B-Instruct
-    - meta-llama/Meta-Llama-3-8B-Instruct
-    - meta-llama/Meta-Llama-3-1-70B-Instruct
     - internlm/internlm3-8b-instruct
-    - internlm/internlm2_5-7b-chat
-    - internlm/internlm2_5-20b-chat
-    - THUDM/glm-4-9b-chat
-    - Qwen/Qwen2.5-7B-Instruct
     - Qwen/Qwen2.5-72B-Instruct
-    - mistralai/Mistral-7B-Instruct-v0.3
     - mistralai/Mixtral-8x7B-Instruct-v0.1
-    - deepseek-ai/DeepSeek-V2-Lite-Chat
-    - allenai/Molmo-7B-D-0924
+
