@@ -162,6 +162,7 @@ jobs:
           conda activate ${{env.CONDA_ENV}}
           pip uninstall -y lmdeploy
           pip install lmdeploy-*.whl --no-deps
+          pip install triton==3.3.0 --no-deps
       - name: conda env
         run: |
           . ${{env.CONDA_PATH}}/bin/activate
