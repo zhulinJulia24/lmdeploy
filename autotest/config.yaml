@@ -70,6 +70,8 @@ turbomind_chat_model:
     - Qwen/Qwen3-0.6B
     - Qwen/Qwen3-32B
     - Qwen/Qwen3-30B-A3B
+    - Qwen/Qwen3-235B-A22B
+    - Qwen/Qwen3-235B-A22B-FP8
     - Qwen/Qwen2.5-0.5B-Instruct
     - Qwen/Qwen2.5-7B-Instruct
     - Qwen/Qwen2.5-32B-Instruct
@@ -362,6 +364,10 @@ benchmark_model:
     - internlm/internlm2_5-7b-chat
     - internlm/internlm2_5-20b-chat
     - THUDM/glm-4-9b-chat
+    - Qwen/Qwen3-32B
+    - Qwen/Qwen3-30B-A3B
+    - Qwen/Qwen3-235B-A22B
+    - Qwen/Qwen3-235B-A22B-FP8
     - Qwen/Qwen2.5-7B-Instruct
     - Qwen/Qwen2.5-32B-Instruct
     - Qwen/Qwen2.5-72B-Instruct
