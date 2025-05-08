@@ -19,7 +19,7 @@ tp_config:
     InternVL2_5-38B: 4
     InternVL2-26B: 2
     InternVL2-40B: 4
-    Qwen/Qwen3-235B-A22B: 8
+    Qwen3-235B-A22B: 8
     Qwen3-235B-A22B-FP8: 4
     Qwen3-32B: 2
     Qwen3-30B-A3B: 2
@@ -264,21 +264,23 @@ turbomind_quatization:
         - OpenGVLab/InternVL2-1B
         - OpenGVLab/InternVL2_5-1B
         - openbmb/MiniCPM-V-2_6
-        - Qwen/Qwen2-7B-Instruct
-        - Qwen/Qwen2-7B-Instruct-AWQ
-        - Qwen/Qwen2-1.5B-Instruct
-        - Qwen/Qwen1.5-7B-Chat
-        - Qwen/Qwen1.5-4B-Chat-AWQ
-        - Qwen/Qwen1.5-MoE-A2.7B-Chat
-        - Qwen/Qwen-VL-Chat
+        - Qwen/Qwen3-0.6B
+        - Qwen/Qwen3-32B
+        - Qwen/Qwen3-30B-A3B
+        - Qwen/Qwen3-235B-A22B
+        - Qwen/Qwen3-235B-A22B-FP8
         - Qwen/Qwen2.5-0.5B-Instruct
         - Qwen/Qwen2.5-7B-Instruct
         - Qwen/Qwen2.5-32B-Instruct
         - Qwen/Qwen2.5-72B-Instruct
-        - Qwen/Qwen2-VL-2B-Instruct
-        - Qwen/Qwen2-VL-7B-Instruct
+        - Qwen/Qwen2-7B-Instruct
+        - Qwen/Qwen2-7B-Instruct-AWQ
+        - Qwen/Qwen2-1.5B-Instruct
         - Qwen/Qwen2-7B-Instruct-GPTQ-Int4
-        - Qwen/Qwen2.5-VL-7B-Instruct
+        - Qwen/Qwen2-57B-A14B-Instruct-GPTQ-Int4
+        - Qwen/Qwen1.5-7B-Chat
+        - Qwen/Qwen1.5-4B-Chat-AWQ
+        - Qwen/Qwen1.5-MoE-A2.7B-Chat
         - allenai/Molmo-7B-D-0924
         - deepseek-ai/DeepSeek-V2-Lite-Chat
     no_kvint8:
@@ -295,6 +297,11 @@ pytorch_quatization:
         - internlm/internlm2-chat-20b
         - OpenGVLab/InternVL-Chat-V1-5
         - 01-ai/Yi-6B-Chat
+        - Qwen/Qwen3-0.6B
+        - Qwen/Qwen3-32B
+        - Qwen/Qwen3-30B-A3B
+        - Qwen/Qwen3-235B-A22B
+        - Qwen/Qwen3-235B-A22B-FP8
         - Qwen/Qwen1.5-7B-Chat
         - Qwen/Qwen2-7B-Instruct
         - Qwen/Qwen2-1.5B-Instruct
@@ -325,20 +332,23 @@ pytorch_quatization:
         - OpenGVLab/InternVL2-1B
         - OpenGVLab/InternVL2-4B
         - OpenGVLab/InternVL2_5-1B
-        - Qwen/Qwen2-7B-Instruct
-        - Qwen/Qwen2-7B-Instruct-AWQ
-        - Qwen/Qwen2-1.5B-Instruct
-        - Qwen/Qwen1.5-7B-Chat
-        - Qwen/Qwen1.5-4B-Chat-AWQ
-        - Qwen/Qwen1.5-MoE-A2.7B-Chat
-        - Qwen/Qwen-VL-Chat
+        - Qwen/Qwen3-0.6B
+        - Qwen/Qwen3-32B
+        - Qwen/Qwen3-30B-A3B
+        - Qwen/Qwen3-235B-A22B
+        - Qwen/Qwen3-235B-A22B-FP8
         - Qwen/Qwen2.5-0.5B-Instruct
         - Qwen/Qwen2.5-7B-Instruct
         - Qwen/Qwen2.5-32B-Instruct
         - Qwen/Qwen2.5-72B-Instruct
-        - Qwen/Qwen2-VL-2B-Instruct
-        - Qwen/Qwen2-VL-7B-Instruct
-        - Qwen/Qwen2.5-VL-7B-Instruct
+        - Qwen/Qwen2-7B-Instruct
+        - Qwen/Qwen2-7B-Instruct-AWQ
+        - Qwen/Qwen2-1.5B-Instruct
+        - Qwen/Qwen2-7B-Instruct-GPTQ-Int4
+        - Qwen/Qwen2-57B-A14B-Instruct-GPTQ-Int4
+        - Qwen/Qwen1.5-7B-Chat
+        - Qwen/Qwen1.5-4B-Chat-AWQ
+        - Qwen/Qwen1.5-MoE-A2.7B-Chat
         - deepseek-ai/DeepSeek-V2-Lite-Chat
         - microsoft/Phi-3-mini-4k-instruct
         - microsoft/Phi-3-vision-128k-instruct
