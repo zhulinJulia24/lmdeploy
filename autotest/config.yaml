@@ -22,6 +22,7 @@ tp_config:
     Qwen3-235B-A22B-FP8: 4
     Qwen3-32B: 2
     Qwen3-30B-A3B: 2
+    Qwen3-30B-A3B-Base: 2
     Qwen-VL-Chat: 2
     Qwen2.5-72B-Instruct: 4
     DeepSeek-V2-Lite-Chat: 2
@@ -64,6 +65,7 @@ turbomind_chat_model:
     - Qwen/Qwen3-4B
     - Qwen/Qwen3-32B
     - Qwen/Qwen3-30B-A3B
+    - Qwen/Qwen3-30B-A3B-FP8
     - Qwen/Qwen3-235B-A22B
     - Qwen/Qwen3-235B-A22B-FP8
     - Qwen/Qwen2.5-0.5B-Instruct
@@ -124,6 +126,7 @@ pytorch_chat_model:
     - Qwen/Qwen3-4B
     - Qwen/Qwen3-32B
     - Qwen/Qwen3-30B-A3B
+    - Qwen/Qwen3-30B-A3B-FP8
     - Qwen/Qwen3-235B-A22B
     - Qwen/Qwen3-235B-A22B-FP8
     - Qwen/Qwen2.5-0.5B-Instruct
@@ -212,12 +215,16 @@ pytorch_vl_model:
     - microsoft/Phi-3.5-vision-instruct
 
 turbomind_base_model:
+    - Qwen/Qwen3-8B-Base
+    - Qwen/Qwen3-30B-A3B-Base
     - internlm/internlm2_5-7b
     - internlm/internlm2_5-1_8b
     - internlm/internlm2_5-20b
     - codellama/CodeLlama-7b-hf
 
 pytorch_base_model:
+    - Qwen/Qwen3-8B-Base
+    - Qwen/Qwen3-30B-A3B-Base
     - internlm/internlm2_5-7b
     - internlm/internlm2_5-1_8b
     - internlm/internlm2_5-20b
@@ -227,8 +234,10 @@ turbomind_quatization:
     no_awq:
         - meta-llama/Meta-Llama-3-1-70B-Instruct
         - Qwen/Qwen3-30B-A3B
+        - Qwen/Qwen3-30B-A3B-FP8
         - Qwen/Qwen3-235B-A22B
         - Qwen/Qwen3-235B-A22B-FP8
+        - Qwen/Qwen3-30B-A3B-Base
         - Qwen/Qwen1.5-MoE-A2.7B-Chat
         - Qwen/Qwen2-VL-2B-Instruct
         - Qwen/Qwen2-VL-7B-Instruct
@@ -249,8 +258,10 @@ turbomind_quatization:
         - Qwen/Qwen3-4B
         - Qwen/Qwen3-32B
         - Qwen/Qwen3-30B-A3B
+        - Qwen/Qwen3-30B-A3B-FP8
         - Qwen/Qwen3-235B-A22B
         - Qwen/Qwen3-235B-A22B-FP8
+        - Qwen/Qwen3-30B-A3B-Base
         - Qwen/Qwen2.5-0.5B-Instruct
         - Qwen/Qwen2.5-7B-Instruct
         - Qwen/Qwen2.5-32B-Instruct
@@ -304,9 +315,11 @@ pytorch_quatization:
         - Qwen/Qwen3-0.6B
         - Qwen/Qwen3-4B
         - Qwen/Qwen3-32B
+        - Qwen/Qwen3-30B-A3B-FP8
         - Qwen/Qwen3-30B-A3B
         - Qwen/Qwen3-235B-A22B
         - Qwen/Qwen3-235B-A22B-FP8
+        - Qwen/Qwen3-30B-A3B-Base
         - Qwen/Qwen2.5-0.5B-Instruct
         - Qwen/Qwen2.5-7B-Instruct
         - Qwen/Qwen2.5-32B-Instruct
@@ -341,6 +354,7 @@ benchmark_model:
     - THUDM/glm-4-9b-chat
     - Qwen/Qwen3-32B
     - Qwen/Qwen3-30B-A3B
+    - Qwen/Qwen3-30B-A3B-FP8
     - Qwen/Qwen3-235B-A22B
     - Qwen/Qwen3-235B-A22B-FP8
     - Qwen/Qwen2.5-7B-Instruct
