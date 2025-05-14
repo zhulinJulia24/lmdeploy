@@ -19,7 +19,6 @@ tp_config:
     InternVL2_5-38B: 4
     InternVL2-40B: 4
     Qwen3-235B-A22B: 8
-    Qwen3-235B-A22B-FP8: 4
     Qwen3-32B: 2
     Qwen3-30B-A3B: 2
     Qwen3-30B-A3B-Base: 2
@@ -66,9 +65,7 @@ turbomind_chat_model:
     - Qwen/Qwen3-4B
     - Qwen/Qwen3-32B
     - Qwen/Qwen3-30B-A3B
-    - Qwen/Qwen3-30B-A3B-FP8
     - Qwen/Qwen3-235B-A22B
-    - Qwen/Qwen3-235B-A22B-FP8
     - Qwen/Qwen2.5-0.5B-Instruct
     - Qwen/Qwen2.5-7B-Instruct
     - Qwen/Qwen2.5-32B-Instruct
@@ -129,9 +126,7 @@ pytorch_chat_model:
     - Qwen/Qwen3-4B
     - Qwen/Qwen3-32B
     - Qwen/Qwen3-30B-A3B
-    - Qwen/Qwen3-30B-A3B-FP8
     - Qwen/Qwen3-235B-A22B
-    - Qwen/Qwen3-235B-A22B-FP8
     - Qwen/Qwen2.5-0.5B-Instruct
     - Qwen/Qwen2.5-7B-Instruct
     - Qwen/Qwen2.5-32B-Instruct
@@ -239,9 +234,7 @@ turbomind_quatization:
     no_awq:
         - meta-llama/Meta-Llama-3-1-70B-Instruct
         - Qwen/Qwen3-30B-A3B
-        - Qwen/Qwen3-30B-A3B-FP8
         - Qwen/Qwen3-235B-A22B
-        - Qwen/Qwen3-235B-A22B-FP8
         - Qwen/Qwen3-30B-A3B-Base
         - Qwen/Qwen1.5-MoE-A2.7B-Chat
         - Qwen/Qwen2-VL-2B-Instruct
@@ -265,9 +258,7 @@ turbomind_quatization:
         - Qwen/Qwen3-4B
         - Qwen/Qwen3-32B
         - Qwen/Qwen3-30B-A3B
-        - Qwen/Qwen3-30B-A3B-FP8
         - Qwen/Qwen3-235B-A22B
-        - Qwen/Qwen3-235B-A22B-FP8
         - Qwen/Qwen3-30B-A3B-Base
         - Qwen/Qwen2.5-0.5B-Instruct
         - Qwen/Qwen2.5-7B-Instruct
@@ -324,10 +315,8 @@ pytorch_quatization:
         - Qwen/Qwen3-0.6B
         - Qwen/Qwen3-4B
         - Qwen/Qwen3-32B
-        - Qwen/Qwen3-30B-A3B-FP8
         - Qwen/Qwen3-30B-A3B
         - Qwen/Qwen3-235B-A22B
-        - Qwen/Qwen3-235B-A22B-FP8
         - Qwen/Qwen3-30B-A3B-Base
         - Qwen/Qwen2.5-0.5B-Instruct
         - Qwen/Qwen2.5-7B-Instruct
@@ -363,9 +352,7 @@ benchmark_model:
     - THUDM/glm-4-9b-chat
     - Qwen/Qwen3-32B
     - Qwen/Qwen3-30B-A3B
-    - Qwen/Qwen3-30B-A3B-FP8
     - Qwen/Qwen3-235B-A22B
-    - Qwen/Qwen3-235B-A22B-FP8
     - Qwen/Qwen2.5-7B-Instruct
     - Qwen/Qwen2.5-32B-Instruct
     - Qwen/Qwen2.5-72B-Instruct
