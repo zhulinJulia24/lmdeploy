@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from contextlib import contextmanager
 from dataclasses import dataclass, field, fields
-from typing import Any, Dict, List, Literal
+from typing import Any, Dict, List, Literal, Optional
 
 import torch
 
@@ -9,6 +9,8 @@ import torch
 import lmdeploy.pytorch.distributed as dist
 from lmdeploy.pytorch.backends import get_backend
 from lmdeploy.pytorch.config import ModelConfig
+from lmdeploy.pytorch.disagg.messages import MigrationExecutionBatch
+from lmdeploy.pytorch.disagg.request import MigrationRequest
 from lmdeploy.pytorch.multimodal.data_type import MultiModalTensor
 
 
@@ -151,6 +153,8 @@ class ModelInputs:
     history_cross_length: torch.LongTensor = None
     model_metas: List[Dict[str, Any]] = None
     dp_meta: 'DPMeta' = None
+    migration_inputs: Optional[MigrationExecutionBatch] = None
+    migration_requests: Optional[MigrationRequest] = None
 
     def update(self, input_ids: torch.LongTensor):
         """update input ids."""
@@ -281,9 +285,14 @@ class ModelInputs:
         self.dp_meta = DPMeta.build(self.input_ids.numel())
 
     @classmethod
-    def make_dummy(cls, batch_size: int, is_decoding: bool, device: str = 'cpu', dummy_block_id: int = 0):
+    def make_dummy(cls,
+                   batch_size: int,
+                   is_decoding: bool,
+                   device: str = 'cpu',
+                   dummy_block_id: int = 0,
+                   vocab_size: int = 1):
         """make dummy inputs."""
-        input_ids = torch.zeros((
+        input_ids = torch.randint(0, vocab_size, (
             1,
             batch_size,
         ), dtype=torch.long, device=device)
