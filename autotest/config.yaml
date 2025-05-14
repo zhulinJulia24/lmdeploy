@@ -50,6 +50,7 @@ turbomind_chat_model:
     - internlm/internlm-xcomposer2-4khd-7b
     - internlm/internlm-xcomposer2d5-7b
     - OpenGVLab/InternVL3-2B
+    - OpenGVLab/InternVL3-8B
     - OpenGVLab/InternVL3-38B
     - OpenGVLab/InternVL2_5-26B-MPO
     - OpenGVLab/InternVL2_5-1B
@@ -110,6 +111,8 @@ pytorch_chat_model:
     - internlm/internlm3-8b-instruct
     - internlm/internlm2_5-7b-chat
     - internlm/internlm2_5-20b-chat
+    - OpenGVLab/InternVL3-2B
+    - OpenGVLab/InternVL3-8B
     - OpenGVLab/InternVL3-38B
     - OpenGVLab/InternVL2_5-26B-MPO
     - OpenGVLab/InternVL2_5-1B
@@ -176,6 +179,7 @@ turbomind_vl_model:
     - OpenGVLab/InternVL-Chat-V1-5
     - OpenGVLab/Mini-InternVL-Chat-2B-V1-5
     - OpenGVLab/InternVL3-2B
+    - OpenGVLab/InternVL3-8B
     - OpenGVLab/InternVL3-38B
     - OpenGVLab/InternVL2_5-1B
     - OpenGVLab/InternVL2_5-8B
@@ -195,6 +199,7 @@ pytorch_vl_model:
     - OpenGVLab/InternVL-Chat-V1-5
     - OpenGVLab/Mini-InternVL-Chat-2B-V1-5
     - OpenGVLab/InternVL3-2B
+    - OpenGVLab/InternVL3-8B
     - OpenGVLab/InternVL3-38B
     - OpenGVLab/InternVL2_5-1B
     - OpenGVLab/InternVL2_5-8B
@@ -252,6 +257,8 @@ turbomind_quatization:
         - internlm/internlm2_5-7b-chat
     no_kvint4:
         - meta-llama/Llama-3.2-1B-Instruct
+        - OpenGVLab/InternVL3-2B
+        - OpenGVLab/InternVL3-8B
         - OpenGVLab/InternVL2_5-1B
         - openbmb/MiniCPM-V-2_6
         - Qwen/Qwen3-0.6B
@@ -310,6 +317,8 @@ pytorch_quatization:
         - meta-llama/Meta-Llama-3-1-8B-Instruct
     no_kvint4:
         - meta-llama/Llama-3.2-1B-Instruct
+        - OpenGVLab/InternVL3-2B
+        - OpenGVLab/InternVL3-8B
         - OpenGVLab/InternVL2-4B
         - OpenGVLab/InternVL2_5-1B
         - Qwen/Qwen3-0.6B
