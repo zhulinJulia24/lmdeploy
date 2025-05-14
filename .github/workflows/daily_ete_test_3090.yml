@@ -38,8 +38,6 @@ on:
         description: 'regression functions'
         type: string
         default: "['quant', 'tools', 'benchmark']"
-  schedule:
-    - cron:  '00 16 * * 0-4'
 
 env:
   HOST_PIP_CACHE_DIR: /nvme/github-actions/pip-cache
