@@ -268,6 +268,7 @@ turbomind_quatization:
         - Qwen/Qwen1.5-7B-Chat
         - Qwen/Qwen1.5-4B-Chat-AWQ
         - Qwen/Qwen1.5-MoE-A2.7B-Chat
+        - microsoft/Phi-3.5-mini-instruct
         - allenai/Molmo-7B-D-0924
         - deepseek-ai/DeepSeek-V2-Lite-Chat
     no_kvint8:
