@@ -87,6 +87,11 @@ def run_pipeline_vl_chat_test(config,
     resource_path = config.get('resource_path')
     hf_path = model_path + '/' + model_case
 
+    if ('InternVL3' in model_case or 'InternVL2_5' in model_case or 'MiniCPM-V-2_6' in model_case
+        ) and 'turbomind' in backend_type and extra is not None and 'communicator' in extra and extra.get(
+            'communicator') == 'native' and tp > 1:
+        return
+
     pipeline_chat_log = os.path.join(
         log_path, '_'.join(['pipeline', 'mllm', backend_type, worker_id,
                             model_case.split('/')[1] + '.log']))
