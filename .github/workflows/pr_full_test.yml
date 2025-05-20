@@ -224,6 +224,7 @@ jobs:
         - /nvme/github-actions/resources/lora:/root/lora
         - /nvme/qa_test_models:/nvme/qa_test_models
         - /mnt/shared:/mnt/shared
+        - /mnt/187:/mnt/187
         - /nvme/qa_test_models/lmdeploy/autotest:/local_case
         - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
     steps:
@@ -321,6 +322,7 @@ jobs:
         - /nvme/github-actions/pip-cache:/root/.cache/pip
         - /nvme/github-actions/packages:/root/packages
         - /nvme/qa_test_models:/nvme/qa_test_models
+        - /mnt/187:/mnt/187
         - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
     steps:
       - name: Copy repository and Artifacts
@@ -410,6 +412,7 @@ jobs:
         - /nvme/github-actions/pip-cache:/root/.cache/pip
         - /nvme/github-actions/packages:/root/packages
         - /nvme/qa_test_models:/nvme/qa_test_models
+        - /mnt/187:/mnt/187
         - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
     steps:
       - name: Copy repository and Artifacts
@@ -468,6 +471,7 @@ jobs:
         - /nvme/github-actions/pip-cache:/root/.cache/pip
         - /nvme/github-actions/packages:/root/packages
         - /nvme/qa_test_models:/nvme/qa_test_models
+        - /mnt/187:/mnt/187
         - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
     steps:
       - name: Copy repository and Artifacts
@@ -528,6 +532,7 @@ jobs:
         - /nvme/qa_test_models/evaluation-reports:/root/evaluation-reports
         - /nvme/qa_test_models:/nvme/qa_test_models
         - /mnt/shared:/mnt/shared
+        - /mnt/187:/mnt/187
         - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
     steps:
       - name: Copy repository and Artifacts
@@ -595,6 +600,7 @@ jobs:
       volumes:
         - /nvme/qa_test_models:/nvme/qa_test_models
         - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
+        - /mnt/187:/mnt/187
     env:
       BENCHMARK_REPORT_DIR: /nvme/qa_test_models/benchmark-reports/${{ github.run_id }}
     steps:
@@ -621,6 +627,7 @@ jobs:
         - /nvme/github-actions/pip-cache:/root/.cache/pip
         - /nvme/github-actions/packages:/root/packages
         - /nvme/qa_test_models:/nvme/qa_test_models
+        - /mnt/187:/mnt/187
         - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
     steps:
       - name: Copy repository and Artifacts
