@@ -10,7 +10,9 @@ from http import HTTPStatus
 from typing import AsyncGenerator, Dict, List, Literal, Optional, Union
 
 import uvicorn
-from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, status
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 from fastapi.security.http import HTTPAuthorizationCredentials, HTTPBearer
@@ -1075,7 +1077,7 @@ def handle_torchrun():
 @router.on_event('startup')
 async def startup_event():
     async_engine = VariableInterface.async_engine
-    async_engine.start_loop()
+    async_engine.start_loop(use_async_api=True)
 
     if VariableInterface.proxy_url is None:
         return
@@ -1092,6 +1094,17 @@ async def startup_event():
             raise HTTPException(status_code=400, detail='Service registration failed')
     except Exception as e:
         logger.error(f'Service registration failed: {e}')
+
+
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """handler for RequestValidationError."""
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content=jsonable_encoder({
+            'detail': exc.errors(),
+            'body': exc.body
+        }),
+    )
 
 
 class ConcurrencyLimitMiddleware(BaseHTTPMiddleware):
@@ -1216,6 +1229,7 @@ def serve(model_path: str,
         app = FastAPI(docs_url='/')
 
     app.include_router(router)
+    app.add_exception_handler(RequestValidationError, validation_exception_handler)
 
     if allow_origins:
         app.add_middleware(
