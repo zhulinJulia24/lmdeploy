@@ -9,6 +9,7 @@ from utils.pipeline_chat import run_pipeline_chat_test
 @pytest.mark.usefixtures('common_case_config')
 @pytest.mark.pipeline_chat
 @pytest.mark.gpu_num_1
+@pytest.mark.test_3090
 @pytest.mark.flaky(reruns=0)
 @pytest.mark.parametrize('model', get_turbomind_model_list(tp_num=1))
 @pytest.mark.parametrize('communicator', get_communicator_list())
@@ -61,6 +62,7 @@ def test_pipeline_chat_tp8(config, common_case_config, model, communicator, work
 @pytest.mark.usefixtures('common_case_config')
 @pytest.mark.pipeline_chat
 @pytest.mark.gpu_num_1
+@pytest.mark.test_3090
 @pytest.mark.flaky(reruns=0)
 @pytest.mark.parametrize('model', get_turbomind_model_list(tp_num=1, quant_policy=4))
 @pytest.mark.parametrize('communicator', get_communicator_list())
@@ -111,6 +113,7 @@ def test_pipeline_chat_kvint4_tp4(config, common_case_config, model, communicato
 @pytest.mark.usefixtures('common_case_config')
 @pytest.mark.pipeline_chat
 @pytest.mark.gpu_num_1
+@pytest.mark.test_3090
 @pytest.mark.flaky(reruns=0)
 @pytest.mark.parametrize('model', get_turbomind_model_list(tp_num=1, quant_policy=8))
 @pytest.mark.parametrize('communicator', get_communicator_list())

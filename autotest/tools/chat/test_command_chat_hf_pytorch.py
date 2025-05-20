@@ -10,6 +10,7 @@ from utils.run_client_chat import hf_command_line_test
 @pytest.mark.usefixtures('cli_case_config')
 @pytest.mark.hf_pytorch_chat
 @pytest.mark.gpu_num_1
+@pytest.mark.test_3090
 @pytest.mark.parametrize('model', get_torch_model_list(tp_num=1))
 def test_hf_pytorch_chat_tp1(config, model, cli_case_config, worker_id):
     usercase = 'chat_testcase'
@@ -88,6 +89,7 @@ def test_hf_pytorch_chat_tp8(config, model, cli_case_config, worker_id):
 @pytest.mark.usefixtures('cli_case_config')
 @pytest.mark.hf_pytorch_chat
 @pytest.mark.gpu_num_1
+@pytest.mark.test_3090
 @pytest.mark.parametrize('model', get_torch_model_list(tp_num=1, quant_policy=4))
 def test_hf_pytorch_chat_kvin4_tp1(config, model, cli_case_config, worker_id):
     usercase = 'chat_testcase'
@@ -150,6 +152,7 @@ def test_hf_pytorch_chat_kvin4_tp4(config, model, cli_case_config, worker_id):
 @pytest.mark.usefixtures('cli_case_config')
 @pytest.mark.hf_pytorch_chat
 @pytest.mark.gpu_num_1
+@pytest.mark.test_3090
 @pytest.mark.parametrize('model', get_torch_model_list(tp_num=1, quant_policy=8))
 def test_hf_pytorch_chat_kvin8_tp1(config, model, cli_case_config, worker_id):
     usercase = 'chat_testcase'
@@ -231,6 +234,7 @@ def test_hf_pytorch_chat_kvin8_tp8(config, model, cli_case_config, worker_id):
 @pytest.mark.order(10)
 @pytest.mark.usefixtures('cli_case_config')
 @pytest.mark.hf_turbomind_chat
+@pytest.mark.test_3090
 @pytest.mark.gpu_num_1
 @pytest.mark.parametrize('model', get_torch_model_list(tp_num=1, model_type='base_model'))
 def test_hf_pytorch_base_tp1(config, model, cli_case_config, worker_id):
