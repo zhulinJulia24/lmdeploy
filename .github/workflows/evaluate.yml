@@ -88,7 +88,6 @@ jobs:
           retention-days: 1
           name: my-artifact-${{ github.run_id }}-${{ matrix.pyver }}
 
-
   evaluate:
     needs: linux-build
     if: ${{github.event_name == 'schedule' || !cancelled()}}
@@ -133,9 +132,9 @@ jobs:
         run: |
           # manually install flash attn
           # the install packeage from. https://github.com/Dao-AILab/flash-attention/releases
-          python3 -m pip install /root/packages/flash_attn-*.whl --no-deps
-          python3 -m pip install -e /root/packages/AutoAWQ_kernels
-          python3 -m pip install sentence_transformers==2.2.2 timm --no-deps
+          python3 -m pip install /root/packages/flash_attn-*.whl
+          python3 -m pip install sentence_transformers==2.2.2 --no-deps
+          python3 -m pip install -r /root/models/offline_pkg/requirements.txt
       - name: Install lmdeploy
         if: ${{github.event_name == 'schedule' || !inputs.offline_mode}}
         run: |
@@ -169,7 +168,6 @@ jobs:
           echo ${{github.event.inputs.chat_models}}
           echo ${{github.event.inputs.chat_datasets}}
           export LMDEPLOY_DIR=$(pwd)
-
           python3 .github/scripts/action_tools.py evaluate "${{github.event.inputs.chat_models}}" "${{github.event.inputs.chat_datasets}}" /root/evaluation-reports/${{ github.run_id }} chat
       - name: Evaluate base models
         if: matrix.evaluate_type == 'base'
@@ -177,7 +175,6 @@ jobs:
           echo ${{github.event.inputs.base_models}}
           echo ${{github.event.inputs.baes_datasets}}
           export LMDEPLOY_DIR=$(pwd)
-
           python3 .github/scripts/action_tools.py evaluate "${{github.event.inputs.base_models}}" "${{github.event.inputs.baes_datasets}}" /root/evaluation-reports/${{ github.run_id }} base
       - name: Clear workspace
         if: always()
