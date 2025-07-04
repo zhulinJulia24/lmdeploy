@@ -244,6 +244,7 @@ jobs:
           pip install ${{env.DEEPSEEK_VL}} --no-deps
       - name: Check env
         run: |
+          pip install triton==3.3.1 torch==2.7.1 torchvision==0.22.1
           python3 -m pip list
           lmdeploy check_env
           cp -r /root/lora .
@@ -339,6 +340,7 @@ jobs:
           pip install ${{env.DEEPSEEK_VL}} --no-deps
       - name: Check env
         run: |
+          pip install triton==3.3.1 torch==2.7.1 torchvision==0.22.1
           python3 -m pip list
           lmdeploy check_env
           rm -rf allure-results
@@ -428,6 +430,7 @@ jobs:
           pip install ${{env.DEEPSEEK_VL}} --no-deps
       - name: Check env
         run: |
+          pip install triton==3.3.1 torch==2.7.1 torchvision==0.22.1
           python3 -m pip list
           lmdeploy check_env
           rm -rf allure-results
@@ -486,6 +489,7 @@ jobs:
           pip install ${{env.DEEPSEEK_VL}} --no-deps
       - name: Check env
         run: |
+          pip install triton==3.3.1 torch==2.7.1 torchvision==0.22.1
           python3 -m pip list
           lmdeploy check_env
           rm -rf allure-results
@@ -551,6 +555,7 @@ jobs:
           echo "OPENCOMPASS_DIR=$(pwd)" >> $GITHUB_ENV
       - name: Check env
         run: |
+          pip install triton==3.3.1 torch==2.7.1 torchvision==0.22.1
           python3 -m pip list
           lmdeploy check_env
           rm -rf allure-results
