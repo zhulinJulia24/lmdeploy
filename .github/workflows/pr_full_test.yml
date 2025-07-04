@@ -162,6 +162,8 @@ jobs:
       - name: Check env
         run: |
           python3 -m pip list
+          pip install torch==2.7.1 torchvision==0.22.1
+          pip install triton==3.3.0 --no-deps
           lmdeploy check_env
           rm -rf allure-results
           # remove tmp log in testcase
@@ -247,6 +249,8 @@ jobs:
       - name: Check env
         run: |
           python3 -m pip list
+          pip install torch==2.7.1 torchvision==0.22.1
+          pip install triton==3.3.0 --no-deps
           lmdeploy check_env
           cp -r /root/lora .
           rm -rf allure-results
@@ -343,6 +347,8 @@ jobs:
       - name: Check env
         run: |
           python3 -m pip list
+          pip install torch==2.7.1 torchvision==0.22.1
+          pip install triton==3.3.0 --no-deps
           lmdeploy check_env
           rm -rf allure-results
           # remove tmp log in testcase
@@ -433,6 +439,8 @@ jobs:
       - name: Check env
         run: |
           python3 -m pip list
+          pip install torch==2.7.1 torchvision==0.22.1
+          pip install triton==3.3.0 --no-deps
           lmdeploy check_env
           rm -rf allure-results
           # remove tmp log in testcase
