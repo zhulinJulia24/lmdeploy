@@ -92,14 +92,14 @@ jobs:
   download_pkgs:
     needs: linux-build
     if: ${{!cancelled()}}
-    runs-on: [self-hosted, 3090-r1]
+    runs-on: [self-hosted, 5090-r1]
     timeout-minutes: 50
     container:
       image: openmmlab/lmdeploy:latest
       options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip -e NVIDIA_DISABLE_REQUIRE=1 --pull never"
       volumes:
         - /nvme/qa_test_models:/nvme/qa_test_models
-        - /data1:/data1
+        - /mnt/3090:/mnt/3090
         - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
     steps:
       - name: Clone repository
@@ -129,7 +129,7 @@ jobs:
   test_quantization:
     needs: download_pkgs
     if: ${{!cancelled() && contains(needs.download_pkgs.result, 'success') && (github.event_name == 'schedule' || contains(fromJSON(github.event.inputs.regression_func), 'quant') )}}
-    runs-on: [self-hosted, 3090-r1]
+    runs-on: [self-hosted, 5090-r1]
     timeout-minutes: 150
     env:
       PYTHONPATH: /nvme/qa_test_models/offline_pkg/LLaVA
@@ -141,7 +141,7 @@ jobs:
       volumes:
         - /nvme/github-actions/pip-cache:/root/.cache/pip
         - /nvme/qa_test_models:/nvme/qa_test_models
-        - /data1:/data1
+        - /mnt/3090:/mnt/3090
         - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
     steps:
       - name: Copy repository and Artifacts
@@ -188,7 +188,7 @@ jobs:
 
   test_tools:
     if: ${{!cancelled() && !contains(needs.test_quantization.result, 'fail') && (github.event_name == 'schedule' || contains(fromJSON(github.event.inputs.regression_func), 'tools'))}}
-    runs-on: [self-hosted, 3090-r1]
+    runs-on: [self-hosted, 5090-r1]
     needs: test_quantization
     timeout-minutes: 300
     strategy:
@@ -214,7 +214,7 @@ jobs:
       volumes:
         - /nvme/github-actions/pip-cache:/root/.cache/pip
         - /nvme/qa_test_models:/nvme/qa_test_models
-        - /data1:/data1
+        - /mnt/3090:/mnt/3090
         - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
     steps:
       - name: Copy repository and Artifacts
@@ -267,7 +267,7 @@ jobs:
 
   test_restful:
     if: ${{!cancelled() && !contains(needs.test_quantization.result, 'fail') && (github.event_name == 'schedule' || contains(fromJSON(github.event.inputs.regression_func), 'restful'))}}
-    runs-on: [self-hosted, 3090-r1]
+    runs-on: [self-hosted, 5090-r1]
     needs: test_quantization
     strategy:
       fail-fast: false
@@ -357,7 +357,7 @@ jobs:
 
   get_coverage_report:
     if: ${{!cancelled() && success()}}
-    runs-on: [self-hosted, 3090-r1]
+    runs-on: [self-hosted, 5090-r1]
     needs: [test_tools, test_restful]
     timeout-minutes: 5
     container:
