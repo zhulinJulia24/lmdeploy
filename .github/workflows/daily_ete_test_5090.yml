@@ -1,4 +1,4 @@
-name: daily_ete_test_3090
+name: daily_ete_test_5090
 
 on:
   workflow_dispatch:
