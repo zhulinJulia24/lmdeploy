@@ -271,6 +271,7 @@ for model in [
 # update config for turbomind, w4a4, w8a8, kvint4, kvint8, pytorch models
 for model in [v for k, v in locals().items() if k.startswith('turbomind_')]:
     model['engine_config']['max_batch_size'] = 512
+    model['engine_config']['enable_prefix_caching'] = True
     model['gen_config']['do_sample'] = False
     model['batch_size'] = 1000
 
