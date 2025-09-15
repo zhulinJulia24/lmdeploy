@@ -245,6 +245,7 @@ jobs:
           pip install ${{env.DEEPSEEK_VL}} --no-deps
       - name: Check env
         run: |
+          echo "nameserver 10.135.0.138" > /etc/resolv.conf
           python3 -m pip list
           lmdeploy check_env
           cp -r /root/lora .
@@ -347,6 +348,7 @@ jobs:
           pip install ${{env.DEEPSEEK_VL}} --no-deps
       - name: Check env
         run: |
+          echo "nameserver 10.135.0.138" > /etc/resolv.conf
           python3 -m pip list
           lmdeploy check_env
           rm -rf allure-results
@@ -431,6 +433,7 @@ jobs:
           pip install ${{env.DEEPSEEK_VL}} --no-deps
       - name: Check env
         run: |
+          echo "nameserver 10.135.0.138" > /etc/resolv.conf
           python3 -m pip list
           lmdeploy check_env
           rm -rf allure-results
