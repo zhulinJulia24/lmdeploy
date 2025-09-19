@@ -38,8 +38,6 @@ on:
         description: 'regression functions'
         type: string
         default: "['tools','restful']"
-  schedule:
-    - cron:  '00 14 * * 0-4'
 
 env:
   HOST_PIP_CACHE_DIR: /nvme/github-actions/pip-cache
