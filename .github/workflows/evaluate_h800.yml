@@ -1,4 +1,4 @@
-name: evaluate
+name: evaluate_h800
 
 on:
   workflow_dispatch:
@@ -15,14 +15,14 @@ on:
         default: 'main'
       base_models:
         required: true
-        description: 'Tested TurboMind models list. eg. [turbomind_qwen2_5_1_5b, turbomind_qwen2_5_7b, turbomind_qwen2_5_32b, turbomind_internlm2_5_7b, turbomind_glm_4_9b, turbomind_llama_3_1_8b, turbomind_llama_3_70b, pytorch_qwen2_5_1_5b, pytorch_qwen2_5_7b, pytorch_qwen2_5_32b, pytorch_internlm2_5_7b, pytorch_gemma_2_9b, pytorch_llama_3_70b, pytorch_llama_3_1_8b]'
+        description: 'Tested TurboMind models list. eg. [turbomind_qwen3_0_6b_base, turbomind_qwen3_8b_base, turbomind_qwen3_30b_A3B_base, pytorch_qwen3_0_6b_base, pytorch_qwen3_8b_base, pytorch_qwen3_30b_A3B_base]'
         type: string
-        default: '[turbomind_qwen2_5_1_5b, turbomind_qwen2_5_7b, turbomind_qwen2_5_32b, turbomind_internlm2_5_7b, turbomind_glm_4_9b, turbomind_llama_3_1_8b, turbomind_llama_3_70b, pytorch_qwen2_5_1_5b, pytorch_qwen2_5_7b, pytorch_qwen2_5_32b, pytorch_internlm2_5_7b, pytorch_gemma_2_9b, pytorch_llama_3_70b, pytorch_llama_3_1_8b]'
+        default: '[turbomind_qwen3_0_6b_base, turbomind_qwen3_8b_base, turbomind_qwen3_30b_A3B_base, pytorch_qwen3_0_6b_base, pytorch_qwen3_8b_base, pytorch_qwen3_30b_A3B_base]'
       baes_datasets:
         required: true
         description: 'Tested datasets list. eg. [*mmlu_datasets, *gsm8k_datasets]'
         type: string
-        default: '[*mmlu_datasets, *gsm8k_datasets, *gpqa_datasets, *winogrande_datasets]'
+        default: '[*race_datasets, *gsm8k_datasets, *gpqa_datasets, *winogrande_datasets]'
       oc_repo_org:
         required: false
         description: 'Tested repository organization name. Default is open-compass/opencompass'
@@ -81,14 +81,14 @@ jobs:
   evaluate:
     needs: linux-build
     if: ${{github.event_name == 'schedule' || !cancelled()}}
-    runs-on: [self-hosted, test-140]
+    runs-on: [self-hosted, h800-r1]
     timeout-minutes: 4320 # 72hours
     strategy:
       fail-fast: false
       matrix:
         evaluate_type: ['base']
     container:
-      image: openmmlab/lmdeploy:latest-cu12
+      image: openmmlab/lmdeploy:latest-cu12.8
       options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip -e NVIDIA_DISABLE_REQUIRE=1 --pull never"
       volumes:
         - /nvme/github-actions/pip-cache:/root/.cache/pip
@@ -97,9 +97,12 @@ jobs:
         - /nvme/github-actions/opencompass-data:/root/opencompass-data
         - /nvme/qa_test_models/evaluation-reports:/root/evaluation-reports
         - /nvme/qa_test_models:/root/models
-        - /mnt/187:/mnt/187
-        - /mnt/bigdisk:/mnt/bigdisk
-        - /mnt/shared:/mnt/shared
+        - /nvme/qa_test_models:/nvme/qa_test_models
+        - /nvme1/qa_test_models:/nvme1/qa_test_models
+        - /nvme2/share:/nvme2/share
+        - /mnt/137_nvme2:/mnt/137_nvme2
+        - /mnt/137_nvme3:/mnt/137_nvme3
+        - /mnt/137_nvme4:/mnt/137_nvme4
         - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
     steps:
       - name: Setup systems
