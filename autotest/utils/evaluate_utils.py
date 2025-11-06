@@ -72,7 +72,7 @@ def write_to_summary(model_name, tp_num, result, msg, worker_id, backend_type, c
         )
 
 
-def restful_test(config, run_id, prepare_environment, worker_id='gw0', port=DEFAULT_PORT, test_type='infer', **kwargs):
+def eval_test(config, run_id, prepare_environment, worker_id='gw0', port=DEFAULT_PORT, test_type='infer', **kwargs):
     work_dir = None
     try:
         model_name = prepare_environment['model']
@@ -142,7 +142,7 @@ def restful_test(config, run_id, prepare_environment, worker_id='gw0', port=DEFA
                 cfg = Config.fromfile(temp_config_path)
                 print(f'Using existing temp config file: {temp_config_path}')
 
-                cfg.JUDGE_API_BASE = f'http://127.0.0.1:{port}/v1'
+                cfg.JUDGE_API_BASE = f'http://127.0.0.1:{port}/v1'  # noqa: E231, E261
                 cfg.JUDGE_MODEL_PATH = os.path.join(model_base_path, 'Qwen/Qwen2.5-32B-Instruct')
 
                 if hasattr(cfg, 'judge_cfg'):
@@ -255,4 +255,113 @@ def restful_test(config, run_id, prepare_environment, worker_id='gw0', port=DEFA
         if work_dir and test_type == 'eval':
             write_to_summary(summary_model_name, tp_num, False, error_msg, worker_id, backend_type, communicator,
                              work_dir)
+        return False, error_msg
+
+
+def mllm_eval_test(config, run_id, prepare_environment, worker_id='gw0', port=DEFAULT_PORT):
+    work_dir = None
+    try:
+        model_name = prepare_environment['model']
+        backend_type = prepare_environment['backend']
+        tp_num = prepare_environment.get('tp_num', 1)
+        communicator = prepare_environment.get('communicator', 'cuda-ipc')
+        quant_policy = prepare_environment.get('quant_policy', 0)
+
+        # summary_model_name = model_name
+        # if quant_policy in [4, 8]:
+        #     summary_model_name = f'{model_name}-kvint{quant_policy}'
+
+        model_base_path = config.get('model_path', '/nvme/qa_test_models')
+        model_path = os.path.join(model_base_path, model_name)
+
+        print(f'Starting VLMEvalKit evaluation for model: {model_name}')
+        print(f'Model path: {model_path}')
+        print(f'Backend: {backend_type}')
+
+        log_path = config.get('mllm_eval_log_path', '/nvme/qa_test_models/mllm_evaluation_report') + f'/{run_id}'
+        os.makedirs(log_path, exist_ok=True)
+
+        original_cwd = os.getcwd()
+        work_dir = os.path.join(log_path,
+                                f"wk_{backend_type}_{model_name.replace('/', '_')}_{communicator}_{quant_policy}")
+        os.makedirs(work_dir, exist_ok=True)
+
+        try:
+            cmd = [
+                'cd VLMEvalKit;', 'python run.py', '--data MMBench_V11_MINI MMStar_MINI AI2D_MINI OCRBench_MINI',
+                f'--model lmdeploy_{port}', '--reuse', f'--work_dir {work_dir}', '--api-nproc 8'
+            ]
+            print(f"Running command: {' '.join(cmd)}")
+            print(f'Work directory: {work_dir}')
+
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=72000)
+
+            stdout_output = result.stdout
+            stderr_output = result.stderr
+
+            log_filename = (f'{backend_type}_'
+                            f"{model_name.replace('/', '_')}_"
+                            f'{communicator}_'
+                            f'{worker_id}_'
+                            f'{quant_policy}.log')
+            log_file = os.path.join(log_path, log_filename)
+            cmd_command = ' '.join(cmd)
+
+            with open(log_file, 'w', encoding='utf-8') as f:
+                f.write(f'Model: {model_name}\n')
+                f.write(f'Backend: {backend_type}\n')
+                f.write(f'TP Num: {tp_num}\n')
+                f.write(f'Command: {cmd_command}\n')
+                f.write(f'Work directory: {work_dir}\n')
+                f.write(f'STDOUT: \n{stdout_output}\n')
+                if stderr_output:
+                    f.write(f'STDERR: \n{stderr_output}\n')
+                f.write(f'Return code: {result.returncode}\n')
+
+            print(f'STDOUT: \n{stdout_output}')
+            if stderr_output:
+                print(f'STDERR: \n{stderr_output}')
+            print(f'Return code: {result.returncode}')
+
+            evaluation_failed = False
+            error_keywords = ['ERROR -', 'fail, see', 'task .* fail']
+            for line in stdout_output.split('\n'):
+                if any(keyword in line for keyword in error_keywords):
+                    evaluation_failed = True
+                    break
+
+            if result.returncode == 0 and not evaluation_failed:
+                final_result = True
+                final_msg = f'Evaluation completed successfully for {model_name}'
+            else:
+                final_result = False
+                final_msg = f'Evaluation failed for {model_name}'
+                if result.returncode != 0:
+                    final_msg += f'with return code {result.returncode}'
+                elif evaluation_failed:
+                    final_msg += 'with internal errors detected in logs'
+
+                if stderr_output:
+                    final_msg += f'\nSTDERR: {stderr_output}'
+                else:
+                    error_lines = []
+                    for line in stdout_output.split('\n'):
+                        if any(keyword in line for keyword in error_keywords):
+                            error_lines.append(line)
+                    if error_lines:
+                        error_lines = ' | '.join(error_lines[:3])
+                        final_msg += f'\nLog errors: {error_lines}'
+
+            return final_result, final_msg
+
+        finally:
+            os.chdir(original_cwd)
+            print(f'Returned to directory: {original_cwd}')
+
+    except subprocess.TimeoutExpired:
+        timeout_msg = (f'Evaluation timed out for {model_name} '
+                       f'after 7200 seconds')
+        return False, timeout_msg
+    except Exception as e:
+        error_msg = f'Error during evaluation for {model_name}: {str(e)}'
         return False, error_msg
