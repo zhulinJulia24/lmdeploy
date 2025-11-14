@@ -1,16 +1,45 @@
 import csv
 import glob
+import json
 import os
 import subprocess
 
+import pandas as pd
 from mmengine.config import Config
 
 DEFAULT_PORT = 23333
 
 
-def write_to_summary(model_name, tp_num, result, msg, worker_id, backend_type, communicator, work_dir=None):
+def write_to_summary(model_name, tp_num, result, backend_type, communicator, metrics, work_dir=None):
     status = '✅ PASS' if result else '❌ FAIL'
 
+    dataset_name = []
+    dataset_metrics = []
+    for key in sorted(metrics.keys()):
+        dataset_name.append(key)
+        dataset_metrics.append(metrics.get(key, ''))
+
+    summary_dataset_name = ' | '.join(dataset_name)
+    summary_dataset_metrics = ' | '.join(dataset_metrics)
+
+    summary_file = os.environ.get('GITHUB_STEP_SUMMARY', f'{work_dir}/summary.md')
+    summary_line = f'| {model_name} | {backend_type} | {communicator} | TP{tp_num} | {status} | {summary_dataset_metrics} |\n'  # noqa: E501
+    if summary_file:
+        write_header = not os.path.exists(summary_file) or os.path.getsize(summary_file) == 0
+        with open(summary_file, 'a') as f:
+            if write_header:
+                dash_line = '-----|' * (len(metrics.keys()))
+                f.write('## Model Evaluation Results\n')
+                f.write(f'| Model | Backend | Communicator | TP | Status | {summary_dataset_name} |\n')
+                f.write(f'|-------|---------|--------------|----|--------|{dash_line}\n')
+            f.write(summary_line)
+    else:
+        print(
+            f'Summary: {model_name} | {backend_type} | {communicator} | TP{tp_num} | {status} | {summary_dataset_metrics}'  # noqa: E501
+        )
+
+
+def llm_summary(model_name, tp_num, result, backend_type, communicator, work_dir=None):
     metrics = {}
 
     if work_dir and os.path.exists(work_dir):
@@ -45,31 +74,44 @@ def write_to_summary(model_name, tp_num, result, msg, worker_id, backend_type, c
 
         except Exception as e:
             print(f'Error reading metrics: {str(e)}')
+    write_to_summary(model_name, tp_num, result, backend_type, communicator, metrics, work_dir)
 
-    dataset_name = []
-    dataset_metrics = []
-    for key in sorted(metrics.keys()):
-        dataset_name.append(key)
-        dataset_metrics.append(metrics.get(key, ''))
 
-    summary_dataset_name = ' | '.join(dataset_name)
-    summary_dataset_metrics = ' | '.join(dataset_metrics)
+def mllm_summary(model_name,
+                 tp_num,
+                 result,
+                 backend_type,
+                 communicator,
+                 work_dir=None,
+                 dataset_list=['MMBench_V11_MINI', 'MMStar_MINI', 'AI2D_MINI', 'OCRBench_MINI']):
+    metrics = {}
+    pattern = os.path.join(work_dir, 'T*')
+    t_dirs = [d for d in glob.glob(pattern) if os.path.isdir(d)]
 
-    summary_file = os.environ.get('GITHUB_STEP_SUMMARY', None)
-    summary_line = f'| {model_name} | {backend_type} | {communicator} | TP{tp_num} | {status} | {summary_dataset_metrics} |\n'  # noqa: E501
-    if summary_file:
-        write_header = not os.path.exists(summary_file) or os.path.getsize(summary_file) == 0
-        with open(summary_file, 'a') as f:
-            if write_header:
-                dash_line = '-----|' * (len(metrics.keys()))
-                f.write('## Model Evaluation Results\n')
-                f.write(f'| Model | Backend | Communicator | TP | Status | {summary_dataset_name} |\n')
-                f.write(f'|-------|---------|--------------|----|--------|{dash_line}\n')
-            f.write(summary_line)
-    else:
-        print(
-            f'Summary: {model_name} | {backend_type} | {communicator} | TP{tp_num} | {status} | {summary_dataset_metrics}'  # noqa: E501
-        )
+    if not t_dirs:
+        return
+
+    # 按修改时间排序
+    t_dirs.sort(key=os.path.getmtime, reverse=True)
+    latest_dir = t_dirs[0]
+
+    for dataset in dataset_list:
+        if dataset == 'OCRBench_MINI':
+            score_file = os.path.join('outputs', f"{latest_dir}/{model_name}_{dataset}_score.json")
+            cur_score = 0
+            with open(score_file, 'r') as f:
+                total_score = json.load(f)
+                cur_score = total_score['Final Score Norm']
+            metrics[dataset] = f'{cur_score:.2f}'  # noqa: E231
+        else:
+            score_file = os.path.join('outputs', f"{latest_dir}/{model_name}_{dataset}_acc.csv")
+            df = pd.read_csv(score_file)
+            cur_score = df['Overall'].iloc[0]
+            if dataset == 'MMBench_V11_MINI':
+                cur_score = df.loc[df['split'] == 'dev', 'Overall'].values
+            metrics[dataset] = f'{cur_score:.2f}'  # noqa: E231
+
+    write_to_summary(model_name, tp_num, result, backend_type, communicator, metrics, work_dir)
 
 
 def eval_test(config, run_id, prepare_environment, worker_id='gw0', port=DEFAULT_PORT, test_type='infer', **kwargs):
@@ -135,8 +177,8 @@ def eval_test(config, run_id, prepare_environment, worker_id='gw0', port=DEFAULT
             elif test_type == 'eval':
                 if not os.path.exists(temp_config_path):
                     error_msg = f'Temp config file {temp_config_path} not found for eval stage'
-                    write_to_summary(summary_model_name, tp_num, False, error_msg, worker_id, backend_type,
-                                     communicator, work_dir)
+                    llm_summary(summary_model_name, tp_num, False, error_msg, worker_id, backend_type, communicator,
+                                work_dir)
                     return False, error_msg
 
                 cfg = Config.fromfile(temp_config_path)
@@ -234,8 +276,8 @@ def eval_test(config, run_id, prepare_environment, worker_id='gw0', port=DEFAULT
                         final_msg += f'\nLog errors: {error_lines}'
 
             if test_type == 'eval':
-                write_to_summary(summary_model_name, tp_num, final_result, final_msg, worker_id, backend_type,
-                                 communicator, work_dir)
+                llm_summary(summary_model_name, tp_num, final_result, final_msg, worker_id, backend_type, communicator,
+                            work_dir)
 
             return final_result, final_msg
 
@@ -247,14 +289,12 @@ def eval_test(config, run_id, prepare_environment, worker_id='gw0', port=DEFAULT
         timeout_msg = (f'Evaluation timed out for {model_name} '
                        f'after 259200 seconds')
         if work_dir and test_type == 'eval':
-            write_to_summary(summary_model_name, tp_num, False, timeout_msg, worker_id, backend_type, communicator,
-                             work_dir)
+            llm_summary(summary_model_name, tp_num, False, timeout_msg, worker_id, backend_type, communicator, work_dir)
         return False, timeout_msg
     except Exception as e:
         error_msg = f'Error during evaluation for {model_name}: {str(e)}'
         if work_dir and test_type == 'eval':
-            write_to_summary(summary_model_name, tp_num, False, error_msg, worker_id, backend_type, communicator,
-                             work_dir)
+            llm_summary(summary_model_name, tp_num, False, error_msg, worker_id, backend_type, communicator, work_dir)
         return False, error_msg
 
 
@@ -267,9 +307,9 @@ def mllm_eval_test(config, run_id, prepare_environment, worker_id='gw0', port=DE
         communicator = prepare_environment.get('communicator', 'cuda-ipc')
         quant_policy = prepare_environment.get('quant_policy', 0)
 
-        # summary_model_name = model_name
-        # if quant_policy in [4, 8]:
-        #     summary_model_name = f'{model_name}-kvint{quant_policy}'
+        summary_model_name = model_name
+        if quant_policy in [4, 8]:
+            summary_model_name = f'{model_name}-kvint{quant_policy}'
 
         model_base_path = config.get('model_path', '/nvme/qa_test_models')
         model_path = os.path.join(model_base_path, model_name)
@@ -352,6 +392,15 @@ def mllm_eval_test(config, run_id, prepare_environment, worker_id='gw0', port=DE
                         error_lines = ' | '.join(error_lines[:3])
                         final_msg += f'\nLog errors: {error_lines}'
 
+            mllm_summary(summary_model_name,
+                         tp_num,
+                         final_result,
+                         final_msg,
+                         worker_id,
+                         backend_type,
+                         communicator,
+                         work_dir,
+                         dataset_list=['MMBench_V11_MINI', 'MMStar_MINI', 'AI2D_MINI', 'OCRBench_MINI'])
             return final_result, final_msg
 
         finally:
@@ -360,8 +409,10 @@ def mllm_eval_test(config, run_id, prepare_environment, worker_id='gw0', port=DE
 
     except subprocess.TimeoutExpired:
         timeout_msg = (f'Evaluation timed out for {model_name} '
-                       f'after 7200 seconds')
+                       f'after 259200 seconds')
+        mllm_summary(summary_model_name, tp_num, False, timeout_msg, worker_id, backend_type, communicator, work_dir)
         return False, timeout_msg
     except Exception as e:
         error_msg = f'Error during evaluation for {model_name}: {str(e)}'
+        mllm_summary(summary_model_name, tp_num, False, error_msg, worker_id, backend_type, communicator, work_dir)
         return False, error_msg
