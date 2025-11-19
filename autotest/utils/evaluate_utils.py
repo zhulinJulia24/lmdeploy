@@ -328,21 +328,8 @@ def mllm_eval_test(config, run_id, prepare_environment, worker_id='gw0', port=DE
 
         try:
             cmd = [
-                'python',
-                'run.py',
-                '--data',
-                'MMBench_V11_MINI',
-                'MMStar_MINI',
-                'AI2D_MINI',
-                'OCRBench_MINI',
-                '--model',
-                f'{model_path}',
-                '--reuse',
-                '--work-dir',
-                work_dir,
-                '--api-nproc',
-                '32',
-                f'--base-url http://0.0.0.0:{port}/v1',
+                'python', 'run.py', '--data', 'MMBench_V11_MINI', 'MMStar_MINI', 'AI2D_MINI', 'OCRBench_MINI',
+                '--model', f'lmdeploy_port{port}', '--reuse', '--work-dir', work_dir, '--api-nproc', '32'
             ]
             print(f"Running command: {' '.join(cmd)}")
             print(f'Work directory: {work_dir}')
