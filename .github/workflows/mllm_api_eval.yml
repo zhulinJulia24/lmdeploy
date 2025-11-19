@@ -1,4 +1,4 @@
-name: api_eval
+name: mlln_api_eval
 
 on:
   workflow_dispatch:
