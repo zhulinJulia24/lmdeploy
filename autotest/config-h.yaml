@@ -166,3 +166,7 @@ evaluate_model:
     - unsloth/gpt-oss-120b-BF16
     - unsloth/gpt-oss-20b-BF16
     - deepseek/DeepSeek-V3.1
+
+mllm_evaluate_model:
+    - internlm/Intern-S1
+    - internlm/Intern-S1-mini

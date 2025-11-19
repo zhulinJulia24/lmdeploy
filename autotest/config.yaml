@@ -386,3 +386,7 @@ evaluate_model:
   - Qwen/Qwen2.5-32B-Instruct
   - Qwen/Qwen1.5-MoE-A2.7B-Chat
   - Qwen/Qwen3-30B-A3B
+
+mllm_evaluate_model:
+  - internlm/Intern-S1
+  - internlm/Intern-S1-mini

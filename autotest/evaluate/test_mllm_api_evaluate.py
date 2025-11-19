@@ -18,7 +18,7 @@ def prepare_environment(request, config, worker_id):
 
 
 def get_turbomind_vl_model_list(tp_num):
-    model_list = get_evaluate_turbomind_model_list(tp_num, kvint_list=[4, 8])
+    model_list = get_evaluate_turbomind_model_list(tp_num, is_mllm=True, kvint_list=[4, 8])
     new_model_list = []
     for model in model_list:
         model['cuda_prefix'] = None
@@ -27,7 +27,7 @@ def get_turbomind_vl_model_list(tp_num):
 
 
 def get_pytorch_vl_model_list(tp_num):
-    model_list = get_evaluate_pytorch_model_list(tp_num, kvint_list=[4, 8])
+    model_list = get_evaluate_pytorch_model_list(tp_num, is_mllm=True)
     new_model_list = []
     for model in model_list:
         model['cuda_prefix'] = None

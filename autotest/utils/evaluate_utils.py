@@ -97,14 +97,14 @@ def mllm_summary(model_name,
 
     for dataset in dataset_list:
         if dataset == 'OCRBench_MINI':
-            score_file = os.path.join('outputs', f"{latest_dir}/{model_name}_{dataset}_score.json")
+            score_file = os.path.join('outputs', f'{latest_dir}/{model_name}_{dataset}_score.json')
             cur_score = 0
             with open(score_file, 'r') as f:
                 total_score = json.load(f)
                 cur_score = total_score['Final Score Norm']
             metrics[dataset] = f'{cur_score:.2f}'  # noqa: E231
         else:
-            score_file = os.path.join('outputs', f"{latest_dir}/{model_name}_{dataset}_acc.csv")
+            score_file = os.path.join('outputs', f'{latest_dir}/{model_name}_{dataset}_acc.csv')
             df = pd.read_csv(score_file)
             cur_score = df['Overall'].iloc[0]
             if dataset == 'MMBench_V11_MINI':
@@ -328,8 +328,8 @@ def mllm_eval_test(config, run_id, prepare_environment, worker_id='gw0', port=DE
 
         try:
             cmd = [
-                'cd VLMEvalKit;', 'python run.py', '--data MMBench_V11_MINI MMStar_MINI AI2D_MINI OCRBench_MINI',
-                f'--model lmdeploy_{port}', '--reuse', f'--work_dir {work_dir}', '--api-nproc 8'
+                'cd', 'VLMEvalKit;', 'python', 'run.py', '--data', 'MMBench_V11_MINI', 'MMStar_MINI', 'AI2D_MINI',
+                'OCRBench_MINI', '--model', f'lmdeploy_{port}', '--reuse', '--work_dir', work_dir, '--api-nproc', '8'
             ]
             print(f"Running command: {' '.join(cmd)}")
             print(f'Work directory: {work_dir}')
@@ -395,8 +395,6 @@ def mllm_eval_test(config, run_id, prepare_environment, worker_id='gw0', port=DE
             mllm_summary(summary_model_name,
                          tp_num,
                          final_result,
-                         final_msg,
-                         worker_id,
                          backend_type,
                          communicator,
                          work_dir,
@@ -410,9 +408,9 @@ def mllm_eval_test(config, run_id, prepare_environment, worker_id='gw0', port=DE
     except subprocess.TimeoutExpired:
         timeout_msg = (f'Evaluation timed out for {model_name} '
                        f'after 259200 seconds')
-        mllm_summary(summary_model_name, tp_num, False, timeout_msg, worker_id, backend_type, communicator, work_dir)
+        mllm_summary(summary_model_name, tp_num, False, backend_type, communicator, work_dir)
         return False, timeout_msg
     except Exception as e:
         error_msg = f'Error during evaluation for {model_name}: {str(e)}'
-        mllm_summary(summary_model_name, tp_num, False, error_msg, worker_id, backend_type, communicator, work_dir)
+        mllm_summary(summary_model_name, tp_num, False, backend_type, communicator, work_dir)
         return False, error_msg

@@ -287,7 +287,7 @@ def get_evaluate_turbomind_model_list(tp_num, is_mllm: bool = False, kvint_list:
     return result
 
 
-def get_evaluate_pytorch_model_list(tp_num, is_mllm: bool = False, kvint_list: list = []):
+def get_evaluate_pytorch_model_list(tp_num, is_mllm: bool = False):
     config = get_config()
 
     if is_mllm:
