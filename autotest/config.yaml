@@ -2,6 +2,7 @@ model_path: /nvme/qa_test_models
 resource_path: /nvme/qa_test_models/resource
 log_path: /nvme/qa_test_models/autotest_model/log
 eval_log_path: /nvme/qa_test_models/evaluation_report
+mllm_eval_log_path: /nvme/qa_test_models/mllm_evaluation_report
 benchmark_path: /nvme/qa_test_models/benchmark-reports
 dataset_path: /nvme/qa_test_models/datasets/ShareGPT_V3_unfiltered_cleaned_split.json
 env_tag: a100
@@ -390,3 +391,5 @@ evaluate_model:
 mllm_evaluate_model:
   - internlm/Intern-S1
   - internlm/Intern-S1-mini
+  - OpenGVLab/InternVL3-8B
+  - Qwen/Qwen2.5-VL-32B-Instruct
