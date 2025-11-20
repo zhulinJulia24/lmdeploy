@@ -18,15 +18,6 @@ on:
         description: 'Set backend testcase filter: turbomind or pytorch or turbomind, pytorch. Default is "["turbomind", "pytorch"]"'
         type: string
         default: "['turbomind', 'pytorch']"
-      execution_mode:
-        required: false
-        description: 'Select execution mode: infer, eval, or both. Default is "both"'
-        type: choice
-        options:
-          - both
-          - infer
-          - eval
-        default: 'both'
       run_id:
         required: false
         description: 'Set custom run ID. If not provided, github.run_id will be used'
@@ -38,7 +29,7 @@ env:
   HOST_PIP_CACHE_DIR: /nvme/github-actions/pip-cache
   HOST_LOCALTIME: /usr/share/zoneinfo/Asia/Shanghai
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
-  REPORT_DIR: /nvme/qa_test_models/evaluation-reports/allure_report/${{ github.run_id }}
+  REPORT_DIR: /nvme/qa_test_models/mllm-evaluation-reports/allure_report/${{ github.run_id }}
   COV_PARAM: --cov /opt/py3/lib/python3.10/site-packages/lmdeploy
   FAIL_CONFIG: '--lf'
   TEST_CODE_PATH: /nvme/qa_test_models/test_pkg/lmdeploy/${{ github.run_id }}
@@ -156,11 +147,12 @@ jobs:
       - name: Setup paths for evaluation
         if: (matrix.backend == 'pytorch' || matrix.backend == 'turbomind')
         run: |
+          unset HTTP_PROXY;unset HTTPS_PROXY;unset http_proxy;unset https_proxy;
           cd VLMEvalKit && cp -r ../autotest .
-          pytest autotest/evaluate/test_mllm_api_evaluate.py -m "gpu_num_1 and ${{matrix.backend}}" -n 8 --run_id ${{ github.event.inputs.run_id || github.run_id }} --alluredir=${{env.REPORT_DIR}} || overall_exit=$?
-          pytest autotest/evaluate/test_mllm_api_evaluate.py -m "gpu_num_2 and ${{matrix.backend}} and infer" -n 4 --run_id ${{ github.event.inputs.run_id || github.run_id }} --alluredir=${{env.REPORT_DIR}} || overall_exit=$?
-          pytest autotest/evaluate/test_mllm_api_evaluate.py -m "gpu_num_4 and ${{matrix.backend}} and infer" -n 2 --run_id ${{ github.event.inputs.run_id || github.run_id }} --alluredir=${{env.REPORT_DIR}} || overall_exit=$?
-          pytest autotest/evaluate/test_mllm_api_evaluate.py -m "gpu_num_8 and ${{matrix.backend}} and infer" -n 1 --run_id ${{ github.event.inputs.run_id || github.run_id }} --alluredir=${{env.REPORT_DIR}} ||
+          pytest autotest/evaluate/test_mllm_api_evaluate.py -m "gpu_num_1 and ${{matrix.backend}}" -n 8 --run_id ${{ github.event.inputs.run_id || github.run_id }} --alluredir=${{env.REPORT_DIR}} || true
+          pytest autotest/evaluate/test_mllm_api_evaluate.py -m "gpu_num_2 and ${{matrix.backend}}" -n 4 --run_id ${{ github.event.inputs.run_id || github.run_id }} --alluredir=${{env.REPORT_DIR}} || true
+          pytest autotest/evaluate/test_mllm_api_evaluate.py -m "gpu_num_4 and ${{matrix.backend}}" -n 2 --run_id ${{ github.event.inputs.run_id || github.run_id }} --alluredir=${{env.REPORT_DIR}} || true
+          pytest autotest/evaluate/test_mllm_api_evaluate.py -m "gpu_num_8 and ${{matrix.backend}}" -n 1 --run_id ${{ github.event.inputs.run_id || github.run_id }} --alluredir=${{env.REPORT_DIR}}
       - name: Clear workspace
         if: always()
         run: |

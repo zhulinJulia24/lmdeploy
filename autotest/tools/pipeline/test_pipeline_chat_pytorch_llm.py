@@ -160,6 +160,23 @@ def test_pipeline_chat_pytorch_pr(config, common_case_config, model, worker_id):
 @pytest.mark.order(6)
 @pytest.mark.usefixtures('common_case_config')
 @pytest.mark.pipeline_chat_pytorch
+@pytest.mark.flaky(reruns=0)
+@pytest.mark.gpu_num_2
+@pytest.mark.pr_test
+@pytest.mark.parametrize('model', ['internlm/internlm2_5-20b-chat'])
+def test_pipeline_chat_pytorch_kvint_pr(config, common_case_config, model, worker_id):
+    run_pipeline_chat_test(config,
+                           common_case_config,
+                           model,
+                           'pytorch-kvint',
+                           worker_id,
+                           extra={'quant_policy': 4},
+                           is_smoke=True)
+
+
+@pytest.mark.order(6)
+@pytest.mark.usefixtures('common_case_config')
+@pytest.mark.pipeline_chat_pytorch
 @pytest.mark.gpu_num_1
 @pytest.mark.other
 @pytest.mark.flaky(reruns=0)
