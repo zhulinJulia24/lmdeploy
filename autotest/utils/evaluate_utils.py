@@ -3,7 +3,6 @@ import glob
 import json
 import os
 import subprocess
-from subprocess import PIPE
 
 import allure
 import pandas as pd
@@ -215,24 +214,11 @@ def eval_test(config, run_id, prepare_environment, worker_id='gw0', port=DEFAULT
             cmd = [
                 'opencompass', temp_config_path, '--reuse', '--max-num-workers', '16', '-w', work_dir, '-m', test_type
             ]
+
             print(f"Running command: {' '.join(cmd)}")
             print(f'Work directory: {work_dir}')
 
-            evaluate_log = os.path.join(log_path, 'evaluate_log_' + model_name.split('/')[1] + worker_id + '.log')
-            with open(evaluate_log, 'w') as f:
-                f.writelines('reproduce command: ' + cmd + '\n')
-                print('reproduce command: ' + cmd)
-
-                result = subprocess.run(cmd,
-                                        stdout=f,
-                                        stderr=PIPE,
-                                        shell=True,
-                                        text=True,
-                                        timeout=259200,
-                                        encoding='utf-8')
-
-                f.writelines(result.stderr)
-            allure.attach.file(evaluate_log, attachment_type=allure.attachment_type.TEXT)
+            result = subprocess.run(cmd, capture_output=True, text=True, errors='replace', timeout=259200)
 
             stdout_output = result.stdout
             stderr_output = result.stderr
@@ -291,6 +277,8 @@ def eval_test(config, run_id, prepare_environment, worker_id='gw0', port=DEFAULT
                         error_lines = ' | '.join(error_lines[:3])
                         final_msg += f'\nLog errors: {error_lines}'
 
+            allure.attach.file(log_file, attachment_type=allure.attachment_type.TEXT)
+
             if test_type == 'eval':
                 llm_summary(summary_model_name, tp_num, final_result, final_msg, worker_id, backend_type, communicator,
                             work_dir)
@@ -347,24 +335,9 @@ def mllm_eval_test(config, run_id, prepare_environment, worker_id='gw0', port=DE
                 'python', 'run.py', '--data', 'MMBench_V11_MINI', 'MMStar_MINI', 'AI2D_MINI', 'OCRBench_MINI',
                 '--model', f'lmdeploy_port{port}', '--reuse', '--work-dir', work_dir, '--api-nproc', '32'
             ]
-            print(f"Running command: {' '.join(cmd)}")
             print(f'Work directory: {work_dir}')
 
-            evaluate_log = os.path.join(log_path, 'mllm_evaluate_log_' + model_name.split('/')[1] + worker_id + '.log')
-            with open(evaluate_log, 'w') as f:
-                f.writelines('reproduce command: ' + cmd + '\n')
-                print('reproduce command: ' + cmd)
-
-                result = subprocess.run(cmd,
-                                        stdout=f,
-                                        stderr=PIPE,
-                                        shell=True,
-                                        text=True,
-                                        timeout=72000,
-                                        encoding='utf-8')
-
-                f.writelines(result.stderr)
-            allure.attach.file(evaluate_log, attachment_type=allure.attachment_type.TEXT)
+            result = subprocess.run(cmd, capture_output=True, text=True, errors='replace', timeout=259200)
 
             stdout_output = result.stdout
             stderr_output = result.stderr
@@ -421,6 +394,8 @@ def mllm_eval_test(config, run_id, prepare_environment, worker_id='gw0', port=DE
                     if error_lines:
                         error_lines = ' | '.join(error_lines[:3])
                         final_msg += f'\nLog errors: {error_lines}'
+
+            allure.attach.file(log_file, attachment_type=allure.attachment_type.TEXT)
 
             mllm_summary(summary_model_name,
                          tp_num,
