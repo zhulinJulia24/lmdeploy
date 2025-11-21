@@ -3,6 +3,7 @@ import glob
 import json
 import os
 import subprocess
+from subprocess import PIPE
 
 import allure
 import pandas as pd
@@ -337,65 +338,28 @@ def mllm_eval_test(config, run_id, prepare_environment, worker_id='gw0', port=DE
             ]
             print(f'Work directory: {work_dir}')
 
-            result = subprocess.run(cmd, capture_output=True, text=True, errors='replace', timeout=259200)
-
-            stdout_output = result.stdout
-            stderr_output = result.stderr
-
+            cmd_command = ' '.join(cmd)
             log_filename = (f'{backend_type}_'
                             f"{model_name.replace('/', '_')}_"
                             f'{communicator}_'
                             f'{worker_id}_'
                             f'{quant_policy}.log')
             log_file = os.path.join(log_path, log_filename)
-            cmd_command = ' '.join(cmd)
 
-            with open(log_file, 'w', encoding='utf-8') as f:
-                f.write(f'Model: {model_name}\n')
-                f.write(f'Backend: {backend_type}\n')
-                f.write(f'TP Num: {tp_num}\n')
-                f.write(f'Command: {cmd_command}\n')
-                f.write(f'Work directory: {work_dir}\n')
-                f.write(f'STDOUT: \n{stdout_output}\n')
-                if stderr_output:
-                    f.write(f'STDERR: \n{stderr_output}\n')
-                f.write(f'Return code: {result.returncode}\n')
+            with open(log_file, 'w') as f:
+                f.writelines('reproduce command: ' + cmd_command + '\n')
+                print('reproduce command: ' + cmd_command)
 
-            print(f'STDOUT: \n{stdout_output}')
-            if stderr_output:
-                print(f'STDERR: \n{stderr_output}')
-            print(f'Return code: {result.returncode}')
-
-            evaluation_failed = False
-            error_keywords = ['ERROR -', 'fail, see', 'task .* fail']
-            for line in stdout_output.split('\n'):
-                if any(keyword in line for keyword in error_keywords):
-                    evaluation_failed = True
-                    break
-
-            if result.returncode == 0 and not evaluation_failed:
-                final_result = True
-                final_msg = f'Evaluation completed successfully for {model_name}'
-            else:
-                final_result = False
-                final_msg = f'Evaluation failed for {model_name}'
-                if result.returncode != 0:
-                    final_msg += f'with return code {result.returncode}'
-                elif evaluation_failed:
-                    final_msg += 'with internal errors detected in logs'
-
-                if stderr_output:
-                    final_msg += f'\nSTDERR: {stderr_output}'
-                else:
-                    error_lines = []
-                    for line in stdout_output.split('\n'):
-                        if any(keyword in line for keyword in error_keywords):
-                            error_lines.append(line)
-                    if error_lines:
-                        error_lines = ' | '.join(error_lines[:3])
-                        final_msg += f'\nLog errors: {error_lines}'
-
+                evaluate_res = subprocess.run([cmd],
+                                              stdout=f,
+                                              stderr=PIPE,
+                                              shell=True,
+                                              text=True,
+                                              encoding='utf-8',
+                                              errors='replace')
+                f.writelines(evaluate_res.stderr)
             allure.attach.file(log_file, attachment_type=allure.attachment_type.TEXT)
+            final_result = evaluate_res.returncode == 0
 
             mllm_summary(summary_model_name,
                          tp_num,
@@ -404,7 +368,7 @@ def mllm_eval_test(config, run_id, prepare_environment, worker_id='gw0', port=DE
                          communicator,
                          work_dir,
                          dataset_list=['MMBench_V11_MINI', 'MMStar_MINI', 'AI2D_MINI', 'OCRBench_MINI'])
-            return final_result, final_msg
+            return final_result, evaluate_res.stderr
 
         finally:
             os.chdir(original_cwd)
