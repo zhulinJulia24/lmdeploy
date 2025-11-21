@@ -45,21 +45,8 @@ def common_case_config():
 
 def pytest_addoption(parser):
     parser.addoption('--run_id', action='store', default='', help='github run_id')
-    parser.addoption('--device', action='store', default='', help='device config suffix')
-
-
-def pytest_configure(config):
-    # Set DEVICE environment variable before test execution
-    device = config.getoption('--device')
-    if device:
-        os.environ['DEVICE'] = device
 
 
 @pytest.fixture(scope='session')
 def run_id(request):
     return request.config.getoption('--run_id')
-
-
-@pytest.fixture(scope='session')
-def device(request):
-    return request.config.getoption('--device')

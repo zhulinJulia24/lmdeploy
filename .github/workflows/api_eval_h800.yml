@@ -85,7 +85,7 @@ jobs:
         with:
           if-no-files-found: error
           path: builder/manywheel/${{ env.OUTPUT_FOLDER }}
-          retention-days: 1
+          retention-days: 7
           name: my-artifact-${{ github.run_id }}-${{ matrix.pyver }}
 
   test_evaluation:
@@ -114,9 +114,6 @@ jobs:
         - /mnt/158_nvme4:/mnt/158_nvme4
         - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
     steps:
-      - name: Create and change to _wk directory
-        run: |
-          echo "Working directory set to: $(pwd)"
       - name: Clone repository
         uses: actions/checkout@v2
         with:

@@ -1,6 +1,6 @@
 import pytest
 from utils.config_utils import get_evaluate_pytorch_model_list, get_evaluate_turbomind_model_list, get_workerid
-from utils.evaluate_utils import restful_test
+from utils.evaluate_utils import eval_test
 from utils.run_restful_chat import start_proxy_server, start_restful_api, stop_restful_api
 
 DEFAULT_PORT = 23333
@@ -107,21 +107,21 @@ def run_test(config, run_id, prepare_environment, worker_id, test_type='infer', 
         port = PROXY_PORT
 
     if get_workerid(worker_id) is None:
-        result, msg = restful_test(config,
-                                   run_id,
-                                   prepare_environment,
-                                   worker_id=worker_id,
-                                   port=port,
-                                   test_type=test_type,
-                                   **preset_config)
+        result, msg = eval_test(config,
+                                run_id,
+                                prepare_environment,
+                                worker_id=worker_id,
+                                port=port,
+                                test_type=test_type,
+                                **preset_config)
     else:
-        result, msg = restful_test(config,
-                                   run_id,
-                                   prepare_environment,
-                                   worker_id=worker_id,
-                                   port=port + get_workerid(worker_id),
-                                   test_type=test_type,
-                                   **preset_config)
+        result, msg = eval_test(config,
+                                run_id,
+                                prepare_environment,
+                                worker_id=worker_id,
+                                port=port + get_workerid(worker_id),
+                                test_type=test_type,
+                                **preset_config)
     return result, msg
 
 
@@ -130,8 +130,9 @@ def run_test(config, run_id, prepare_environment, worker_id, test_type='infer', 
 @pytest.mark.gpu_num_1
 @pytest.mark.flaky(reruns=0)
 @pytest.mark.parametrize('prepare_environment', get_turbomind_model_list(tp_num=1), indirect=True)
-def test_turbomind_restful_tp1(config, run_id, prepare_environment, worker_id):
-    result, msg = run_test(config, run_id, prepare_environment, worker_id, 'infer')
+@pytest.mark.parametrize('eval_config', list(EVAL_CONFIGS.keys()))
+def test_turbomind_eval_tp1(config, run_id, prepare_environment, worker_id, eval_config):
+    result, msg = run_test(config, run_id, prepare_environment, worker_id, 'infer', eval_config)
     assert result, msg
 
 
@@ -140,8 +141,9 @@ def test_turbomind_restful_tp1(config, run_id, prepare_environment, worker_id):
 @pytest.mark.gpu_num_2
 @pytest.mark.flaky(reruns=0)
 @pytest.mark.parametrize('prepare_environment', get_turbomind_model_list(tp_num=2), indirect=True)
-def test_turbomind_restful_tp2(config, run_id, prepare_environment, worker_id):
-    result, msg = run_test(config, run_id, prepare_environment, worker_id, 'infer')
+@pytest.mark.parametrize('eval_config', list(EVAL_CONFIGS.keys()))
+def test_turbomind_eval_tp2(config, run_id, prepare_environment, worker_id, eval_config):
+    result, msg = run_test(config, run_id, prepare_environment, worker_id, 'infer', eval_config)
     assert result, msg
 
 
@@ -150,8 +152,9 @@ def test_turbomind_restful_tp2(config, run_id, prepare_environment, worker_id):
 @pytest.mark.gpu_num_4
 @pytest.mark.flaky(reruns=0)
 @pytest.mark.parametrize('prepare_environment', get_turbomind_model_list(tp_num=4), indirect=True)
-def test_turbomind_restful_tp4(config, run_id, prepare_environment, worker_id):
-    result, msg = run_test(config, run_id, prepare_environment, worker_id, 'infer')
+@pytest.mark.parametrize('eval_config', list(EVAL_CONFIGS.keys()))
+def test_turbomind_eval_tp4(config, run_id, prepare_environment, worker_id, eval_config):
+    result, msg = run_test(config, run_id, prepare_environment, worker_id, 'infer', eval_config)
     assert result, msg
 
 
@@ -160,8 +163,9 @@ def test_turbomind_restful_tp4(config, run_id, prepare_environment, worker_id):
 @pytest.mark.gpu_num_8
 @pytest.mark.flaky(reruns=0)
 @pytest.mark.parametrize('prepare_environment', get_turbomind_model_list(tp_num=8), indirect=True)
-def test_turbomind_restful_tp8(config, run_id, prepare_environment, worker_id):
-    result, msg = run_test(config, run_id, prepare_environment, worker_id, 'infer')
+@pytest.mark.parametrize('eval_config', list(EVAL_CONFIGS.keys()))
+def test_turbomind_eval_tp8(config, run_id, prepare_environment, worker_id, eval_config):
+    result, msg = run_test(config, run_id, prepare_environment, worker_id, 'infer', eval_config)
     assert result, msg
 
 
@@ -171,8 +175,9 @@ def test_turbomind_restful_tp8(config, run_id, prepare_environment, worker_id):
 @pytest.mark.test_ascend
 @pytest.mark.flaky(reruns=0)
 @pytest.mark.parametrize('prepare_environment', get_pytorch_model_list(tp_num=1), indirect=True)
-def test_pytorch_restful_tp1(config, run_id, prepare_environment, worker_id):
-    result, msg = run_test(config, run_id, prepare_environment, worker_id, 'infer')
+@pytest.mark.parametrize('eval_config', list(EVAL_CONFIGS.keys()))
+def test_pytorch_eval_tp1(config, run_id, prepare_environment, worker_id, eval_config):
+    result, msg = run_test(config, run_id, prepare_environment, worker_id, 'infer', eval_config)
     assert result, msg
 
 
@@ -182,8 +187,9 @@ def test_pytorch_restful_tp1(config, run_id, prepare_environment, worker_id):
 @pytest.mark.test_ascend
 @pytest.mark.flaky(reruns=0)
 @pytest.mark.parametrize('prepare_environment', get_pytorch_model_list(tp_num=2), indirect=True)
-def test_pytorch_restful_tp2(config, run_id, prepare_environment, worker_id):
-    result, msg = run_test(config, run_id, prepare_environment, worker_id, 'infer')
+@pytest.mark.parametrize('eval_config', list(EVAL_CONFIGS.keys()))
+def test_pytorch_eval_tp2(config, run_id, prepare_environment, worker_id, eval_config):
+    result, msg = run_test(config, run_id, prepare_environment, worker_id, 'infer', eval_config)
     assert result, msg
 
 
@@ -193,8 +199,9 @@ def test_pytorch_restful_tp2(config, run_id, prepare_environment, worker_id):
 @pytest.mark.test_ascend
 @pytest.mark.flaky(reruns=0)
 @pytest.mark.parametrize('prepare_environment', get_pytorch_model_list(tp_num=4), indirect=True)
-def test_pytorch_restful_tp4(config, run_id, prepare_environment, worker_id):
-    result, msg = run_test(config, run_id, prepare_environment, worker_id, 'infer')
+@pytest.mark.parametrize('eval_config', list(EVAL_CONFIGS.keys()))
+def test_pytorch_eval_tp4(config, run_id, prepare_environment, worker_id, eval_config):
+    result, msg = run_test(config, run_id, prepare_environment, worker_id, 'infer', eval_config)
     assert result, msg
 
 
@@ -204,8 +211,9 @@ def test_pytorch_restful_tp4(config, run_id, prepare_environment, worker_id):
 @pytest.mark.test_ascend
 @pytest.mark.flaky(reruns=0)
 @pytest.mark.parametrize('prepare_environment', get_pytorch_model_list(tp_num=8), indirect=True)
-def test_pytorch_restful_tp8(config, run_id, prepare_environment, worker_id):
-    result, msg = run_test(config, run_id, prepare_environment, worker_id, 'infer')
+@pytest.mark.parametrize('eval_config', list(EVAL_CONFIGS.keys()))
+def test_pytorch_eval_tp8(config, run_id, prepare_environment, worker_id, eval_config):
+    result, msg = run_test(config, run_id, prepare_environment, worker_id, 'infer', eval_config)
     assert result, msg
 
 
@@ -215,8 +223,9 @@ def test_pytorch_restful_tp8(config, run_id, prepare_environment, worker_id):
 @pytest.mark.test_ascend
 @pytest.mark.flaky(reruns=0)
 @pytest.mark.parametrize('prepare_environment', get_pytorch_model_list(tp_num=16), indirect=True)
-def test_pytorch_restful_tp16(config, run_id, prepare_environment, worker_id):
-    result, msg = run_test(config, run_id, prepare_environment, worker_id, 'infer')
+@pytest.mark.parametrize('eval_config', list(EVAL_CONFIGS.keys()))
+def test_pytorch_eval_tp16(config, run_id, prepare_environment, worker_id, eval_config):
+    result, msg = run_test(config, run_id, prepare_environment, worker_id, 'infer', eval_config)
     assert result, msg
 
 
