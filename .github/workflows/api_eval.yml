@@ -121,9 +121,6 @@ jobs:
         - /mnt/121:/mnt/121
         - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
     steps:
-      - name: Create and change to _wk directory
-        run: |
-          echo "Working directory set to: $(pwd)"
       - name: Clone repository
         uses: actions/checkout@v2
         with:

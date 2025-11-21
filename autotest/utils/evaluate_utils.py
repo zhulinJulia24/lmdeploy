@@ -3,7 +3,9 @@ import glob
 import json
 import os
 import subprocess
+from subprocess import PIPE
 
+import allure
 import pandas as pd
 from mmengine.config import Config
 
@@ -216,7 +218,21 @@ def eval_test(config, run_id, prepare_environment, worker_id='gw0', port=DEFAULT
             print(f"Running command: {' '.join(cmd)}")
             print(f'Work directory: {work_dir}')
 
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=259200)
+            evaluate_log = os.path.join(log_path, 'evaluate_log_' + model_name + worker_id + '.log')
+            with open(evaluate_log, 'w') as f:
+                f.writelines('reproduce command: ' + cmd + '\n')
+                print('reproduce command: ' + cmd)
+
+                result = subprocess.run(cmd,
+                                        stdout=f,
+                                        stderr=PIPE,
+                                        shell=True,
+                                        text=True,
+                                        timeout=259200,
+                                        encoding='utf-8')
+
+                f.writelines(result.stderr)
+            allure.attach.file(evaluate_log, attachment_type=allure.attachment_type.TEXT)
 
             stdout_output = result.stdout
             stderr_output = result.stderr
@@ -334,7 +350,21 @@ def mllm_eval_test(config, run_id, prepare_environment, worker_id='gw0', port=DE
             print(f"Running command: {' '.join(cmd)}")
             print(f'Work directory: {work_dir}')
 
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=72000)
+            evaluate_log = os.path.join(log_path, 'mllm_evaluate_log_' + model_name + worker_id + '.log')
+            with open(evaluate_log, 'w') as f:
+                f.writelines('reproduce command: ' + cmd + '\n')
+                print('reproduce command: ' + cmd)
+
+                result = subprocess.run(cmd,
+                                        stdout=f,
+                                        stderr=PIPE,
+                                        shell=True,
+                                        text=True,
+                                        timeout=72000,
+                                        encoding='utf-8')
+
+                f.writelines(result.stderr)
+            allure.attach.file(evaluate_log, attachment_type=allure.attachment_type.TEXT)
 
             stdout_output = result.stdout
             stderr_output = result.stderr
