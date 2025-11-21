@@ -218,7 +218,7 @@ def eval_test(config, run_id, prepare_environment, worker_id='gw0', port=DEFAULT
             print(f"Running command: {' '.join(cmd)}")
             print(f'Work directory: {work_dir}')
 
-            evaluate_log = os.path.join(log_path, 'evaluate_log_' + model_name + worker_id + '.log')
+            evaluate_log = os.path.join(log_path, 'evaluate_log_' + model_name.split('/')[1] + worker_id + '.log')
             with open(evaluate_log, 'w') as f:
                 f.writelines('reproduce command: ' + cmd + '\n')
                 print('reproduce command: ' + cmd)
@@ -350,7 +350,7 @@ def mllm_eval_test(config, run_id, prepare_environment, worker_id='gw0', port=DE
             print(f"Running command: {' '.join(cmd)}")
             print(f'Work directory: {work_dir}')
 
-            evaluate_log = os.path.join(log_path, 'mllm_evaluate_log_' + model_name + worker_id + '.log')
+            evaluate_log = os.path.join(log_path, 'mllm_evaluate_log_' + model_name.split('/')[1] + worker_id + '.log')
             with open(evaluate_log, 'w') as f:
                 f.writelines('reproduce command: ' + cmd + '\n')
                 print('reproduce command: ' + cmd)
