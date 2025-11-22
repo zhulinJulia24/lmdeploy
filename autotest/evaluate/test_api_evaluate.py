@@ -86,7 +86,7 @@ def get_turbomind_model_list(tp_num):
 
 
 def get_pytorch_model_list(tp_num):
-    model_list = get_evaluate_pytorch_model_list(tp_num, kvint_list=[4, 8])
+    model_list = get_evaluate_pytorch_model_list(tp_num)
     new_model_list = []
     for model in model_list:
         model['extra'] = '--session-len 65536 '
