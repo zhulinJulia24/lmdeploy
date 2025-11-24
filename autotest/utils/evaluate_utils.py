@@ -3,7 +3,7 @@ import glob
 import json
 import os
 import subprocess
-from subprocess import PIPE
+import sys
 
 import allure
 import pandas as pd
@@ -305,81 +305,82 @@ def eval_test(config, run_id, prepare_environment, worker_id='gw0', port=DEFAULT
 
 def mllm_eval_test(config, run_id, prepare_environment, worker_id='gw0', port=DEFAULT_PORT):
     work_dir = None
-    try:
-        model_name = prepare_environment['model']
-        backend_type = prepare_environment['backend']
-        tp_num = prepare_environment.get('tp_num', 1)
-        communicator = prepare_environment.get('communicator', 'cuda-ipc')
-        quant_policy = prepare_environment.get('quant_policy', 0)
+    model_name = prepare_environment['model']
+    backend_type = prepare_environment['backend']
+    tp_num = prepare_environment.get('tp_num', 1)
+    communicator = prepare_environment.get('communicator', 'cuda-ipc')
+    quant_policy = prepare_environment.get('quant_policy', 0)
 
-        summary_model_name = model_name
-        if quant_policy in [4, 8]:
-            summary_model_name = f'{model_name}-kvint{quant_policy}'
+    summary_model_name = model_name
+    if quant_policy in [4, 8]:
+        summary_model_name = f'{model_name}-kvint{quant_policy}'
 
-        model_base_path = config.get('model_path', '/nvme/qa_test_models')
-        model_path = os.path.join(model_base_path, model_name)
+    model_base_path = config.get('model_path', '/nvme/qa_test_models')
+    model_path = os.path.join(model_base_path, model_name)
 
-        print(f'Starting VLMEvalKit evaluation for model: {model_name}')
-        print(f'Model path: {model_path}')
-        print(f'Backend: {backend_type}')
+    print(f'Starting VLMEvalKit evaluation for model: {model_name}')
+    print(f'Model path: {model_path}')
+    print(f'Backend: {backend_type}')
 
-        log_path = config.get('mllm_eval_log_path', '/nvme/qa_test_models/mllm_evaluation_report') + f'/{run_id}'
-        os.makedirs(log_path, exist_ok=True)
+    log_path = config.get('mllm_eval_log_path', '/nvme/qa_test_models/mllm_evaluation_report') + f'/{run_id}'
+    os.makedirs(log_path, exist_ok=True)
 
-        original_cwd = os.getcwd()
-        work_dir = os.path.join(log_path,
-                                f"wk_{backend_type}_{model_name.replace('/', '_')}_{communicator}_{quant_policy}")
-        os.makedirs(work_dir, exist_ok=True)
+    work_dir = os.path.join(log_path, f"wk_{backend_type}_{model_name.replace('/', '_')}_{communicator}_{quant_policy}")
+    os.makedirs(work_dir, exist_ok=True)
+
+    cmd = [
+        'python', 'run.py', '--data', 'MMBench_V11_MINI', 'MMStar_MINI', 'AI2D_MINI', 'OCRBench_MINI', '--model',
+        f'lmdeploy_port{port}', '--reuse', '--work-dir', work_dir, '--api-nproc', '32'
+    ]
+    print(f'Work directory: {work_dir}')
+
+    log_filename = (f'{backend_type}_'
+                    f"{model_name.replace('/', '_')}_"
+                    f'{communicator}_'
+                    f'{worker_id}_'
+                    f'{quant_policy}.log')
+    log_file = os.path.join(log_path, log_filename)
+    result, msg = execute_command_real_time_simple(cmd, log_file)
+
+    mllm_summary(summary_model_name,
+                 tp_num,
+                 result,
+                 backend_type,
+                 communicator,
+                 work_dir,
+                 dataset_list=['MMBench_V11_MINI', 'MMStar_MINI', 'AI2D_MINI', 'OCRBench_MINI'])
+    return result, msg
+
+
+def execute_command_real_time_simple(cmd, log_file_path):
+    with open(log_file_path, 'w', encoding='utf-8') as log_file:
+        cmd_command = ' '.join(cmd)
+        initial_msg = f'reproduce command: {cmd_command}\n'
+        print(initial_msg, end='')
+        log_file.write(initial_msg)
+        log_file.flush()
 
         try:
-            cmd = [
-                'python', 'run.py', '--data', 'MMBench_V11_MINI', 'MMStar_MINI', 'AI2D_MINI', 'OCRBench_MINI',
-                '--model', f'lmdeploy_port{port}', '--reuse', '--work-dir', work_dir, '--api-nproc', '32'
-            ]
-            print(f'Work directory: {work_dir}')
+            process = subprocess.Popen(cmd,
+                                       stdout=subprocess.PIPE,
+                                       stderr=subprocess.STDOUT,
+                                       shell=True,
+                                       text=True,
+                                       encoding='utf-8',
+                                       errors='replace',
+                                       bufsize=1)
 
-            cmd_command = ' '.join(cmd)
-            log_filename = (f'{backend_type}_'
-                            f"{model_name.replace('/', '_')}_"
-                            f'{communicator}_'
-                            f'{worker_id}_'
-                            f'{quant_policy}.log')
-            log_file = os.path.join(log_path, log_filename)
+            for line in iter(process.stdout.readline, ''):
+                if line:
+                    print(line, end='', flush=True)
+                    log_file.write(line)
+                    log_file.flush()
 
-            with open(log_file, 'w') as f:
-                f.writelines('reproduce command: ' + cmd_command + '\n')
-                print('reproduce command: ' + cmd_command)
+            returncode = process.wait()
+            return returncode == 0, f"Process completed with return code: {returncode}"
 
-                evaluate_res = subprocess.run([cmd],
-                                              stdout=f,
-                                              stderr=PIPE,
-                                              shell=True,
-                                              text=True,
-                                              encoding='utf-8',
-                                              errors='replace')
-                f.writelines(evaluate_res.stderr)
-            allure.attach.file(log_file, attachment_type=allure.attachment_type.TEXT)
-            final_result = evaluate_res.returncode == 0
-
-            mllm_summary(summary_model_name,
-                         tp_num,
-                         final_result,
-                         backend_type,
-                         communicator,
-                         work_dir,
-                         dataset_list=['MMBench_V11_MINI', 'MMStar_MINI', 'AI2D_MINI', 'OCRBench_MINI'])
-            return final_result, evaluate_res.stderr
-
-        finally:
-            os.chdir(original_cwd)
-            print(f'Returned to directory: {original_cwd}')
-
-    except subprocess.TimeoutExpired:
-        timeout_msg = (f'Evaluation timed out for {model_name} '
-                       f'after 259200 seconds')
-        mllm_summary(summary_model_name, tp_num, False, backend_type, communicator, work_dir)
-        return False, timeout_msg
-    except Exception as e:
-        error_msg = f'Error during evaluation for {model_name}: {str(e)}'
-        mllm_summary(summary_model_name, tp_num, False, backend_type, communicator, work_dir)
-        return False, error_msg
+        except Exception as e:
+            error_msg = f"Error executing command: {str(e)}\n"
+            print(error_msg, file=sys.stderr)
+            log_file.write(error_msg)
+            return False, error_msg
