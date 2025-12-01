@@ -135,6 +135,7 @@ def stop_restful_api(pid, startRes, param):
         for child in parent.children(recursive=True):
             child.terminate()
         parent.terminate()
+        parent.join(10)
     if 'modelscope' in param.keys():
         modelscope = param['modelscope']
         if modelscope:
