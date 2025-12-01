@@ -156,7 +156,6 @@ jobs:
         if: (matrix.backend == 'pytorch' || matrix.backend == 'turbomind')
         run: |
           overall_exit=0
-          ln -s /mnt/187/opencompass-data/data ./data
           ln -s /nvme/qa_test_models/resource/nltk_data /usr/share/nltk_data
           execution_mode="${{ github.event.inputs.execution_mode || 'both' }}"
           if [ "$execution_mode" = "both" ] || [ "$execution_mode" = "infer" ]; then
