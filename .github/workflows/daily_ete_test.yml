@@ -103,6 +103,7 @@ jobs:
 
   test_restful:
     if: ${{!cancelled() && (github.event_name == 'schedule' || contains(fromJSON(github.event.inputs.regression_func), 'restful'))}}
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
