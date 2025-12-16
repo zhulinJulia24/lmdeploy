@@ -148,18 +148,6 @@ jobs:
             backend: pytorch
     timeout-minutes: 60
     steps:
-      - name: Copy repository and Artifacts
+      - name: echo
         run: |
-          cp -r ${{env.TEST_CODE_PATH}}/. .
-          mkdir ${{env.REPORT_DIR}} -p
-          echo "starttime=$(date +%s)" > ${{env.REPORT_DIR}}/status.txt
-      - name: Clear workfile
-        if: always()
-        run: |
-          echo "status=done" >> ${{env.REPORT_DIR}}/status.txt
-          chmod -R 777 $REPORT_DIR
-          export workdir=$(pwd)
-          cd ..
-          rm -rf $workdir
-          mkdir $workdir
-          chmod -R 777 $workdir
+          echo "${{matrix.tp}}, ${{matrix.model}}, ${{matrix.case_info}}, ${{matrix.mark}}, ${{matrix.extra}}"
