@@ -109,40 +109,50 @@ jobs:
       matrix:
         backend: ${{ fromJSON(inputs.backend || '["turbomind", "pytorch"]')}}
         model: ['internlm/Intern-S1', 'internlm/internlm2_5-20b-chat', 'internlm/internlm2_5-20b', 'Qwen/Qwen3-32B', 'OpenGVLab/InternVL3-38B']
+        scene_type: ['base', 'logprob', 'expert']
         include:
           - tp: 2
             model: internlm/internlm2_5-20b-chat
-            case_info: chat_completions, generate
+            case_info: ['chat_completions', 'generate']
+            scene_type: base
           - tp: 2
             model: internlm/internlm2_5-20b
-            case_info: completions
+            case_info: ['completions']
+            scene_type: base
           - tp: 8
             model: internlm/Intern-S1
-            case_info: chat_completions, generate
+            case_info: ['chat_completions', 'generate']
+            scene_type: base
           - tp: 2
             model: Qwen/Qwen3-32B
-            case_info: chat_completions, generate
+            case_info: ['chat_completions', 'generate']
+            scene_type: base
           - tp: 2
             model: OpenGVLab/InternVL3-38B
-            case_info: chat_completions, generate
+            case_info: ['chat_completions', 'generate']
+            scene_type: base
           - tp: 2
             model: Qwen/Qwen3-32B
-            case_info: chat_completions, generate_logprob
+            case_info: ['chat_completions', 'generate_logprob']
+            scene_type: logprob
             mark: 'not expert'
             extra: '--logprobs-mode raw_logprobs'
           - tp: 2
             model: OpenGVLab/InternVL3-38B
-            case_info: chat_completions, generate_logprob
+            case_info: ['chat_completions', 'generate_logprob']
+            scene_type: logprob
             mark: 'not expert'
             extra: '--logprobs-mode raw_logprobs'
           - tp: 2
             model: Qwen/Qwen3-32B
-            case_info: chat_completions, generate_expert
+            case_info: ['chat_completions', 'generate_expert']
+            scene_type: expert
             mark: 'not logprob'
             extra: '--enable-return-routed-experts'
           - tp: 2
             model: OpenGVLab/InternVL3-38B
-            case_info: chat_completions, generate_expert
+            case_info: ['chat_completions', 'generate_expert']
+            scene_type: expert
             mark: 'not logprob'
             extra: '--enable-return-routed-experts'
             backend: pytorch
