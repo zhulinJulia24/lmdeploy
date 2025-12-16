@@ -341,14 +341,44 @@ jobs:
       fail-fast: false
       matrix:
         backend: ${{ fromJSON(inputs.backend || '["turbomind", "pytorch"]')}}
-        model: ['Intern-S1', 'internlm2_5-20b-chat', 'internlm2_5-20b']
+        model: ['internlm/Intern-S1', 'internlm/internlm2_5-20b-chat', 'internlm/internlm2_5-20b', 'Qwen/Qwen3-32B', 'OpenGVLab/InternVL3-38B']
         include:
           - tp: 2
-            model: internlm2_5-20b-chat
+            model: internlm/internlm2_5-20b-chat
+            case_info: chat_completions, generate
           - tp: 2
-            model: internlm2_5-20b
+            model: internlm/internlm2_5-20b
+            case_info: completions
           - tp: 8
-            model: Intern-S1
+            model: internlm/Intern-S1
+            case_info: chat_completions, generate
+          - tp: 2
+            model: Qwen/Qwen3-32B
+            case_info: chat_completions, generate
+          - tp: 2
+            model: OpenGVLab/InternVL3-38B
+            case_info: chat_completions, generate
+          - tp: 2
+            model: Qwen/Qwen3-32B
+            case_info: chat_completions, generate_logprob
+            mark: 'not expert'
+            extra: '--logprobs-mode raw_logprobs'
+          - tp: 2
+            model: OpenGVLab/InternVL3-38B
+            case_info: chat_completions, generate_logprob
+            mark: 'not expert'
+            extra: '--logprobs-mode raw_logprobs'
+          - tp: 2
+            model: Qwen/Qwen3-32B
+            case_info: chat_completions, generate_expert
+            mark: 'not logprob'
+            extra: '--enable-return-routed-experts'
+          - tp: 2
+            model: OpenGVLab/InternVL3-38B
+            case_info: chat_completions, generate_expert
+            mark: 'not logprob'
+            extra: '--enable-return-routed-experts'
+            backend: pytorch
     timeout-minutes: 60
     container:
       image: openmmlab/lmdeploy:latest-cu12.8
@@ -368,62 +398,6 @@ jobs:
           cp -r ${{env.TEST_CODE_PATH}}/. .
           mkdir ${{env.REPORT_DIR}} -p
           echo "starttime=$(date +%s)" > ${{env.REPORT_DIR}}/status.txt
-      - name: Install lmdeploy - dependency
-        run: |
-          python3 -m pip install -r ${{env.OFFLINE_REQUIREMENTS}}
-      - name: Install lmdeploy
-        run: |
-          python3 -m pip uninstall lmdeploy -y && python3 -m pip install lmdeploy-*.whl --no-deps
-          python3 -m pip install -r requirements/test.txt
-          rm -rf ${{env.DEEPSEEK_VL}}/build
-          pip install ${{env.DEEPSEEK_VL}} --no-deps
-      - name: Check env
-        run: |
-          python3 -m pip list
-          lmdeploy check_env
-          rm -rf allure-results
-          # remove tmp log in testcase
-          rm -rf /nvme/qa_test_models/autotest_model/log/*
-          mkdir ${{env.REPORT_DIR}}/.pytest_cache -p && rm autotest/.pytest_cache -f
-          ln -s ${{env.REPORT_DIR}}/.pytest_cache autotest
-      - name: Start restful api
-        if:  matrix.model != 'internlm2_5-20b'
-        run: |
-          lmdeploy serve api_server /nvme/qa_test_models/internlm/${{matrix.model}} --tp ${{matrix.tp}} --backend ${{matrix.backend}} > ${{env.REPORT_DIR}}/${{matrix.backend}}_${{matrix.model}}_start_chat_restful.log 2>&1 &
-          echo "restful_pid=$!" >> "$GITHUB_ENV"
-          sleep 900s
-      - name: Test lmdeploy - restful api
-        if:  matrix.model == 'internlm2_5-20b-chat'
-        timeout-minutes: 30
-        run: |
-          pytest autotest/interface/restful/test_restful_chat_func.py -n 20 -m 'not not_${{matrix.backend}} and not interns1' --alluredir=${{env.REPORT_DIR}}/interface-${{matrix.model}}-${{matrix.backend}}_ ${{env.COV_PARAM}} || true
-          mv .coverage ${{env.REPORT_DIR}}/.coverage.$(date +'%Y%m%d%H%M%S')
-      - name: Test lmdeploy - restful api
-        if:  matrix.model == 'Intern-S1'
-        timeout-minutes: 30
-        run: |
-          pytest autotest/interface/restful/test_restful_chat_func.py -n 20 -m 'not not_${{matrix.backend}} and not internlm2_5' --alluredir=${{env.REPORT_DIR}}/interface-${{matrix.model}}-${{matrix.backend}}_ ${{env.COV_PARAM}} || true
-          mv .coverage ${{env.REPORT_DIR}}/.coverage.$(date +'%Y%m%d%H%M%S')
-      - name: Kill api server
-        if:  matrix.model != 'internlm2_5-20b'
-        run: |
-          kill -15 "$restful_pid"
-      - name: Start restful api turbomind - base
-        if: matrix.model == 'internlm2_5-20b'
-        run: |
-          lmdeploy serve api_server /nvme/qa_test_models/internlm/${{matrix.model}} --tp ${{matrix.tp}} --backend ${{matrix.backend}} > ${{env.REPORT_DIR}}/${{matrix.backend}}_${{matrix.model}}_start_base_restful.log 2>&1 &
-          echo "restful_pid=$!" >> "$GITHUB_ENV"
-          sleep 180s
-      - name: Test lmdeploy - restful api - base
-        if: matrix.model == 'internlm2_5-20b'
-        timeout-minutes: 30
-        run: |
-          pytest autotest/interface/restful/test_restful_completions_v1.py -n 20 --alluredir=${{env.REPORT_DIR}}/interface-${{matrix.backend}} ${{env.COV_PARAM}} || true
-          mv .coverage ${{env.REPORT_DIR}}/.coverage.$(date +'%Y%m%d%H%M%S')
-      - name: Kill api server
-        if: matrix.model == 'internlm2_5-20b'
-        run: |
-          kill -15 "$restful_pid"
       - name: Clear workfile
         if: always()
         run: |
