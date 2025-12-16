@@ -101,53 +101,8 @@ jobs:
           retention-days: 1
           name: my-artifact-${{ github.run_id }}-${{ matrix.pyver }}
 
-
-  download_pkgs:
-    needs: linux-build
-    if: ${{!cancelled()}}
-    runs-on: [self-hosted, test-104-lala]
-    timeout-minutes: 50
-    container:
-      image: openmmlab/lmdeploy:latest-cu12.8
-      options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip -e NVIDIA_DISABLE_REQUIRE=1 --pull never"
-      volumes:
-        - /nvme/qa_test_models:/nvme/qa_test_models
-        - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
-    steps:
-      - name: Clone repository
-        uses: actions/checkout@v2
-        if: ${{github.event_name == 'schedule' || !inputs.offline_mode}}
-        with:
-          repository: ${{ github.event.inputs.repo_org || 'InternLM/lmdeploy' }}
-          ref: ${{github.event.inputs.repo_ref || 'main'}}
-      - name: Copy repository
-        if: ${{github.event_name == 'schedule' || !inputs.offline_mode}}
-        run: rm -rf ${{env.TEST_CODE_PATH}} && mkdir ${{env.TEST_CODE_PATH}} && chmod 777 ${{env.TEST_CODE_PATH}} && cp -r . ${{env.TEST_CODE_PATH}}
-      - name: Copy repository - offline
-        if: ${{inputs.offline_mode}}
-        run: rm -rf ${{env.TEST_CODE_PATH}} && mkdir ${{env.TEST_CODE_PATH}} && chmod 777 ${{env.TEST_CODE_PATH}} && cp -r ${{env.OFFLINE_CODE_PATH}}/. ${{env.TEST_CODE_PATH}}
-      - name: Download Artifacts
-        if: ${{github.event_name == 'schedule' || !inputs.offline_mode}}
-        uses: actions/download-artifact@v4
-        with:
-          name: my-artifact-${{ github.run_id }}-py310
-      - name: Copy Artifacts
-        if: ${{github.event_name == 'schedule' || !inputs.offline_mode}}
-        run: rm ${{env.TEST_CODE_PATH}}/lmdeploy-*.whl -f && cp lmdeploy-*.whl ${{env.TEST_CODE_PATH}}
-      - name: Copy Artifacts - offline
-        if: ${{inputs.offline_mode}}
-        run: rm ${{env.TEST_CODE_PATH}}/lmdeploy-*.whl -f && cp ${{env.OFFLINE_CODE_PATH}}/lmdeploy-*.whl ${{env.TEST_CODE_PATH}}
-      - name: Mark as start
-        run: |
-          chmod -R 777 ${{env.TEST_CODE_PATH}}
-          mkdir ${{env.REPORT_DIR}} -p
-          echo "starttime=$(date +%s)" > ${{env.REPORT_DIR}}/status.txt
-
-
   test_restful:
     if: ${{!cancelled() && (github.event_name == 'schedule' || contains(fromJSON(github.event.inputs.regression_func), 'restful'))}}
-    runs-on: [self-hosted, linux-a100]
-    needs: download_pkgs
     strategy:
       fail-fast: false
       matrix:
@@ -191,18 +146,6 @@ jobs:
             extra: '--enable-return-routed-experts'
             backend: pytorch
     timeout-minutes: 60
-    container:
-      image: openmmlab/lmdeploy:latest-cu12.8
-      options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip -e NVIDIA_DISABLE_REQUIRE=1 --pull never"
-      volumes:
-        - /nvme/github-actions/pip-cache:/root/.cache/pip
-        - /nvme/github-actions/packages:/root/packages
-        - /nvme/qa_test_models:/nvme/qa_test_models
-        - /nvme/huggingface_hub:/nvme/huggingface_hub
-        - /mnt/121:/mnt/121
-        - /mnt/104:/mnt/104
-        - /mnt/bigdisk:/mnt/bigdisk
-        - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
     steps:
       - name: Copy repository and Artifacts
         run: |
