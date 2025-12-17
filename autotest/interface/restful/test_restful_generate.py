@@ -920,7 +920,7 @@ class TestGenerateComprehensive:
         model_path = os.path.join(config.get('model_path'), self.model_name)
         user_content = 'Hello [world]! This is a [test].'
 
-        tokenizer = AutoTokenizer.from_pretrained(model_path)
+        tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
         special_tokens_map = tokenizer.special_tokens_map
 
         special_patterns = list(special_tokens_map.values())
@@ -1136,7 +1136,7 @@ class TestGenerateComprehensive:
         model_path = os.path.join(config.get('model_path'), self.model_name)
         user_content = 'Hello [world]! This is a [test].'
 
-        tokenizer = AutoTokenizer.from_pretrained(model_path)
+        tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
         special_tokens_map = tokenizer.special_tokens_map
 
         special_patterns = list(special_tokens_map.values())
