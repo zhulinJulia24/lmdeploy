@@ -109,40 +109,49 @@ jobs:
       matrix:
         backend: ${{ fromJSON(inputs.backend || '["turbomind", "pytorch"]')}}
         model: ['internlm/Intern-S1', 'internlm/internlm2_5-20b-chat', 'internlm/internlm2_5-20b', 'Qwen/Qwen3-32B', 'OpenGVLab/InternVL3-38B']
-        generate_type: ['logprob', 'expert']
+        generate_type: ['base', 'logprob', 'all']
         include:
           - tp: 2
             model: internlm/internlm2_5-20b-chat
-            case_info: ['chat_completions', 'generate']
+            case_info: ['chat_completions_v1', 'generate']
+            mark: 'not expert and not logprob'
             generate_type: base
           - tp: 2
             model: internlm/internlm2_5-20b
-            case_info: ['completions']
+            case_info: ['completions_v1']
+            mark: 'not expert and not logprob'
             generate_type: base
           - tp: 8
             model: internlm/Intern-S1
-            case_info: ['chat_completions', 'generate']
+            case_info: ['chat_completions_v1', 'generate']
+            mark: 'not expert and not logprob'
             generate_type: base
           - tp: 2
             model: Qwen/Qwen3-30B-A3B
-            case_info: ['chat_completions', 'generate']
+            case_info: ['chat_completions_v1', 'generate']
             generate_type: all
-            mark: 'not expert'
             extra: '--logprobs-mode raw_logprobs --enable-return-routed-experts'
             backend: pytorch
           - tp: 2
             model: Qwen/Qwen3-30B-A3B
-            case_info: ['chat_completions', 'generate']
+            case_info: ['chat_completions_v1', 'generate']
             generate_type: logprob
             mark: 'not expert'
             extra: '--logprobs-mode raw_logprobs'
             backend: turbomind
           - tp: 2
-            model: OpenGVLab/InternVL3-38B
-            case_info: ['chat_completions', 'generate']
+            model: OpenGVLab/InternVL3_5-30B-A3B
+            case_info: ['chat_completions_v1', 'generate']
+            generate_type: all
+            extra: '--logprobs-mode raw_logprobs --enable-return-routed-experts'
+            backend: pytorch
+          - tp: 2
+            model: OpenGVLab/InternVL3_5-30B-A3B
+            case_info: ['chat_completions_v1', 'generate']
             generate_type: logprob
             mark: 'not expert'
             extra: '--logprobs-mode raw_logprobs'
+            backend: turbomind
     timeout-minutes: 60
     steps:
       - name: echo
