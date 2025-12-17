@@ -238,9 +238,9 @@ jobs:
           sleep 900s
           for i in {1..180}; do
             sleep 5
-
+            echo "health check try $i"
             if curl -f -s http://127.0.0.1:23333/health > /dev/null 2>&1; then
-              echo "health check success=true"
+              echo "health check success"
               exit 0
             fi
 
@@ -253,41 +253,41 @@ jobs:
           echo "health check fail"
           kill -15 $restful_pid 2>/dev/null || true
           exit 1
-      - name: Test lmdeploy
+      - name: Test lmdeploy - chat_completions_v1
         if:  matrix.model != 'internlm2_5-20b-chat' && contains(matrix.case_info, 'chat_completions_v1')
         timeout-minutes: 30
         run: |
           pytest autotest/interface/restful/test_restful_chat_completions_v1.py -n 20 -m 'not not_${{matrix.backend}} and not internlm2_5' --alluredir=${{env.REPORT_DIR}}/interface-${{matrix.model}}-${{matrix.backend}}_ ${{env.COV_PARAM}} || true
           mv .coverage ${{env.REPORT_DIR}}/.coverage.$(date +'%Y%m%d%H%M%S')
-      - name: Test lmdeploy
+      - name: Test lmdeploy - chat_completions_v1
         if:  matrix.model == 'internlm2_5-20b-chat' && contains(matrix.case_info, 'chat_completions_v1')
         timeout-minutes: 30
         run: |
           pytest autotest/interface/restful/test_restful_chat_completions_v1.py -n 20 -m 'not not_${{matrix.backend}}' --alluredir=${{env.REPORT_DIR}}/interface-${{matrix.model}}-${{matrix.backend}}_ ${{env.COV_PARAM}} || true
           mv .coverage ${{env.REPORT_DIR}}/.coverage.$(date +'%Y%m%d%H%M%S')
-      - name: Test generate
+      - name: Test lmdeploy - completions_v1
+        if: contains(matrix.case_info, 'completions_v1')
+        timeout-minutes: 30
+        run: |
+          pytest autotest/interface/restful/test_restful_completions_v1.py -n 20 --alluredir=${{env.REPORT_DIR}}/interface-${{matrix.backend}} ${{env.COV_PARAM}} || true
+          mv .coverage ${{env.REPORT_DIR}}/.coverage.$(date +'%Y%m%d%H%M%S')
+      - name: Test generate - base
         if:  matrix.generate_type == 'base' && contains(matrix.case_info, 'generate')
         timeout-minutes: 30
         run: |
           pytest autotest/interface/restful/test_restful_generate.py -n 20 -m 'not not_${{matrix.backend}} and not logprob and not expert' --alluredir=${{env.REPORT_DIR}}/interface-${{matrix.model}}-${{matrix.backend}}_ ${{env.COV_PARAM}} || true
           mv .coverage ${{env.REPORT_DIR}}/.coverage.$(date +'%Y%m%d%H%M%S')
-      - name: Test generate
+      - name: Test generate - logprob
         if:  matrix.generate_type == 'logprob' && contains(matrix.case_info, 'generate')
         timeout-minutes: 30
         run: |
           pytest autotest/interface/restful/test_restful_generate.py -n 20 -m 'not not_${{matrix.backend}} and not expert' --alluredir=${{env.REPORT_DIR}}/interface-${{matrix.model}}-${{matrix.backend}}_ ${{env.COV_PARAM}} || true
           mv .coverage ${{env.REPORT_DIR}}/.coverage.$(date +'%Y%m%d%H%M%S')
-      - name: Test generate
+      - name: Test generate - all
         if:  matrix.generate_type == 'all' && contains(matrix.case_info, 'generate')
         timeout-minutes: 30
         run: |
           pytest autotest/interface/restful/test_restful_generate.py -n 20 -m 'not not_${{matrix.backend}}' --alluredir=${{env.REPORT_DIR}}/interface-${{matrix.model}}-${{matrix.backend}}_ ${{env.COV_PARAM}} || true
-          mv .coverage ${{env.REPORT_DIR}}/.coverage.$(date +'%Y%m%d%H%M%S')
-      - name: Test lmdeploy - restful api - base
-        if: contains(matrix.case_info, 'completions_v1')
-        timeout-minutes: 30
-        run: |
-          pytest autotest/interface/restful/test_restful_completions_v1.py -n 20 --alluredir=${{env.REPORT_DIR}}/interface-${{matrix.backend}} ${{env.COV_PARAM}} || true
           mv .coverage ${{env.REPORT_DIR}}/.coverage.$(date +'%Y%m%d%H%M%S')
       - name: Kill api server
         run: |
