@@ -320,7 +320,7 @@ class TestGenerateComprehensive:
             try:
                 input_ids = encode_text(model_path, test_case['text'])
             except Exception as e:
-                pytest.skip(f'Tokenizer failed for {test_case['name']}: {e}')
+                pytest.skip(f'Tokenizer failed for {test_name}: {e}')
 
             assert isinstance(input_ids, list), \
                 f'input_ids should be list, got {type(input_ids)}'
@@ -463,7 +463,7 @@ class TestGenerateComprehensive:
             try:
                 input_ids = encode_text(model_path, test_case['text'])
             except Exception as e:
-                pytest.skip(f'Tokenizer failed for {test_case['name']}: {e}')
+                pytest.skip(f'Tokenizer failed for {test_name}: {e}')
 
             request_payload = {'input_ids': input_ids, 'max_tokens': test_case['max_tokens'], 'return_logprob': True}
 
