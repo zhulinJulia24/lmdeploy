@@ -104,7 +104,7 @@ jobs:
   download_pkgs:
     needs: linux-build
     if: ${{!cancelled()}}
-    runs-on: [self-hosted, linux-a100]
+    runs-on: [self-hosted, test-104-lala]
     timeout-minutes: 50
     container:
       image: openmmlab/lmdeploy:latest-cu12.8
@@ -145,7 +145,7 @@ jobs:
 
   test_restful:
     if: ${{!cancelled() && (github.event_name == 'schedule' || contains(fromJSON(github.event.inputs.regression_func), 'restful'))}}
-    runs-on: [self-hosted, linux-a100]
+    runs-on: [self-hosted, test-104-lala]
     needs: download_pkgs
     strategy:
       fail-fast: false
