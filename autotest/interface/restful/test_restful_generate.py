@@ -13,7 +13,9 @@ from utils.toolkit import encode_text, parse_sse_stream
 
 BASE_HTTP_URL = 'http://127.0.0.1'
 DEFAULT_PORT = 23333
-MODEL_LIST = ['Qwen/Qwen3-0.6B', 'Qwen/Qwen3-VL-2B-Instruct', 'Qwen/Qwen3-30B-A3B']
+MODEL_LIST = [
+    'internlm/internlm2_5-20b-chat', 'internlm/Intern-S1', 'Qwen/Qwen3-30B-A3B', 'OpenGVLab/InternVL3_5-30B-A3B'
+]
 BASE_URL = ':'.join([BASE_HTTP_URL, str(DEFAULT_PORT)])
 
 
@@ -318,7 +320,7 @@ class TestGenerateComprehensive:
             try:
                 input_ids = encode_text(model_path, test_case['text'])
             except Exception as e:
-                pytest.skip(f'Tokenizer failed for {test_case["name"]}: {e}')
+                pytest.skip(f'Tokenizer failed for {test_case['name']}: {e}')
 
             assert isinstance(input_ids, list), \
                 f'input_ids should be list, got {type(input_ids)}'
@@ -461,7 +463,7 @@ class TestGenerateComprehensive:
             try:
                 input_ids = encode_text(model_path, test_case['text'])
             except Exception as e:
-                pytest.skip(f'Tokenizer failed for {test_case["name"]}: {e}')
+                pytest.skip(f'Tokenizer failed for {test_case['name']}: {e}')
 
             request_payload = {'input_ids': input_ids, 'max_tokens': test_case['max_tokens'], 'return_logprob': True}
 
@@ -605,7 +607,7 @@ class TestGenerateComprehensive:
 
                         event_count += 1
                         if delta_text.strip():
-                            print(f"    +'{delta_text}'")
+                            print(f"delta_text: +'{delta_text}'")
 
                     except Exception as e:
                         print(f'    [Parse warning]: {e}')
