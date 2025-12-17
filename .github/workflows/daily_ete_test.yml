@@ -15,12 +15,12 @@ on:
         default: 'main'
       backend:
         required: true
-        description: 'Set backend testcase filter: turbomind or pytorch or turbomind, pytorch. Default is "["turbomind", "pytorch"]"'
+        description: 'Set backend filter. Default is "["turbomind", "pytorch"]"'
         type: string
         default: "['turbomind', 'pytorch']"
       model:
         required: true
-        description: 'Set testcase module filter: llm, vllm. Default contains all models'
+        description: 'Set testcase module filter: llm, mllm. Default contains all models'
         type: string
         default: "['llm','mllm']"
       function:
@@ -46,7 +46,7 @@ env:
   HOST_LOCALTIME: /usr/share/zoneinfo/Asia/Shanghai
   OUTPUT_FOLDER: cuda12.8_dist_${{ github.run_id }}
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
-  REPORT_DIR: /nvme/qa_test_models/test-reports/${{ github.run_id }}
+  REPORT_DIR: /nvme/qa_test_models/test-reports-tmp/${{ github.run_id }}
   COV_PARAM: --cov /opt/py3/lib/python3.10/site-packages/lmdeploy
   FAIL_CONFIG: ${{ github.event_name == 'schedule' && github.run_attempt != 1 && '--lf --lfnf none' || '--lf'}}
   TEST_CODE_PATH: /nvme/qa_test_models/test_pkg/lmdeploy/${{ github.run_id }}
@@ -101,48 +101,259 @@ jobs:
           retention-days: 1
           name: my-artifact-${{ github.run_id }}-${{ matrix.pyver }}
 
+  download_pkgs:
+    needs: linux-build
+    if: ${{!cancelled()}}
+    runs-on: [self-hosted, linux-a100]
+    timeout-minutes: 50
+    container:
+      image: openmmlab/lmdeploy:latest-cu12.8
+      options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip -e NVIDIA_DISABLE_REQUIRE=1 --pull never"
+      volumes:
+        - /nvme/qa_test_models:/nvme/qa_test_models
+        - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v2
+        if: ${{github.event_name == 'schedule' || !inputs.offline_mode}}
+        with:
+          repository: ${{ github.event.inputs.repo_org || 'InternLM/lmdeploy' }}
+          ref: ${{github.event.inputs.repo_ref || 'main'}}
+      - name: Copy repository
+        if: ${{github.event_name == 'schedule' || !inputs.offline_mode}}
+        run: rm -rf ${{env.TEST_CODE_PATH}} && mkdir ${{env.TEST_CODE_PATH}} && chmod 777 ${{env.TEST_CODE_PATH}} && cp -r . ${{env.TEST_CODE_PATH}}
+      - name: Copy repository - offline
+        if: ${{inputs.offline_mode}}
+        run: rm -rf ${{env.TEST_CODE_PATH}} && mkdir ${{env.TEST_CODE_PATH}} && chmod 777 ${{env.TEST_CODE_PATH}} && cp -r ${{env.OFFLINE_CODE_PATH}}/. ${{env.TEST_CODE_PATH}}
+      - name: Download Artifacts
+        if: ${{github.event_name == 'schedule' || !inputs.offline_mode}}
+        uses: actions/download-artifact@v4
+        with:
+          name: my-artifact-${{ github.run_id }}-py310
+      - name: Copy Artifacts
+        if: ${{github.event_name == 'schedule' || !inputs.offline_mode}}
+        run: rm ${{env.TEST_CODE_PATH}}/lmdeploy-*.whl -f && cp lmdeploy-*.whl ${{env.TEST_CODE_PATH}}
+      - name: Copy Artifacts - offline
+        if: ${{inputs.offline_mode}}
+        run: rm ${{env.TEST_CODE_PATH}}/lmdeploy-*.whl -f && cp ${{env.OFFLINE_CODE_PATH}}/lmdeploy-*.whl ${{env.TEST_CODE_PATH}}
+      - name: Mark as start
+        run: |
+          chmod -R 777 ${{env.TEST_CODE_PATH}}
+          mkdir ${{env.REPORT_DIR}} -p
+          echo "starttime=$(date +%s)" > ${{env.REPORT_DIR}}/status.txt
+
+
   test_restful:
+    if: ${{!cancelled() && (github.event_name == 'schedule' || contains(fromJSON(github.event.inputs.regression_func), 'restful'))}}
+    runs-on: [self-hosted, linux-a100]
+    needs: download_pkgs
+    strategy:
+      fail-fast: false
+      matrix:
+        backend: ${{ fromJSON(inputs.backend || '["turbomind", "pytorch"]')}}
+        model: ['internlm/Intern-S1', 'internlm/internlm2_5-20b-chat', 'internlm/internlm2_5-20b', 'Qwen/Qwen3-30B-A3B', 'OpenGVLab/InternVL3_5-30B-A3B']
+        generate_type: ['base', 'logprob', 'all']
+        include:
+          - tp: 2
+            model: internlm/internlm2_5-20b-chat
+            case_info: ['chat_completions_v1', 'generate']
+            mark: 'not expert and not logprob'
+            generate_type: base
+          - tp: 2
+            model: internlm/internlm2_5-20b
+            case_info: ['completions_v1']
+            mark: 'not expert and not logprob'
+            generate_type: base
+          - tp: 8
+            model: internlm/Intern-S1
+            case_info: ['chat_completions_v1', 'generate']
+            mark: 'not expert and not logprob'
+            generate_type: base
+          - tp: 2
+            model: Qwen/Qwen3-30B-A3B
+            case_info: ['chat_completions_v1', 'generate']
+            generate_type: all
+            extra: '--logprobs-mode raw_logprobs --enable-return-routed-experts'
+            backend: pytorch
+          - tp: 2
+            model: Qwen/Qwen3-30B-A3B
+            case_info: ['chat_completions_v1', 'generate']
+            generate_type: logprob
+            mark: 'not expert'
+            extra: '--logprobs-mode raw_logprobs'
+            backend: turbomind
+          - tp: 2
+            model: OpenGVLab/InternVL3_5-30B-A3B
+            case_info: ['chat_completions_v1', 'generate']
+            generate_type: all
+            extra: '--logprobs-mode raw_logprobs --enable-return-routed-experts'
+            backend: pytorch
+          - tp: 2
+            model: OpenGVLab/InternVL3_5-30B-A3B
+            case_info: ['chat_completions_v1', 'generate']
+            generate_type: logprob
+            mark: 'not expert'
+            extra: '--logprobs-mode raw_logprobs'
+            backend: turbomind
+    timeout-minutes: 60
+    container:
+      image: openmmlab/lmdeploy:latest-cu12.8
+      options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip -e NVIDIA_DISABLE_REQUIRE=1 --pull never"
+      volumes:
+        - /nvme/github-actions/pip-cache:/root/.cache/pip
+        - /nvme/github-actions/packages:/root/packages
+        - /nvme/qa_test_models:/nvme/qa_test_models
+        - /nvme/huggingface_hub:/nvme/huggingface_hub
+        - /mnt/121:/mnt/121
+        - /mnt/104:/mnt/104
+        - /mnt/bigdisk:/mnt/bigdisk
+        - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
+    steps:
+      - name: Copy repository and Artifacts
+        run: |
+          cp -r ${{env.TEST_CODE_PATH}}/. .
+          mkdir ${{env.REPORT_DIR}} -p
+          echo "starttime=$(date +%s)" > ${{env.REPORT_DIR}}/status.txt
+      - name: Install lmdeploy - dependency
+        run: |
+          python3 -m pip install -r ${{env.OFFLINE_REQUIREMENTS}}
+      - name: Install lmdeploy
+        run: |
+          python3 -m pip uninstall lmdeploy -y && python3 -m pip install lmdeploy-*.whl --no-deps
+          python3 -m pip install -r requirements/test.txt
+      - name: Check env
+        run: |
+          python3 -m pip list
+          lmdeploy check_env
+          rm -rf allure-results
+          # remove tmp log in testcase
+          rm -rf /nvme/qa_test_models/autotest_model/log/*
+          mkdir ${{env.REPORT_DIR}}/.pytest_cache -p && rm autotest/.pytest_cache -f
+          ln -s ${{env.REPORT_DIR}}/.pytest_cache autotest
+      - name: Start restful api
+        run: |
+          lmdeploy serve api_server /nvme/qa_test_models/${{matrix.model}} --tp ${{matrix.tp}} --backend ${{matrix.backend}} > ${{env.REPORT_DIR}}/${{matrix.backend}}_${{matrix.model}}_${{matrix.generate_type}}_start_restful.log 2>&1 &
+          echo "restful_pid=$!" >> "$GITHUB_ENV"
+          sleep 900s
+          for i in {1..180}; do
+            sleep 5
+
+            if curl -f -s http://127.0.0.1:23333/health > /dev/null 2>&1; then
+              echo "health check success=true"
+              exit 0
+            fi
+
+            if ! kill -0 $restful_pid 2>/dev/null; then
+              echo "api server stopped"
+              exit 1
+            fi
+          done
+
+          echo "health check fail"
+          kill -15 $restful_pid 2>/dev/null || true
+          exit 1
+      - name: Test lmdeploy
+        if:  matrix.model != 'internlm/internlm2_5-20b-chat' && contains(matrix.case_info, 'chat_completions_v1')
+        timeout-minutes: 30
+        run: |
+          pytest autotest/interface/restful/test_restful_chat_completions_v1.py -n 20 -m 'not not_${{matrix.backend}} and not internlm2_5' --alluredir=${{env.REPORT_DIR}}/interface-${{matrix.model}}-${{matrix.backend}}_ ${{env.COV_PARAM}} || true
+          mv .coverage ${{env.REPORT_DIR}}/.coverage.$(date +'%Y%m%d%H%M%S')
+      - name: Test lmdeploy
+        if:  matrix.model == 'internlm/internlm2_5-20b-chat' && contains(matrix.case_info, 'chat_completions_v1')
+        timeout-minutes: 30
+        run: |
+          pytest autotest/interface/restful/test_restful_chat_completions_v1.py -n 20 -m 'not not_${{matrix.backend}}' --alluredir=${{env.REPORT_DIR}}/interface-${{matrix.model}}-${{matrix.backend}}_ ${{env.COV_PARAM}} || true
+          mv .coverage ${{env.REPORT_DIR}}/.coverage.$(date +'%Y%m%d%H%M%S')
+      - name: Test generate
+        if:  matrix.generate_type == 'base' && contains(matrix.case_info, 'generate')
+        timeout-minutes: 30
+        run: |
+          pytest autotest/interface/restful/test_restful_generate.py -n 20 -m 'not not_${{matrix.backend}} and not logprob and not expert' --alluredir=${{env.REPORT_DIR}}/interface-${{matrix.model}}-${{matrix.backend}}_ ${{env.COV_PARAM}} || true
+          mv .coverage ${{env.REPORT_DIR}}/.coverage.$(date +'%Y%m%d%H%M%S')
+      - name: Test generate
+        if:  matrix.generate_type == 'logprob' && contains(matrix.case_info, 'generate')
+        timeout-minutes: 30
+        run: |
+          pytest autotest/interface/restful/test_restful_generate.py -n 20 -m 'not not_${{matrix.backend}} and not expert' --alluredir=${{env.REPORT_DIR}}/interface-${{matrix.model}}-${{matrix.backend}}_ ${{env.COV_PARAM}} || true
+          mv .coverage ${{env.REPORT_DIR}}/.coverage.$(date +'%Y%m%d%H%M%S')
+      - name: Test generate
+        if:  matrix.generate_type == 'all' && contains(matrix.case_info, 'generate')
+        timeout-minutes: 30
+        run: |
+          pytest autotest/interface/restful/test_restful_generate.py -n 20 -m 'not not_${{matrix.backend}}' --alluredir=${{env.REPORT_DIR}}/interface-${{matrix.model}}-${{matrix.backend}}_ ${{env.COV_PARAM}} || true
+          mv .coverage ${{env.REPORT_DIR}}/.coverage.$(date +'%Y%m%d%H%M%S')
+      - name: Test lmdeploy - restful api - base
+        if: contains(matrix.case_info, 'completions_v1')
+        timeout-minutes: 30
+        run: |
+          pytest autotest/interface/restful/test_restful_completions_v1.py -n 20 --alluredir=${{env.REPORT_DIR}}/interface-${{matrix.backend}} ${{env.COV_PARAM}} || true
+          mv .coverage ${{env.REPORT_DIR}}/.coverage.$(date +'%Y%m%d%H%M%S')
+      - name: Kill api server
+        run: |
+          kill -15 "$restful_pid"
+      - name: Clear workfile
+        if: always()
+        run: |
+          echo "status=done" >> ${{env.REPORT_DIR}}/status.txt
+          chmod -R 777 $REPORT_DIR
+          export workdir=$(pwd)
+          cd ..
+          rm -rf $workdir
+          mkdir $workdir
+          chmod -R 777 $workdir
+
+
+  test_restfulnew:
     if: ${{!cancelled() && (github.event_name == 'schedule' || contains(fromJSON(github.event.inputs.regression_func), 'restful'))}}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         backend: ${{ fromJSON(inputs.backend || '["turbomind", "pytorch"]')}}
-        model: ['internlm/Intern-S1', 'internlm/internlm2_5-20b-chat', 'internlm/internlm2_5-20b', 'Qwen/Qwen3-32B', 'OpenGVLab/InternVL3-38B']
-        generate_type: ['logprob', 'expert']
+        model: ['internlm/Intern-S1', 'internlm/internlm2_5-20b-chat', 'internlm/internlm2_5-20b', 'Qwen/Qwen3-30B-A3B', 'OpenGVLab/InternVL3_5-30B-A3B']
+        generate_type: ['base', 'logprob', 'all']
         include:
           - tp: 2
             model: internlm/internlm2_5-20b-chat
-            case_info: ['chat_completions', 'generate']
+            case_info: ['chat_completions_v1', 'generate']
+            mark: 'not expert and not logprob'
             generate_type: base
           - tp: 2
             model: internlm/internlm2_5-20b
-            case_info: ['completions']
+            case_info: ['completions_v1']
+            mark: 'not expert and not logprob'
             generate_type: base
           - tp: 8
             model: internlm/Intern-S1
-            case_info: ['chat_completions', 'generate']
+            case_info: ['chat_completions_v1', 'generate']
+            mark: 'not expert and not logprob'
             generate_type: base
           - tp: 2
             model: Qwen/Qwen3-30B-A3B
-            case_info: ['chat_completions', 'generate']
+            case_info: ['chat_completions_v1', 'generate']
             generate_type: all
-            mark: 'not expert'
             extra: '--logprobs-mode raw_logprobs --enable-return-routed-experts'
             backend: pytorch
           - tp: 2
             model: Qwen/Qwen3-30B-A3B
-            case_info: ['chat_completions', 'generate']
+            case_info: ['chat_completions_v1', 'generate']
             generate_type: logprob
             mark: 'not expert'
             extra: '--logprobs-mode raw_logprobs'
             backend: turbomind
           - tp: 2
-            model: OpenGVLab/InternVL3-38B
-            case_info: ['chat_completions', 'generate']
+            model: OpenGVLab/InternVL3_5-30B-A3B
+            case_info: ['chat_completions_v1', 'generate']
+            generate_type: all
+            extra: '--logprobs-mode raw_logprobs --enable-return-routed-experts'
+            backend: pytorch
+          - tp: 2
+            model: OpenGVLab/InternVL3_5-30B-A3B
+            case_info: ['chat_completions_v1', 'generate']
             generate_type: logprob
             mark: 'not expert'
             extra: '--logprobs-mode raw_logprobs'
+            backend: turbomind
     timeout-minutes: 60
     steps:
       - name: echo
