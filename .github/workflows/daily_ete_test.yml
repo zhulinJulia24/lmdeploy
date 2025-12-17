@@ -271,19 +271,19 @@ jobs:
         if:  matrix.generate_type == 'base' && contains(matrix.case_info, 'generate')
         timeout-minutes: 30
         run: |
-          pytest autotest/interface/restful/test_restful_generate.py -n 20 -m 'not not_${{matrix.backend}} and not logprob and not expert' --alluredir=${{env.REPORT_DIR}}/interface-${{matrix.model}}-${{matrix.backend}}_ ${{env.COV_PARAM}} || true
+          pytest autotest/interface/restful/test_restful_generate.py -n 20 -k ${{matrix.model_path}} -m 'not not_${{matrix.backend}} and not logprob and not expert' --alluredir=${{env.REPORT_DIR}}/interface-${{matrix.model}}-${{matrix.backend}}_ ${{env.COV_PARAM}} || true
           mv .coverage ${{env.REPORT_DIR}}/.coverage.$(date +'%Y%m%d%H%M%S')
       - name: Test generate - logprob
         if:  matrix.generate_type == 'logprob' && contains(matrix.case_info, 'generate')
         timeout-minutes: 30
         run: |
-          pytest autotest/interface/restful/test_restful_generate.py -n 20 -m 'not not_${{matrix.backend}} and not expert' --alluredir=${{env.REPORT_DIR}}/interface-${{matrix.model}}-${{matrix.backend}}_ ${{env.COV_PARAM}} || true
+          pytest autotest/interface/restful/test_restful_generate.py -n 20 -k ${{matrix.model_path}} -m 'not not_${{matrix.backend}} and not expert' --alluredir=${{env.REPORT_DIR}}/interface-${{matrix.model}}-${{matrix.backend}}_ ${{env.COV_PARAM}} || true
           mv .coverage ${{env.REPORT_DIR}}/.coverage.$(date +'%Y%m%d%H%M%S')
       - name: Test generate - all
         if:  matrix.generate_type == 'all' && contains(matrix.case_info, 'generate')
         timeout-minutes: 30
         run: |
-          pytest autotest/interface/restful/test_restful_generate.py -n 20 -m 'not not_${{matrix.backend}}' --alluredir=${{env.REPORT_DIR}}/interface-${{matrix.model}}-${{matrix.backend}}_ ${{env.COV_PARAM}} || true
+          pytest autotest/interface/restful/test_restful_generate.py -n 20 -k ${{matrix.model_path}} -m 'not not_${{matrix.backend}}' --alluredir=${{env.REPORT_DIR}}/interface-${{matrix.model}}-${{matrix.backend}}_ ${{env.COV_PARAM}} || true
           mv .coverage ${{env.REPORT_DIR}}/.coverage.$(date +'%Y%m%d%H%M%S')
       - name: Kill api server
         run: |
