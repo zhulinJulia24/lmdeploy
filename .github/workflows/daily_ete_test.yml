@@ -109,7 +109,6 @@ jobs:
       matrix:
         backend: ${{ fromJSON(inputs.backend || '["turbomind", "pytorch"]')}}
         model: ['internlm/Intern-S1', 'internlm/internlm2_5-20b-chat', 'internlm/internlm2_5-20b', 'Qwen/Qwen3-32B', 'OpenGVLab/InternVL3-38B']
-        generate_type: ['base', 'logprob', 'all']
         include:
           - tp: 2
             model: internlm/internlm2_5-20b-chat
