@@ -9,6 +9,7 @@ from typing import Any, Dict, List
 import pytest
 import requests
 from transformers import AutoTokenizer
+from utils.constant import BACKEND_LIST
 from utils.toolkit import encode_text, parse_sse_stream
 
 BASE_HTTP_URL = 'http://127.0.0.1'
@@ -20,10 +21,11 @@ BASE_URL = ':'.join([BASE_HTTP_URL, str(DEFAULT_PORT)])
 
 
 @pytest.mark.parametrize('model_name', MODEL_LIST)
+@pytest.mark.parametrize('backend', BACKEND_LIST)
 class TestGenerateComprehensive:
 
     @pytest.fixture(autouse=True)
-    def setup_api(self, request, config, model_name):
+    def setup_api(self, request, config, model_name, backend):
         self.api_url = f'{BASE_URL}/generate'
         self.headers = {'Content-Type': 'application/json'}
         self.model_name = model_name
@@ -34,7 +36,7 @@ class TestGenerateComprehensive:
         log_base = config.get('log_path', './logs')
         self.log_dir = os.path.join(log_base, safe_model_name)
         os.makedirs(self.log_dir, exist_ok=True)
-        self.log_file = os.path.join(self.log_dir, f'{safe_test_name}.log')
+        self.log_file = os.path.join(self.log_dir, f'{backend}_{safe_test_name}.log')
 
     def _log_request_response(self, payload, response_data, stream_raw=None):
         log_entry = {

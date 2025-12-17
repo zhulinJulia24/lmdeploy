@@ -20,3 +20,5 @@ EVAL_CONFIGS = {
         }
     }
 }
+
+BACKEND_LIST = ['turbomind', 'pytorch']
