@@ -8,7 +8,7 @@ import triton.language as tl
 
 from .activation import silu_and_mul
 from .blocked_gemm_fp8 import quant_fp8
-from .fused_moe import _get_sorted_idx, _make_intermediate, _renormalize, moe_reduce
+from .fused_moe import _get_sorted_idx, _make_intermediate, _renormalize
 
 
 def get_cuda_autotune_config():
@@ -35,6 +35,7 @@ def fused_moe_blocked_f8_kernel(
     SortedIdx,
     ExpStart,
     ExpEnd,
+    Weights,
     N: tl.constexpr,
     K: tl.constexpr,
     group_ak: tl.constexpr,
@@ -59,6 +60,7 @@ def fused_moe_blocked_f8_kernel(
     BLOCK_SIZE_K: tl.constexpr,
     GROUP_SIZE_M: tl.constexpr,
     M_NP2: tl.constexpr,
+    ENABLE_WEIGHTS: tl.constexpr,
     top_k: tl.constexpr,
     expert_offset: tl.constexpr,
     reindex_a: tl.constexpr,
@@ -160,6 +162,10 @@ def fused_moe_blocked_f8_kernel(
         bias_val = tl.load(bias_ptrs).to(accumulator.dtype)
         c += bias_val[None]
 
+    if ENABLE_WEIGHTS:
+        weight = tl.load(Weights + sid, mask=mask_sid)
+        c = c * weight[:, None].to(c.dtype)
+
     c = c.to(C.dtype.element_ty)
 
     if reindex_c:
@@ -179,7 +185,9 @@ def fused_moe_blocked_fp8_kernel_launcher(
     sorted_idx: torch.Tensor,
     exp_start: torch.Tensor,
     exp_end: torch.Tensor,
+    weights: torch.Tensor,
     bias: torch.Tensor = None,
+    enable_weights: bool = False,
     top_k: int = 1,
     num_tokens: int = None,
     expert_offset: int = 0,
@@ -228,6 +236,7 @@ def fused_moe_blocked_fp8_kernel_launcher(
         sorted_idx,
         exp_start,
         exp_end,
+        weights,
         N=N,
         K=K,
         group_ak=group_ak,
@@ -247,6 +256,7 @@ def fused_moe_blocked_fp8_kernel_launcher(
         stride_cn=C.stride(1),
         stride_bie=bias.stride(0) if enable_bias else 0,
         stride_bin=bias.stride(1) if enable_bias else 0,
+        ENABLE_WEIGHTS=enable_weights,
         top_k=top_k,
         expert_offset=expert_offset,
         reindex_a=reindex_a,
@@ -296,7 +306,9 @@ def fused_moe_blocked_fp8(input: torch.Tensor,
         sorted_idx=sorted_idx,
         exp_start=exp_start,
         exp_end=exp_end,
+        weights=topk_weights,
         bias=w1_bias,
+        enable_weights=False,
         top_k=topk,
         num_tokens=M,
         expert_offset=expert_offset,
@@ -324,7 +336,9 @@ def fused_moe_blocked_fp8(input: torch.Tensor,
         sorted_idx=sorted_idx,
         exp_start=exp_start,
         exp_end=exp_end,
+        weights=topk_weights,
         bias=w2_bias,
+        enable_weights=True,
         top_k=1,
         num_tokens=M,
         expert_offset=expert_offset,
@@ -332,5 +346,5 @@ def fused_moe_blocked_fp8(input: torch.Tensor,
         reindex_c=True,
     )
 
-    ret = moe_reduce(intermediate_cache2, topk_weights)
+    ret = intermediate_cache2.sum(dim=1)
     return ret

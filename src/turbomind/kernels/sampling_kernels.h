@@ -16,10 +16,9 @@
 
 #pragma once
 
-#include <cstdint>
-
 #include <cuda_runtime.h>
 #include <curand_kernel.h>
+#include <stdint.h>
 
 namespace turbomind {
 
@@ -33,8 +32,8 @@ struct SamplingParams {
     int*           output_ids;
     int*           sequence_length;
     void*          sampled_logprobs;
-    int*           sampled_indexes;
-    int*           sampled_nums;
+    uint32_t*      sampled_indexes;
+    uint32_t*      sampled_nums;
 };
 
 template<typename T>

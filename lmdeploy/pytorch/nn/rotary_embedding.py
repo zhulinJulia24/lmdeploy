@@ -148,8 +148,7 @@ def build_rotary_embedding(dim: int,
                            llama3_params: Llama3Parameters = None,
                            fope_params: FopeParameters = None,
                            emb_type: RopeType = RopeType.Default,
-                           partial_rotary_factor: float = None,
-                           device: torch.device = None) -> nn.Module:
+                           partial_rotary_factor: float = None) -> nn.Module:
     """Build rotary embedding op."""
     backend = get_backend()
 
@@ -170,13 +169,13 @@ def build_rotary_embedding(dim: int,
     if fope_params is not None:
         inv_freq = impl.inv_freq
         fope_params.inv_freq = inv_freq
-        fope = FopeRotaryEmbedding(dim, max_position_embeddings, scaling_factor, fope_params, device)
+        fope = FopeRotaryEmbedding(dim, max_position_embeddings, scaling_factor, fope_params)
         return fope
 
     return impl
 
 
-def build_rotary_embedding_from_config(config: PretrainedConfig, device: torch.device = None) -> nn.Module:
+def build_rotary_embedding_from_config(config: PretrainedConfig) -> nn.Module:
     """Build rotary embedding op from config."""
     emb_type = RopeType.LinearScaling
     rope_dim = getattr(config, 'head_dim', None)
@@ -187,7 +186,7 @@ def build_rotary_embedding_from_config(config: PretrainedConfig, device: torch.d
     rope_params = dict(emb_type=emb_type, dim=rope_dim, max_position_embeddings=rope_max_pos_emb, base=rope_base)
     update_params = build_rotary_params(config)
     rope_params.update(update_params)
-    return build_rotary_embedding(**rope_params, device=device)
+    return build_rotary_embedding(**rope_params)
 
 
 class ApplyRotaryEmb(nn.Module):
@@ -228,12 +227,7 @@ class ApplyRotaryEmb(nn.Module):
 class FopeRotaryEmbedding(nn.Module):
     """Fope rotary embedding."""
 
-    def __init__(self,
-                 dim: int,
-                 max_position_embeddings: int,
-                 attention_scaling: float,
-                 params: FopeParameters,
-                 device: torch.device = None):
+    def __init__(self, dim: int, max_position_embeddings: int, attention_scaling: float, params: FopeParameters):
         super().__init__()
 
         num_key_value_heads, tp = self.update_num_kv_heads(params.num_key_value_heads)
@@ -253,9 +247,9 @@ class FopeRotaryEmbedding(nn.Module):
         inv_freq = self.impl.inv_freq
         self.input_dim = inv_freq.shape[-1]
         self.output_dim = inv_freq.shape[-1]
-        self.cos_coef = nn.Parameter(torch.empty(num_key_value_heads, self.input_dim, self.output_dim, device=device),
+        self.cos_coef = nn.Parameter(torch.empty(num_key_value_heads, self.input_dim, self.output_dim),
                                      requires_grad=False)
-        self.sin_coef = nn.Parameter(torch.empty(num_key_value_heads, self.input_dim, self.output_dim, device=device),
+        self.sin_coef = nn.Parameter(torch.empty(num_key_value_heads, self.input_dim, self.output_dim),
                                      requires_grad=False)
         if self.tp:
             self.cos_coef.weight_loader = self.weight_loader

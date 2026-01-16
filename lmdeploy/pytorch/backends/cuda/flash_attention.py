@@ -16,7 +16,7 @@ class TritonFlashAttentionImpl(FlashAttentionImpl):
         v_head_dim: int = None,
         causal: bool = True,
         sliding_window: int = None,
-        logit_softcapping: float = None,
+        logical_softcapping: float = None,
     ):
         if scale is None:
             scale = 1.0 / (head_dim**0.5)
@@ -34,10 +34,10 @@ class TritonFlashAttentionImpl(FlashAttentionImpl):
         self.v_head_dim = v_head_dim
         self.causal = causal
         self.sliding_window = sliding_window
-        self.logit_softcapping = logit_softcapping
+        self.logical_softcapping = logical_softcapping
 
-        from lmdeploy.pytorch.kernels.cuda import flash_attn_varlen_func
-        self.flash_attention_fwd = flash_attn_varlen_func
+        from lmdeploy.pytorch.kernels.cuda import flash_attention_fwd
+        self.flash_attention_fwd = flash_attention_fwd
 
     def forward(self,
                 query: Tensor,
@@ -49,18 +49,23 @@ class TritonFlashAttentionImpl(FlashAttentionImpl):
                 kv_seqlens: Tensor,
                 max_q_seqlen: int = None):
         """forward."""
-        out = self.flash_attention_fwd(
+
+        q_shape = query.shape
+        o_shape = q_shape[:-1] + (self.v_head_dim, )
+        out = query.new_empty(o_shape)
+        self.flash_attention_fwd(
             query,
             key,
             value,
+            out,
             q_start_loc=q_start_loc,
             q_seqlens=q_seqlens,
             kv_start_loc=kv_start_loc,
             kv_seqlens=kv_seqlens,
-            max_seqlen_q=max_q_seqlen,
+            max_seqlen=max_q_seqlen,
             window_size=self.sliding_window,
-            softmax_scale=self.scale,
-            softcap=self.logit_softcapping,
+            sm_scale=self.scale,
+            logit_softcapping=self.logical_softcapping,
             causal=self.causal,
             kv_layout='shd',
         )
@@ -80,7 +85,7 @@ class TritonFlashAttentionBuilder(FlashAttentionBuilder):
         v_head_dim: int = None,
         causal: bool = True,
         sliding_window: int = None,
-        logit_softcapping: float = None,
+        logical_softcapping: float = None,
         **kwargs,
     ) -> FlashAttentionImpl:
         """build."""
@@ -92,5 +97,5 @@ class TritonFlashAttentionBuilder(FlashAttentionBuilder):
             v_head_dim=v_head_dim,
             causal=causal,
             sliding_window=sliding_window,
-            logit_softcapping=logit_softcapping,
+            logical_softcapping=logical_softcapping,
         )

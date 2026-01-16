@@ -26,9 +26,6 @@
     },
     {
       "pattern": "^http://0.0.0.0"
-    },
-    {
-      "pattern": "^https://kexue.fm"
     }
   ],
   "httpHeaders": [

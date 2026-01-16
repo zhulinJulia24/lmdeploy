@@ -2,7 +2,6 @@
 
 #include <cuda_runtime.h>
 
-#include "src/turbomind/core/context.h"
 #include "src/turbomind/kernels/activation.h"
 #include "src/turbomind/kernels/norm/rms_norm.h"
 
@@ -15,8 +14,6 @@
 #include "src/turbomind/utils/anomaly_handler.h"
 #include "src/turbomind/utils/cuda_utils.h"
 
-// #include "dbg.h"
-
 namespace turbomind {
 
 MoeFfnLayer::MoeFfnLayer(const ModelParam& model, const MoeParam& param, const EngineParam& engine, const Context& ctx):
@@ -24,7 +21,7 @@ MoeFfnLayer::MoeFfnLayer(const ModelParam& model, const MoeParam& param, const E
     hidden_dim_(model.hidden_units),
     tp_size_(engine.mlp_tp_size),
     param_(param),
-    is_warm_up_{*ctx.is_warm_up},
+    stream_(ctx.stream),
     linear_(*ctx.linear)
 {
     TM_CHECK(!param.expert_num.empty());
@@ -43,16 +40,6 @@ MoeFfnLayer::MoeFfnLayer(const ModelParam& model, const MoeParam& param, const E
     const int max_token_num = engine.max_forward_token_num * engine.attn_dp_size;
     const int pad_token_num = (max_token_num + kMoeGateVecSize - 1) / kMoeGateVecSize * kMoeGateVecSize;
 
-    // dbg(inter_size_,
-    //     hidden_dim_,
-    //     tp_size_,
-    //     param_.method,
-    //     param.expert_num,
-    //     max_expert_num,
-    //     max_token_num,
-    //     pad_token_num,
-    //     param_.experts_per_token);
-
     masks_   = {max_expert_num * pad_token_num, kDEVICE};
     f2n_     = {param_.experts_per_token * max_token_num, kDEVICE};
     f2E_     = {param_.experts_per_token * max_token_num, kDEVICE};
@@ -69,7 +56,7 @@ Tensor_<float> MoeFfnLayer::Gate(const Tensor& input, const LlamaDenseWeight& ga
     Tensor_<float> logits{{input.shape(0), weight.shape(1)}, kDEVICE};
     linear_.Forward(input, gate, logits);
     sync_check_cuda_error();
-    ApplyBias(logits, gate.bias, core::Context::stream().handle());
+    ApplyBias(logits, gate.bias, stream_);
     sync_check_cuda_error();
     return logits;
 }
@@ -88,17 +75,15 @@ void MoeFfnLayer::Forward(ForwardParam& p)
 
     TM_DEBUG_TENSOR(logits, "logits", 2);
 
-    const auto st = core::Context::stream().handle();
-
-    check_cuda_error(cudaMemsetAsync(accum_.data(), 0, sizeof(int) * expert_num * kMoeGateMaxTiles, st));
-    check_cuda_error(cudaMemsetAsync(masks_.data(), -1, sizeof(int8_t) * expert_num * padded, st));
+    check_cuda_error(cudaMemsetAsync(accum_.data(), 0, sizeof(int) * expert_num * kMoeGateMaxTiles, stream_));
+    check_cuda_error(cudaMemsetAsync(masks_.data(), -1, sizeof(int8_t) * expert_num * padded, stream_));
 
     // dump_logits(tokens, layer_id);
 
     bool softmax = true;
     if (param_.topk_method == "group_limited_greedy") {
         invokeMoeSoftmaxMaskTopKGroups(
-            logits.data(), tokens, expert_num, expert_num / param_.n_group, param_.topk_group, st);
+            logits.data(), tokens, expert_num, expert_num / param_.n_group, param_.topk_group, stream_);
         sync_check_cuda_error();
         softmax = false;
     }
@@ -119,10 +104,10 @@ void MoeFfnLayer::Forward(ForwardParam& p)
                      softmax,
                      param_.norm_topk_prob,
                      param_.routed_scale,
-                     st);
+                     stream_);
     sync_check_cuda_error();
 
-    if (is_warm_up_) {
+    if (isTuning()) {
         std::mt19937     g;
         const auto       expert_ids = SampleUniform(tokens, expert_num, param_.experts_per_token, g);
         std::vector<int> cnt(expert_num);
@@ -133,21 +118,21 @@ void MoeFfnLayer::Forward(ForwardParam& p)
         for (int i = 0; i < expert_num; ++i) {
             h_offsets_[i + 1] = h_offsets_[i] + cnt[i];
         }
-        check_cuda_error(
-            cudaMemcpyAsync(offsets_.data(), h_offsets_.data(), sizeof(int) * (expert_num + 1), cudaMemcpyDefault, st));
+        check_cuda_error(cudaMemcpyAsync(
+            offsets_.data(), h_offsets_.data(), sizeof(int) * (expert_num + 1), cudaMemcpyDefault, stream_));
     }
 
     temp_ = Tensor{{param_.experts_per_token * tokens, hidden_dim_}, p.input.dtype(), p.input.device()};
 
     if (param_.method == MoeParam::kNaive) {
 
-        invokeMoeDispatch(temp_, p.input, f2n_.data(), param_.experts_per_token, st);
+        invokeMoeDispatch(temp_, p.input, f2n_.data(), param_.experts_per_token, stream_);
         sync_check_cuda_error();
 
-        check_cuda_error(
-            cudaMemcpyAsync(h_offsets_.data(), offsets_.data(), sizeof(int) * (expert_num + 1), cudaMemcpyDefault, st));
+        check_cuda_error(cudaMemcpyAsync(
+            h_offsets_.data(), offsets_.data(), sizeof(int) * (expert_num + 1), cudaMemcpyDefault, stream_));
 
-        check_cuda_error(cudaStreamSynchronize(st));
+        check_cuda_error(cudaStreamSynchronize(stream_));
 
         TM_CHECK_EQ(h_offsets_[expert_num], tokens * param_.experts_per_token);
 
@@ -169,7 +154,7 @@ void MoeFfnLayer::Forward(ForwardParam& p)
         sync_check_cuda_error();
 
         if (!block.is_fused_silu) {
-            Activation(inter, block.fused_gating_intermediate.bias, f2E_, moe.block.act_type, st);
+            Activation(inter, block.fused_gating_intermediate.bias, f2E_, moe.block.act_type, stream_);
             sync_check_cuda_error();
         }
 
@@ -196,7 +181,7 @@ void MoeFfnLayer::Combine(ForwardParam& p)
                      param_.experts_per_token,
                      1.f / tp_size_,
                      p.scale,
-                     core::Context::stream().handle());
+                     stream_);
     sync_check_cuda_error();
 
     temp_          = {};

@@ -32,7 +32,6 @@ class OpType(Enum):
     LinearBlockedF8 = auto()
     FusedMoEBlockedF8 = auto()
     NSAIndexFP8 = auto()
-    Embedding = auto()
 
 
 class OpsBackend(ABC):

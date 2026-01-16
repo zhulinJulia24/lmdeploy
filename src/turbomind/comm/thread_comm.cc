@@ -11,7 +11,6 @@
 #include "src/turbomind/comm/host_comm.h"
 #include "src/turbomind/core/check.h"
 #include "src/turbomind/core/data_type.h"
-#include "src/turbomind/core/serdes.h"
 namespace turbomind::comm {
 
 struct ThreadCommImpl: public HostCommImpl {
@@ -132,7 +131,7 @@ struct ThreadCommImpl: public HostCommImpl {
         }
     }
 
-    void Broadcast(void* data, int count, DataType dtype, int root, copy_fn copy, ser_fn ser, des_fn des) override
+    void Broadcast(void* data, int count, DataType dtype, int root, copy_fn copy) override
     {
         TM_CHECK(copy);
         if (n_ranks_ == 1) {
@@ -165,7 +164,7 @@ struct ThreadCommImpl: public HostCommImpl {
         }
     }
 
-    void AllGather(void* data, int count, DataType dtype, copy_fn copy, ser_fn ser, des_fn des) override
+    void AllGather(void* data, int count, DataType dtype, copy_fn copy) override
     {
         TM_CHECK(copy);
         if (n_ranks_ == 1) {
@@ -316,7 +315,7 @@ public:
         TM_CHECK((bool)internal_);
     }
 
-    HostComm CreateCommunicator(int n_ranks, int rank, int node_rank = 0) override
+    HostComm CreateCommunicator(int n_ranks, int rank) override
     {
         auto init_shared_state = [&] {  //
             internal_->state = std::make_shared<ThreadCommImpl::State>(n_ranks);
@@ -347,18 +346,6 @@ private:
 std::unique_ptr<HostGroupId> CreateThreadGroupId()
 {
     return std::make_unique<ThreadGroupId>();
-}
-
-template<class Archive>
-void save(Archive& ar, const std::shared_ptr<ThreadCommImpl::State>& p)
-{
-    TM_CHECK(false) << "should never be called";
-}
-
-template<class Archive>
-void load(Archive& ar, std::shared_ptr<ThreadCommImpl::State>& p)
-{
-    TM_CHECK(false) << "should never be called";
 }
 
 }  // namespace turbomind::comm

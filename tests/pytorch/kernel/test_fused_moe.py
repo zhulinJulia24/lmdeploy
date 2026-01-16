@@ -64,6 +64,10 @@ class TestFusedMoEKernelLauncher:
         yield router_weights.topk(top_k, dim=-1)
 
     @pytest.fixture
+    def weights(self, topk_weights):
+        yield topk_weights[0]
+
+    @pytest.fixture
     def topk_idx(self, topk_weights):
         yield topk_weights[1]
 
@@ -88,7 +92,11 @@ class TestFusedMoEKernelLauncher:
         yield exp_end - exp_tok_cnt
 
     @pytest.fixture
-    def gt(self, A, B, bias, top_k, topk_idx):
+    def enable_weights(self):
+        yield True
+
+    @pytest.fixture
+    def gt(self, A, B, bias, top_k, topk_idx, enable_weights, weights):
         M = A.size(0)
         N = B.size(1)
         E = B.size(0)
@@ -101,10 +109,12 @@ class TestFusedMoEKernelLauncher:
                 continue
             EC = A[token_idx] @ EB + Ebias
             C[token_idx, k_idx] = EC
+        if enable_weights:
+            C = C * weights[..., None]
         yield C.flatten(0, 1)
 
     @torch.inference_mode()
-    def test_launcher(self, A, B, bias, sorted_idx, exp_start, exp_end, top_k, M, gt):
+    def test_launcher(self, A, B, bias, sorted_idx, exp_start, exp_end, weights, enable_weights, top_k, M, gt):
         from lmdeploy.pytorch.kernels.cuda.fused_moe import fused_moe_kernel_launcher
         N = B.size(1)
         C = B.new_empty(M * top_k, N)
@@ -116,7 +126,9 @@ class TestFusedMoEKernelLauncher:
             sorted_idx,
             exp_start,
             exp_end,
+            weights,
             bias=bias,
+            enable_weights=enable_weights,
             top_k=top_k,
             num_tokens=M,
         )

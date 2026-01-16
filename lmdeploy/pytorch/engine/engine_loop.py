@@ -13,7 +13,6 @@ from lmdeploy.messages import RequestMetrics
 from lmdeploy.pytorch.disagg.config import EngineRole
 from lmdeploy.pytorch.disagg.messages import MigrationExecutionBatch
 from lmdeploy.pytorch.messages import MessageStatus, UpdateTokenMode
-from lmdeploy.pytorch.utils import cancel_async_tasks, wait_for_async_tasks
 from lmdeploy.utils import get_logger
 
 from .engine import InferOutput, ResponseType, response_reqs
@@ -435,13 +434,27 @@ class EngineLoop:
                 # release coroutine for decoding
                 await asyncio.sleep(.5)
 
-    def start(self, event_loop: asyncio.AbstractEventLoop):
+    def _add_loop_tasks_done_callback(self):
+        """Add loop tasks done callback."""
+
+        def __task_callback(task: asyncio.Task) -> None:
+            """Raise exception on finish."""
+            task_name = task.get_name()
+            try:
+                task.result()
+            except asyncio.CancelledError:
+                logger.info(f'Task <{task_name}> cancelled.')
+            except BaseException:
+                logger.exception(f'Task <{task_name}> failed')
+            finally:
+                self.stop()
+                self.cancel()
+
+        for task in self.tasks:
+            task.add_done_callback(__task_callback)
+
+    def create_tasks(self, event_loop: asyncio.AbstractEventLoop):
         """Create async tasks."""
-        # start executor
-        logger.info('Starting executor.')
-        self.executor.start(self.forward_event)
-        # start owned loops
-        self.tasks.add(event_loop.create_task(self.executor.wait_tasks(), name='MainLoopWaitExecutor'))
         logger.info('Starting async task MainLoopPreprocessMessage.')
         self.tasks.add(event_loop.create_task(self.preprocess_loop(), name='MainLoopPreprocessMessage'))
         logger.info('Starting async task MainLoopResponse.')
@@ -452,38 +465,37 @@ class EngineLoop:
             logger.info('Starting async task MigrationLoop.')
             self.tasks.add(event_loop.create_task(self.migration_loop(), name='MainLoopMigration'))
 
-        for task in self.tasks:
-            task.add_done_callback(self.tasks.discard)
+        self._add_loop_tasks_done_callback()
 
     async def wait_tasks(self):
         """Wait for all tasks to finish."""
         if not self.tasks:
             return
 
-        # copy the tasks so callback of tasks would not update it
-        tasks = self.tasks.copy()
         try:
-            await wait_for_async_tasks(tasks)
+            done, pending = await asyncio.wait(self.tasks, return_when=asyncio.FIRST_EXCEPTION)
+
+            # cancel all pending tasks
+            for task in pending:
+                task.cancel()
+
+            for task in done:
+                try:
+                    task.result()
+                except asyncio.CancelledError:
+                    logger.debug('Task cancelled.')
         except asyncio.CancelledError:
-            logger.info('EngineLoop wait_tasks cancelled.')
+            logger.info('Engine loop wait tasks cancelled.')
             raise
         except BaseException:
-            logger.error('EngineLoop wait_tasks failed.')
-            raise
+            logger.exception('Engine loop wait tasks failed.')
         finally:
-            logger.debug('EngineLoop wait_tasks cleanup.')
-            # Make sure task finished/cancelled here.
-            # Error might happen if executor release before executor wait_tasks finish.
-            await cancel_async_tasks(tasks)
+            self.stop()
+            self.cancel()
 
     def stop(self):
         """Stop all loops."""
-        if self.stop_event.is_set():
-            # Already stopped, avoid calling executor.stop() multiple times
-            return
-        self.executor.stop()
         self.stop_event.set()
-        self.cancel()
 
     def cancel(self):
         """Cancel all loops."""

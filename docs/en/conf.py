@@ -13,16 +13,8 @@
 #
 import os
 import sys
-from pathlib import Path
-
-from fastapi import FastAPI
-from fastapi.responses import Response
-from yaml import safe_dump
 
 sys.path.insert(0, os.path.abspath('../..'))
-
-from lmdeploy.serve.openai.api_server import router  # noqa: E402
-from lmdeploy.serve.proxy.proxy import app as proxy_server  # noqa: E402
 
 version_file = '../../lmdeploy/version.py'
 with open(version_file, 'r') as f:
@@ -40,39 +32,6 @@ version = __version__
 # The full version, including alpha/beta/rc tags
 release = __version__
 
-# -- Generate OpenAPI Spec -----------------------------------------------------
-
-openai_server = FastAPI()
-openai_server.include_router(router)
-
-
-@openai_server.get('/metrics',
-                   response_class=Response,
-                   responses={
-                       200: {
-                           'content': {
-                               'text/plain': {}
-                           },
-                           'description': 'Prometheus metrics data'
-                       },
-                       404: {
-                           'description': 'Metrics Endpoint not enabled'
-                       }
-                   })
-def metrics():
-    """**[Optional]** Prometheus metrics endpoint."""
-    pass
-
-
-spec_dir = Path('_static')
-spec_dir.mkdir(exist_ok=True)
-
-with open(spec_dir / 'openai.yaml', 'w', encoding='utf-8') as f:
-    f.write(safe_dump(openai_server.openapi()))
-
-with open(spec_dir / 'proxy.yaml', 'w', encoding='utf-8') as f:
-    f.write(safe_dump(proxy_server.openapi()))
-
 # -- General configuration ---------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -84,19 +43,16 @@ with open(spec_dir / 'proxy.yaml', 'w', encoding='utf-8') as f:
 # ones.
 
 extensions = [
-    'myst_parser',
-    'sphinx_argparse_cli',
     'sphinx.ext.autodoc',
-    'sphinx.ext.autosectionlabel',
     'sphinx.ext.autosummary',
-    'sphinx.ext.intersphinx',
     'sphinx.ext.napoleon',
     'sphinx.ext.viewcode',
-    'sphinx_autodoc_typehints',
-    'sphinx_copybutton',
+    'sphinx.ext.autosectionlabel',
+    'sphinx.ext.intersphinx',
     'sphinx_tabs.tabs',
+    'myst_parser',
+    'sphinx_copybutton',
     'sphinxcontrib.mermaid',
-    'sphinxcontrib.openapi',
 ]  # yapf: disable
 
 
@@ -283,8 +239,6 @@ autodoc_mock_imports = [
     '_turbomind',
     'triton',
 ]
-
-autodoc_type_aliases = {'PydanticDataclass': 'pydantic.dataclasses.PydanticDataclass'}
 
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3.10', None),

@@ -1,20 +1,32 @@
-Inference pipeline
+inference pipeline
 ==================
 .. currentmodule:: lmdeploy
 
-Pipeline
+pipeline
 --------
 .. autofunction:: pipeline
 
-Serving
+serving
 --------
-.. autofunction:: lmdeploy.api.serve
-.. autofunction:: lmdeploy.api.client
+.. autofunction:: serve
+.. autofunction:: client
 
 
-Config
+PytorchEngineConfig
 -------------------
 .. autoclass:: PytorchEngineConfig
+
+
+TurbomindEngineConfig
+---------------------
 .. autoclass:: TurbomindEngineConfig
+
+
+GenerationConfig
+----------------
 .. autoclass:: GenerationConfig
+
+
+ChatTemplateConfig
+------------------
 .. autoclass:: ChatTemplateConfig

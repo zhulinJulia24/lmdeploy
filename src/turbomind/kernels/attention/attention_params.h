@@ -65,7 +65,6 @@ struct AttentionParams {
     int   size_per_head;
     float inv_sqrt_dh;
     int   window_size;
-    int   layer_id;  // for debugging
 
     // rotary embedding
     RopeKernelParam rope_param;

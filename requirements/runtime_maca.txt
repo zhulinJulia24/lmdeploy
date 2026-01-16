@@ -1,7 +1,4 @@
 accelerate==0.32.1
-aiohttp
-cloudpickle
-dlinfer-maca
 einops
 fastapi
 fire
@@ -12,12 +9,10 @@ openai_harmony
 partial_json_parser
 peft<=0.11.1
 pillow
-prometheus_client
 protobuf
 pybase64
 pydantic>2.0.0
 pyzmq
-ray
 safetensors
 sentencepiece
 shortuuid

@@ -3,16 +3,12 @@
 #pragma once
 
 #include <algorithm>
-#include <cstring>
 #include <memory>
 #include <stdexcept>
-#include <tuple>
 #include <type_traits>
 #include <vector>
 
 #include "src/turbomind/core/data_type.h"
-#include "src/turbomind/core/serdes.h"
-#include "src/turbomind/utils/logger.h"
 
 namespace turbomind::comm {
 
@@ -26,10 +22,6 @@ enum class RedOp
 typedef void (*copy_fn)(void* src, int n, void* dst, int offset);
 
 typedef void (*reduce_fn)(void* src, int n, void* dst, int offset);
-
-typedef void (*ser_fn)(void* data, int offset, int n, size_t& size, void* out);
-
-typedef void (*des_fn)(void* data, int offset, int n, void* in, size_t size);
 
 class HostCommImpl {
 public:
@@ -45,20 +37,9 @@ public:
 
     virtual void Sync(bool blocking = false) = 0;
 
-    virtual void Broadcast(void*    data,  //
-                           int      count,
-                           DataType dtype,
-                           int      root,
-                           copy_fn  copy,
-                           ser_fn   ser = nullptr,
-                           des_fn   des = nullptr) = 0;
+    virtual void Broadcast(void* data, int count, DataType dtype, int root, copy_fn copy) = 0;
 
-    virtual void AllGather(void*    data,  //
-                           int      count,
-                           DataType dtype,
-                           copy_fn  copy,
-                           ser_fn   ser = nullptr,
-                           des_fn   des = nullptr) = 0;
+    virtual void AllGather(void* data, int count, DataType dtype, copy_fn copy) = 0;
 
     virtual void AllReduce(void* data, int count, DataType dtype, RedOp red_op) = 0;
 };
@@ -84,38 +65,11 @@ private:
 };
 
 namespace detail {
+
 template<class T>
 void copy_fn(void* src, int n, void* dst, int offset)
 {
     std::copy_n((T*)src + offset, n, (T*)dst + offset);
-}
-
-template<class T>
-void ser_fn(void* data, int offset, int n, size_t& size, void* out)
-{
-    if (out == nullptr) {
-        size = 0;
-        core::BinarySizeArchive sa;
-        for (int i = 0; i < n; ++i) {
-            sa&((T*)data)[offset + i];
-        }
-        size = sa.size();
-    }
-    else {
-        core::BinaryOutputArchive oa(core::ArrayWrapper((std::byte*)out, size));
-        for (int i = 0; i < n; ++i) {
-            oa&((T*)data)[offset + i];
-        }
-    }
-}
-
-template<class T>
-void des_fn(void* data, int offset, int n, void* in, size_t size)
-{
-    core::BinaryInputArchive ia(core::ArrayWrapper((std::byte*)in, size));
-    for (int i = 0; i < n; ++i) {
-        ia&((T*)data)[offset + i];
-    }
 }
 
 }  // namespace detail
@@ -134,7 +88,7 @@ void Broadcast(HostCommImpl* comm, T* data, int n, int root)
             comm->Broadcast(data, n, kNull, root, detail::copy_fn<T>);
         }
         else {
-            comm->Broadcast(data, n, kNull, root, detail::copy_fn<T>, detail::ser_fn<T>, detail::des_fn<T>);
+            throw std::runtime_error("not implemented");
         }
     }
 }
@@ -151,7 +105,8 @@ void AllGather(HostCommImpl* comm, T* data, int n)
             comm->AllGather(data, n, kNull, detail::copy_fn<T>);
         }
         else {
-            comm->AllGather(data, n, kNull, detail::copy_fn<T>, detail::ser_fn<T>, detail::des_fn<T>);
+            /// serialize data
+            throw std::runtime_error("not implemented");
         }
     }
 }
@@ -195,7 +150,7 @@ public:
     virtual void Export(std::ostream& os) = 0;
     virtual void Import(std::istream& is) = 0;
 
-    virtual HostComm CreateCommunicator(int n_ranks, int rank, int node_rank = 0) = 0;
+    virtual HostComm CreateCommunicator(int n_ranks, int rank) = 0;
 };
 
 std::unique_ptr<HostGroupId> CreateHostGroupId(const std::string& backend);

@@ -31,7 +31,7 @@ class EngineP2PConnection:
 
         self.use_unique_kvtransfer_engine = os.environ.get('LMDEPLOY_USE_UNIQUE_KVTRANSFER_ENGINE', False)
 
-    def p2p_initialize(self, init_request: DistServeInitRequest):
+    async def p2p_initialize(self, init_request: DistServeInitRequest):
         ctx = zmq.asyncio.Context(2)
         sender = ctx.socket(zmq.PUSH)
         sender_port = find_available_port()

@@ -1,8 +1,7 @@
 // Copyright (c) OpenMMLab. All rights reserved.
 
 #include "src/turbomind/core/allocator.h"
-#include "src/turbomind/core/context.h"
-#include "src/turbomind/core/core.h"
+#include "src/turbomind/core/check.h"
 #include "src/turbomind/core/cuda_data_type.h"
 #include "src/turbomind/core/data_type.h"
 
@@ -23,7 +22,7 @@ using namespace gemm;
 
 struct LlamaLinear::Impl {
 
-    explicit Impl()
+    explicit Impl(cudaStream_t stream): stream_(stream)
     {
         workspace_ = {};
 
@@ -31,25 +30,19 @@ struct LlamaLinear::Impl {
         workspace_.partials_size   = gemm::Gemm::kPartialsSize;
         workspace_.tensormaps_size = 8192 * 128;  // maximum 4096 tensor maps
 
-        auto st = core::Context::stream().handle();
-
-        check_cuda_error(cudaMallocAsync(&workspace_.barriers, workspace_.barriers_size, st));
-        check_cuda_error(cudaMallocAsync(&workspace_.partials, workspace_.partials_size, st));
-        check_cuda_error(cudaMallocAsync(&workspace_.tensormaps, workspace_.partials_size, st));
-        check_cuda_error(cudaMemsetAsync(workspace_.barriers, 0, workspace_.barriers_size, st));
-        check_cuda_error(cudaMallocAsync(&workspace_.flags, sizeof(int), st));
-
-        core::Context::stream().Sync();
+        check_cuda_error(cudaMallocAsync(&workspace_.barriers, workspace_.barriers_size, stream_));
+        check_cuda_error(cudaMallocAsync(&workspace_.partials, workspace_.partials_size, stream_));
+        check_cuda_error(cudaMallocAsync(&workspace_.tensormaps, workspace_.partials_size, stream_));
+        check_cuda_error(cudaMemsetAsync(workspace_.barriers, 0, workspace_.barriers_size, stream_));
+        check_cuda_error(cudaMalloc(&workspace_.flags, sizeof(int)));
     }
 
     ~Impl()
     {
-        auto st = core::Context::stream().handle();
-
-        cudaFreeAsync(workspace_.barriers, st);
-        cudaFreeAsync(workspace_.partials, st);
-        cudaFreeAsync(workspace_.tensormaps, st);
-        cudaFreeAsync(workspace_.flags, st);
+        cudaFreeAsync(workspace_.barriers, stream_);
+        cudaFreeAsync(workspace_.partials, stream_);
+        cudaFreeAsync(workspace_.tensormaps, stream_);
+        cudaFreeAsync(workspace_.flags, stream_);
         workspace_ = {};
     }
 
@@ -65,8 +58,6 @@ struct LlamaLinear::Impl {
     std::tuple<Tensor, MatrixLayout, Tensor, MatrixLayout>
     GetOperandA(const LlamaDenseWeight& dense, const Tensor& input, Buffer_<int> indices, const Buffer_<int>& offsets)
     {
-        auto st = core::Context::stream().handle();
-
         Tensor A;
         Tensor U;
 
@@ -74,7 +65,7 @@ struct LlamaLinear::Impl {
 
         // Currently, FP8 only; INT8 may be added later
         if (input.dtype() != dense.input_type) {
-            QuantizeSymm(A, U, input, st);
+            QuantizeSymm(A, U, input, stream_);
             sync_check_cuda_error();
         }
         else {
@@ -85,10 +76,10 @@ struct LlamaLinear::Impl {
             const auto [bsz, k] = A.shapes(0, 1);
             const int e         = indices.size() / bsz;
             Tensor    A_e       = {{m, k}, A.dtype(), kDEVICE};
-            invokeMoeDispatch(A_e, A, indices.data(), e, st);
+            invokeMoeDispatch(A_e, A, indices.data(), e, stream_);
             sync_check_cuda_error();
             Tensor U_e;
-            invokeMoeDispatchScales(U_e, U, indices.data(), e, st);
+            invokeMoeDispatchScales(U_e, U, indices.data(), e, stream_);
             sync_check_cuda_error();
             A       = A_e;
             U       = U_e;
@@ -166,7 +157,7 @@ struct LlamaLinear::Impl {
                             D.raw_data(),
                             desc_D,
                             workspace_,
-                            core::Context::stream().handle());
+                            stream_);
 
         if (ec) {
             TM_LOG_ERROR("%s: %d", __PRETTY_FUNCTION__, ec);
@@ -175,11 +166,12 @@ struct LlamaLinear::Impl {
 
     gemm::Gemm           gemm_;
     gemm::DispatchPolicy dispatch_policy_{gemm::DispatchPolicy::kDefault};
+    cudaStream_t         stream_{};
 
     gemm::Workspace workspace_;
 };
 
-LlamaLinear::LlamaLinear(): impl_{std::make_shared<Impl>()} {}
+LlamaLinear::LlamaLinear(cudaStream_t stream): impl_{std::make_shared<Impl>(stream)} {}
 
 Tensor LlamaLinear::Forward(const Tensor&           input,  //
                             const LlamaDenseWeight& weight,
