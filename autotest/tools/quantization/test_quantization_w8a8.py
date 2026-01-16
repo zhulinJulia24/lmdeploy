@@ -2,6 +2,7 @@ import os
 
 import allure
 import pytest
+
 from utils.config_utils import get_cuda_prefix_by_workerid, get_quantization_model_list
 from utils.quantization_utils import quantization
 
@@ -11,7 +12,7 @@ from utils.quantization_utils import quantization
 @pytest.mark.timeout(900)
 @pytest.mark.parametrize('model', get_quantization_model_list('w8a8'))
 def test_quantization_w8a8(config, model, worker_id):
-    quantization_w8a8(config, model + '-inner-w8a8', model, get_cuda_prefix_by_workerid(worker_id))
+    quantization_w8a8(config, model + '-inner-w8a8', model, get_cuda_prefix_by_workerid(worker_id, {'tp': 1}))
 
 
 def quantization_w8a8(config, quantization_model_name, origin_model_name, cuda_prefix):
