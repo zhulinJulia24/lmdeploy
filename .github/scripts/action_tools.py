@@ -119,10 +119,7 @@ def evaluate(models: List[str],
                 f.write('\nfor d in datasets:\n')
                 f.write("    if d['reader_cfg'] is not None:\n")
                 f.write("        d['reader_cfg']['test_range'] = '[0:50]'\n")
-            if model.startswith('hf'):
-                f.write(f'\nmodels = [*{model}]\n')
-            else:
-                f.write(f'\nmodels = [{model}]\n')
+            f.write(f'\nmodels = [{model}]\n')
 
         work_dir = os.path.join(workspace, model)
         cmd_eval = [
