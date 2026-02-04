@@ -1,7 +1,7 @@
 from copy import deepcopy
 
 from mmengine.config import read_base
-from opencompass.models import TurboMindModel
+from opencompass.models import HuggingFaceBaseModel, TurboMindModel
 
 with read_base():
     # choose a list of datasets
@@ -136,42 +136,80 @@ base_model = dict(
     run_cfg=dict(num_gpus=1),
 )
 
+base_hf_model = dict(
+    type=HuggingFaceBaseModel,
+    max_seq_len=7168,
+    max_out_len=1024,
+    batch_size=32,
+    run_cfg=dict(num_gpus=1),
+)
+
 turbomind_qwen2_5_1_5b = deepcopy(base_model)
 turbomind_qwen2_5_1_5b['path'] = 'Qwen/Qwen2.5-1.5B'
 turbomind_qwen2_5_1_5b['abbr'] = 'turbomind_qwen2_5_1_5b'
+hf_qwen2_5_1_5b = deepcopy(base_hf_model)
+hf_qwen2_5_1_5b['path'] = 'Qwen/Qwen2.5-1.5B'
+hf_qwen2_5_1_5b['abbr'] = 'hf_qwen2_5_1_5b'
 turbomind_qwen2_5_7b = deepcopy(base_model)
 turbomind_qwen2_5_7b['path'] = 'Qwen/Qwen2.5-7B'
 turbomind_qwen2_5_7b['abbr'] = 'turbomind_qwen2_5_7b'
+hf_qwen2_5_7b = deepcopy(base_hf_model)
+hf_qwen2_5_7b['path'] = 'Qwen/Qwen2.5-7B'
+hf_qwen2_5_7b['abbr'] = 'hf_qwen2_5_7b'
 turbomind_qwen2_5_32b = deepcopy(base_model)
 turbomind_qwen2_5_32b['path'] = 'Qwen/Qwen2.5-32B'
 turbomind_qwen2_5_32b['abbr'] = 'turbomind_qwen2_5_32b'
 turbomind_qwen2_5_32b['run_cfg']['num_gpus'] = 2
 turbomind_qwen2_5_32b['engine_config']['tp'] = 2
+hf_qwen2_5_32b = deepcopy(base_hf_model)
+hf_qwen2_5_32b['path'] = 'Qwen/Qwen2.5-32B'
+hf_qwen2_5_32b['abbr'] = 'hf_qwen2_5_32b'
+hf_qwen2_5_32b['run_cfg']['num_gpus'] = 2
 turbomind_internlm2_5_7b = deepcopy(base_model)
 turbomind_internlm2_5_7b['path'] = 'internlm/internlm2_5-7b-chat'
 turbomind_internlm2_5_7b['abbr'] = 'turbomind_internlm2_5_7b'
+hf_internlm2_5_7b = deepcopy(base_hf_model)
+hf_internlm2_5_7b['path'] = 'internlm/internlm2_5-7b-chat'
+hf_internlm2_5_7b['abbr'] = 'hf_internlm2_5_7b'
 turbomind_glm_4_9b = deepcopy(base_model)
 turbomind_glm_4_9b['path'] = 'THUDM/glm-4-9b'
 turbomind_glm_4_9b['abbr'] = 'turbomind_glm_4_9b'
+hf_glm_4_9b = deepcopy(base_hf_model)
+hf_glm_4_9b['path'] = 'THUDM/glm-4-9b'
+hf_glm_4_9b['abbr'] = 'hf_glm_4_9b'
 turbomind_llama_3_70b = deepcopy(base_model)
 turbomind_llama_3_70b['path'] = 'meta-llama/Meta-Llama-3-70B'
 turbomind_llama_3_70b['abbr'] = 'turbomind_llama_3_70b'
 turbomind_llama_3_70b['run_cfg']['num_gpus'] = 4
 turbomind_llama_3_70b['engine_config']['tp'] = 4
+hf_llama_3_70b = deepcopy(base_hf_model)
+hf_llama_3_70b['path'] = 'meta-llama/Meta-Llama-3-70B'
+hf_llama_3_70b['abbr'] = 'hf_llama_3_70b'
+hf_llama_3_70b['run_cfg']['num_gpus'] = 4
 turbomind_llama_3_1_8b = deepcopy(base_model)
 turbomind_llama_3_1_8b['path'] = 'meta-llama/Llama-3.1-8B'
 turbomind_llama_3_1_8b['abbr'] = 'turbomind_llama_3_1_8b'
+hf_llama_3_1_8b = deepcopy(base_hf_model)
+hf_llama_3_1_8b['path'] = 'meta-llama/Llama-3.1-8B'
+hf_llama_3_1_8b['abbr'] = 'hf_llama_3_1_8b'
 turbomind_qwen3_0_6b_base = deepcopy(base_model)
 turbomind_qwen3_0_6b_base['path'] = 'Qwen/Qwen3-0.6B-Base'
 turbomind_qwen3_0_6b_base['abbr'] = 'turbomind_qwen3_0_6b_base'
 turbomind_qwen3_8b_base = deepcopy(base_model)
 turbomind_qwen3_8b_base['path'] = 'Qwen/Qwen3-8B-Base'
 turbomind_qwen3_8b_base['abbr'] = 'turbomind_qwen3_8b_base'
+hf_qwen3_8b_base = deepcopy(base_hf_model)
+hf_qwen3_8b_base['path'] = 'Qwen/Qwen3-8B-Base'
+hf_qwen3_8b_base['abbr'] = 'hf_qwen3_8b_base'
 turbomind_qwen3_30b_A3B_base = deepcopy(base_model)
 turbomind_qwen3_30b_A3B_base['path'] = 'Qwen/Qwen3-30B-A3B-Base'
 turbomind_qwen3_30b_A3B_base['abbr'] = 'turbomind_qwen3_30b_A3B_base'
 turbomind_qwen3_30b_A3B_base['run_cfg']['num_gpus'] = 2
 turbomind_qwen3_30b_A3B_base['engine_config']['tp'] = 2
+hf_qwen3_30b_A3B_base = deepcopy(base_hf_model)
+hf_qwen3_30b_A3B_base['path'] = 'Qwen/Qwen3-30B-A3B-Base'
+hf_qwen3_30b_A3B_base['abbr'] = 'hf_qwen3_30b_A3B_base'
+hf_qwen3_30b_A3B_base['run_cfg']['num_gpus'] = 2
 
 pytorch_qwen2_5_1_5b = deepcopy(base_model)
 pytorch_qwen2_5_1_5b['path'] = 'Qwen/Qwen2.5-1.5B'
@@ -190,6 +228,10 @@ pytorch_internlm2_5_7b['abbr'] = 'pytorch_internlm2_5_7b'
 pytorch_gemma_2_9b = deepcopy(base_model)
 pytorch_gemma_2_9b['path'] = 'google/gemma-2-9b'
 pytorch_gemma_2_9b['abbr'] = 'pytorch_gemma_2_9b'
+hf_gemma_2_9b = deepcopy(base_hf_model)
+hf_gemma_2_9b['path'] = 'google/gemma-2-9b'
+hf_gemma_2_9b['abbr'] = 'hf_gemma_2_9b'
+hf_gemma_2_9b['model_kwargs'] = dict(torch_dtype='torch.bfloat16', )
 pytorch_llama_3_70b = deepcopy(base_model)
 pytorch_llama_3_70b['path'] = 'meta-llama/Meta-Llama-3-70B'
 pytorch_llama_3_70b['abbr'] = 'pytorch_llama_3_70b'

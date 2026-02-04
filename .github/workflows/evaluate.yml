@@ -17,7 +17,7 @@ on:
         required: true
         description: 'Tested TurboMind models list. eg. [turbomind_qwen2_5_1_5b, turbomind_qwen2_5_7b, turbomind_qwen2_5_32b, turbomind_internlm2_5_7b, turbomind_glm_4_9b, turbomind_llama_3_1_8b, turbomind_llama_3_70b, pytorch_qwen2_5_1_5b, pytorch_qwen2_5_7b, pytorch_qwen2_5_32b, pytorch_internlm2_5_7b, pytorch_gemma_2_9b, pytorch_llama_3_70b, pytorch_llama_3_1_8b]'
         type: string
-        default: '[turbomind_qwen2_5_1_5b, turbomind_qwen2_5_7b, turbomind_qwen2_5_32b, turbomind_internlm2_5_7b, turbomind_glm_4_9b, turbomind_llama_3_1_8b, turbomind_llama_3_70b, pytorch_qwen2_5_1_5b, pytorch_qwen2_5_7b, pytorch_qwen2_5_32b, pytorch_internlm2_5_7b, pytorch_gemma_2_9b, pytorch_llama_3_70b, pytorch_llama_3_1_8b]'
+        default: '[turbomind_qwen2_5_1_5b, turbomind_qwen2_5_7b, turbomind_qwen2_5_32b, turbomind_internlm2_5_7b, turbomind_glm_4_9b, turbomind_llama_3_1_8b, turbomind_llama_3_70b, turbomind_qwen3_8b_base, turbomind_qwen3_30b_A3B_base, pytorch_qwen2_5_1_5b, pytorch_qwen2_5_7b, pytorch_qwen2_5_32b, pytorch_internlm2_5_7b, pytorch_gemma_2_9b, pytorch_llama_3_70b, pytorch_llama_3_1_8b, pytorch_qwen3_8b_base, pytorch_qwen3_30b_A3B_base, hf_qwen2_5_1_5b, hf_qwen2_5_7b, hf_qwen2_5_32b, hf_internlm2_5_7b, hf_glm_4_9b, hf_llama_3_1_8b, hf_llama_3_70b, hf_qwen3_8b_base, hf_qwen3_30b_A3B_base, hf_gemma_2_9b]'
       baes_datasets:
         required: true
         description: 'Tested datasets list. eg. [*mmlu_datasets, *gsm8k_datasets]'
