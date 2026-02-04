@@ -231,7 +231,7 @@ pytorch_gemma_2_9b['abbr'] = 'pytorch_gemma_2_9b'
 hf_gemma_2_9b = deepcopy(base_hf_model)
 hf_gemma_2_9b['path'] = 'google/gemma-2-9b'
 hf_gemma_2_9b['abbr'] = 'hf_gemma_2_9b'
-hf_gemma_2_9b['model_kwargs'] = dict(torch_dtype='torch.bfloat16', )
+hf_gemma_2_9b['model_kwargs'] = dict(torch_dtype='torch.bfloat16')
 pytorch_llama_3_70b = deepcopy(base_model)
 pytorch_llama_3_70b['path'] = 'meta-llama/Meta-Llama-3-70B'
 pytorch_llama_3_70b['abbr'] = 'pytorch_llama_3_70b'
