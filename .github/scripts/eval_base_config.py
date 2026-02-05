@@ -140,7 +140,7 @@ base_hf_model = dict(
     type=HuggingFaceBaseModel,
     max_seq_len=7168,
     max_out_len=1024,
-    batch_size=32,
+    batch_size=8,
     run_cfg=dict(num_gpus=1),
 )
 
