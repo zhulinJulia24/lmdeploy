@@ -44,6 +44,7 @@ config:
         unsloth/gpt-oss-20b-BF16: 2
         unsloth/gpt-oss-120b-BF16: 4
         OpenGVLab/InternVL3_5-30B-A3B: 2
+        zai-org/GLM-4.7-Flash: 2
 
 turbomind_chat_model:
     tp:
@@ -176,6 +177,7 @@ pytorch_chat_model:
         - THUDM/glm-4v-9b
         - THUDM/glm-4-9b-chat
         - THUDM/codegeex4-all-9b
+        - zai-org/GLM-4.7-Flash
         - openbmb/MiniCPM-V-2_6
         - microsoft/Phi-4-mini-instruct
         - microsoft/Phi-3.5-mini-instruct
@@ -389,8 +391,10 @@ pytorch_quantization:
         - openbmb/MiniCPM-V-2_6
         - unsloth/gpt-oss-20b-BF16
         - unsloth/gpt-oss-120b-BF16
+        - zai-org/GLM-4.7-Flash
     no_kvint8:
         - deepseek-ai/DeepSeek-V2-Lite-Chat
+        - zai-org/GLM-4.7-Flash
 
 longtext_benchmark_model:
     - Qwen/Qwen3-8B
