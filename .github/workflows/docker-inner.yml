@@ -1,0 +1,35 @@
+name: publish-docker-inner
+
+on:
+  workflow_dispatch:
+    inputs:
+      repo_ref:
+        required: false
+        description: 'Set branch or tag or commit id. Default is ""'
+        type: string
+        default: 'main'
+      image_tag:
+        required: true
+        description: 'Set docker image tag. Default is "latest"'
+        type: string
+        default: latest
+  schedule:
+    - cron:  '00 14 * * *'
+
+jobs:
+  publish_docker_image:
+    runs-on: [docker-inner]
+    env:
+      CUDA_VERSION: cu12.8
+      TAG: "registry.h.pjlab.org.cn/ailab-puyu-puyu_gpu/lmdeploy:${{github.event.inputs.image_tag}}-cu12.8"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          ref: ${{github.event.inputs.repo_ref}}
+      - name: Build and push Docker image
+        run: |
+          echo $TAG
+          docker build . -f docker/Dockerfile -t ${TAG} --build-arg CUDA_VERSION=${CUDA_VERSION}
+          docker login registry.h.pjlab.org.cn -p ${{ secrets.CLUSTER_DOCKERHUB_TOKEN }} -u ${{ secrets.CLUSTER_DOCKERHUB_USERNAME }}
+          docker push $TAG
