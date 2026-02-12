@@ -30,6 +30,21 @@ jobs:
       - name: Build and push Docker image
         run: |
           echo $TAG
-          docker build . -f docker/Dockerfile -t ${TAG} --build-arg CUDA_VERSION=${CUDA_VERSION}
+          sed -i '/ENV TZ=Etc\/UTC/a \
+          ENV http_proxy="" \
+          ENV https_proxy="" \
+          ENV no_proxy="localhost,127.0.0.1,host.docker.internal" \
+          \
+          ARG HTTP_PROXY="" \
+          ARG HTTPS_PROXY="" \
+          ARG NO_PROXY="localhost,127.0.0.1,host.docker.internal" \
+          \
+          ENV http_proxy=${HTTP_PROXY} \
+          ENV https_proxy=${HTTPS_PROXY} \
+          ENV no_proxy=${NO_PROXY}' docker/Dockerfile
+
+          sed -i 's/pip install --upgrade pip build/pip install --upgrade pip build \&\& unset http_proxy https_proxy no_proxy/' docker/Dockerfile
+
+          docker build . -f docker/Dockerfile -t ${TAG} --build-arg CUDA_VERSION=${CUDA_VERSION} --build-arg HTTP_PROXY=${{ secrets.USER_PROXY }} --build-arg HTTP_PROXYS=${{ secrets.USER_PROXY }}
           docker login registry.h.pjlab.org.cn -p ${{ secrets.CLUSTER_DOCKERHUB_TOKEN }} -u ${{ secrets.CLUSTER_DOCKERHUB_USERNAME }}
           docker push $TAG
