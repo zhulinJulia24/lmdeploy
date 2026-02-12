@@ -13,8 +13,6 @@ on:
         description: 'Set docker image tag. Default is "latest"'
         type: string
         default: latest
-  schedule:
-    - cron:  '00 14 * * *'
 
 jobs:
   publish_docker_image:
