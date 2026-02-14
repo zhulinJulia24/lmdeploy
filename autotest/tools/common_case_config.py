@@ -108,7 +108,7 @@ TURBOMIND_FALLBACK_TEST_LLM_GPU2 = [{
 }]
 
 TURBOMIND_FALLBACK_TEST_MLLM_GPU1 = [{
-    'model': 'microsoft/Phi-4-mini-instruct',
+    'model': 'microsoft/Phi-3.5-vision-instruct',
     'backend': 'turbomind',
     'communicator': 'cuda-ipc',
     'quant_policy': 8,

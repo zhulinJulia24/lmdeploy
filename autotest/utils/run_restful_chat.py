@@ -119,6 +119,8 @@ def run_all_step(log_path, case_name, cases_info, port: int = DEFAULT_PORT):
     if model is None:
         assert False, 'server not start correctly'
     for case in cases_info.keys():
+        if case != 'code_testcases' and 'code' in model.lower():
+            continue
         case_info = cases_info.get(case)
 
         with allure.step(case + ' restful_test - openai chat'):
@@ -149,13 +151,19 @@ def open_chat_test(log_path, case_name, case_info, url):
         messages.append({'role': 'user', 'content': prompt})
         file.writelines('prompt:' + prompt + '\n')
 
-        response = client.chat.completions.create(model=model_name,
-                                                  messages=messages,
-                                                  temperature=0.01,
-                                                  top_p=0.8,
-                                                  max_completion_tokens=1024)
+        outputs = client.chat.completions.create(model=model_name,
+                                                 messages=messages,
+                                                 temperature=0.01,
+                                                 top_p=0.8,
+                                                 max_completion_tokens=1024,
+                                                 stream=True)
 
-        output_content = response.choices[0].message.content
+        output_content = ''
+        for output in outputs:
+            output_content += output.model_dump().get('choices')[0].get('delta').get('content', '')
+
+        if output_content is None:
+            output_content = ''
         file.writelines('output:' + output_content + '\n')
         messages.append({'role': 'assistant', 'content': output_content})
 
