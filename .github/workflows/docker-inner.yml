@@ -3,6 +3,11 @@ name: publish-docker-inner
 on:
   workflow_dispatch:
     inputs:
+      repo_org:
+        required: false
+        description: 'Tested repository organization name. Default is InternLM'
+        type: string
+        default: 'InternLM/lmdeploy'
       repo_ref:
         required: false
         description: 'Set branch or tag or commit id. Default is ""'
@@ -26,6 +31,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
+          repository: ${{ github.event.inputs.repo_org}}
           ref: ${{github.event.inputs.repo_ref}}
       - name: Build and push Docker image
         run: |
