@@ -32,8 +32,10 @@ RUN --mount=type=cache,target=/root/.cache \
         libssl-dev pkg-config vim rapidjson-dev libgoogle-glog-dev gdb && \
     apt-get clean -y && \
     rm -rf /var/lib/apt/lists/* && \
-    wget -qO- https://astral.sh/uv/install.sh | sh && \
-    uv venv -p python${PYTHON_VERSION} --seed /opt/py3 && \
+    wget -qO- https://astral.sh/uv/install.sh | sh -s -- --verbose 2>&1 | tee /tmp/uv_install.log && cat /tmp/uv_install.log && \
+    UV_PATH=$(find /root -name "uv" -type f -executable 2>/dev/null | head -1) && \
+    if [ -z "$UV_PATH" ]; then echo "uv install failed"; exit 1; fi && \
+    $UV_PATH venv -p python${PYTHON_VERSION} --seed /opt/py3 && \
     pip install --upgrade pip build
 
 FROM dev AS builder
