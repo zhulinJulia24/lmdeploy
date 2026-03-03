@@ -37,6 +37,7 @@ jobs:
         run: |
           echo $TAG
           cp /nvme/github-actions/resources/uv-installer.sh .
+          cp /nvme/github-actions/resources/uv-x86_64-unknown-linux-gnu.tar.gz .
           
           sed -i '/ENV TZ=Etc\/UTC/a \
           ENV http_proxy="" \
