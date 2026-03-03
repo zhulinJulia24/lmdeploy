@@ -36,6 +36,8 @@ jobs:
       - name: Build and push Docker image
         run: |
           echo $TAG
+          cp /nvme/github-actions/resources/uv-installer.sh .
+          
           sed -i '/ENV TZ=Etc\/UTC/a \
           ENV http_proxy="" \
           ENV https_proxy="" \
@@ -49,7 +51,7 @@ jobs:
           ENV https_proxy=${HTTPS_PROXY} \
           ENV no_proxy=${NO_PROXY} \
           \
-          COPY /nvme/github-actions/resources/uv-installer.sh uv-installer.sh \' docker/Dockerfile
+          COPY uv-installer.sh uv-installer.sh' docker/Dockerfile
 
           sed -i 's/pip install --upgrade pip build/pip install --upgrade pip build \&\& unset http_proxy https_proxy no_proxy/' docker/Dockerfile
           sed -i 's@wget -qO- https://astral.sh/uv/install.sh \| sh@sh uv-installer.sh@g' docker/Dockerfile
