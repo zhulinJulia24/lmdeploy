@@ -23,6 +23,8 @@ ENV PATH=/opt/py3/bin:/root/.local/bin:${PATH}
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Etc/UTC
 
+COPY /nvme/github-actions/resources/uv-installer.sh uv-installer.sh
+
 RUN --mount=type=cache,target=/root/.cache \
     sed -i 's|http://archive.ubuntu.com|http://azure.archive.ubuntu.com|g' /etc/apt/sources.list && \
     apt-get update -y && \
@@ -32,7 +34,7 @@ RUN --mount=type=cache,target=/root/.cache \
         libssl-dev pkg-config vim rapidjson-dev libgoogle-glog-dev gdb && \
     apt-get clean -y && \
     rm -rf /var/lib/apt/lists/* && \
-    sh /nvme/github-actions/resources/uv-installer.sh && \
+    sh uv-installer.sh && \
     UV_PATH=$(find /root -name "uv" -type f -executable 2>/dev/null | head -1) && \
     if [ -z "$UV_PATH" ]; then echo "uv install failed"; exit 1; fi && \
     $UV_PATH venv -p python${PYTHON_VERSION} --seed /opt/py3 && \
