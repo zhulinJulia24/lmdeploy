@@ -23,7 +23,7 @@ ENV PATH=/opt/py3/bin:/root/.local/bin:${PATH}
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Etc/UTC
 
-COPY /nvme/github-actions/resources/uv-installer.sh uv-installer.sh
+COPY uv-installer.sh uv-installer.sh
 
 RUN --mount=type=cache,target=/root/.cache \
     sed -i 's|http://archive.ubuntu.com|http://azure.archive.ubuntu.com|g' /etc/apt/sources.list && \
