@@ -51,7 +51,8 @@ jobs:
 
           sed -i 's/pip install --upgrade pip build/pip install --upgrade pip build \&\& unset http_proxy https_proxy no_proxy/' docker/Dockerfile
           sed -i 's/uv venv/export PATH="\$HOME\/.cargo\/bin::$HOME\/.local\/bin:\$PATH" \&\& uv venv/g' docker/Dockerfile
-
+          
+          cp /nvme/github-actions/resources/uv-installer.sh .
           docker build . -f docker/Dockerfile -t ${TAG} --build-arg CUDA_VERSION=${CUDA_VERSION} --build-arg HTTP_PROXY=${{ secrets.USER_PROXY }} --build-arg HTTP_PROXYS=${{ secrets.USER_PROXY }}
           docker login registry.h.pjlab.org.cn -p ${{ secrets.CLUSTER_DOCKERHUB_TOKEN }} -u ${{ secrets.CLUSTER_DOCKERHUB_USERNAME }}
           docker push $TAG
