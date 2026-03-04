@@ -43,9 +43,11 @@ COPY . /opt/lmdeploy
 WORKDIR /opt/lmdeploy
 
 RUN --mount=type=cache,target=/root/.cache \
+    --mount=type=cache,target=/opt/py3/.cache/pip \
     docker/build.sh
 
 RUN --mount=type=cache,target=/root/.cache \
+    --mount=type=cache,target=/opt/py3/.cache/pip \
     docker/prepare_wheel.sh
 
 # Runtime image
@@ -70,6 +72,7 @@ ARG PYTHON_VERSION=3.10
 COPY requirements /tmp/requirements
 COPY docker/install.sh /tmp/install.sh
 RUN --mount=type=cache,target=/root/.cache \
+    --mount=type=cache,target=/opt/py3/.cache/pip \
     --mount=type=cache,target=/wheels,from=builder,source=/wheels \
     --mount=type=cache,target=/nccl,from=builder,source=/nccl \
     /tmp/install.sh
