@@ -37,12 +37,12 @@ jobs:
         env:
           HTTP_PROXY: ${{ secrets.USER_PROXY }}
           HTTPS_PROXY: ${{ secrets.USER_PROXY }}
-          NO_PROXY: localhost,127.0.0.1,github.com,your-internal-domain.com
+          NO_PROXY: localhost,127.0.0.1,host.docker.internal
         run: |
           echo $TAG
           export SHLVL=1
           export SSH_TTY=/dev/pts/0
-          unset GITHUB_API_URL GITHUB_SERVER_URL GITHUB_WORKSPACE GITHUB_REF
+          unset GITHUB_API_URL GITHUB_SERVER_URL GITHUB_WORKSPACE GITHUB_REF no_proxy NO_PROXY
           env
 
           cp /nvme/github-actions/resources/uv-installer.sh .
