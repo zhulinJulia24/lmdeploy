@@ -48,10 +48,7 @@ jobs:
           \
           ENV http_proxy=${HTTP_PROXY} \
           ENV https_proxy=${HTTPS_PROXY} \
-          ENV no_proxy=${NO_PROXY} \
-          \
-          COPY uv-installer.sh uv-installer.sh \
-          COPY uv-x86_64-unknown-linux-gnu.tar.gz uv-x86_64-unknown-linux-gnu.tar.gz' docker/Dockerfile
+          ENV no_proxy=${NO_PROXY} \' docker/Dockerfile
 
           sed -i 's/    \/tmp\/install.sh/    \/tmp\/install.sh \&\& unset http_proxy https_proxy no_proxy/g' docker/Dockerfile
 
