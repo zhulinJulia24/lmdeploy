@@ -40,8 +40,7 @@ jobs:
           NO_PROXY: localhost,127.0.0.1,github.com,your-internal-domain.com
         run: |
           echo $TAG
-          echo "PATH: $PATH"
-          echo "HOME: $HOME"
+          export SHLVL=1
           env
           
           sed -i '/ENV TZ=Etc\/UTC/a \
