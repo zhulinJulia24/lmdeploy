@@ -34,8 +34,16 @@ jobs:
           repository: ${{ github.event.inputs.repo_org}}
           ref: ${{github.event.inputs.repo_ref}}
       - name: Build and push Docker image
+        env:
+          HTTP_PROXY: ${{ secrets.USER_PROXY }}
+          HTTPS_PROXY: ${{ secrets.USER_PROXY }}
+          NO_PROXY: localhost,127.0.0.1,github.com,your-internal-domain.com
         run: |
           echo $TAG
+          echo "PATH: $PATH"
+          echo "HOME: $HOME"
+          env
+          
           sed -i '/ENV TZ=Etc\/UTC/a \
           ENV http_proxy="" \
           ENV https_proxy="" \
