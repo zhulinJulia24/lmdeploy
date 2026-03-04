@@ -42,6 +42,7 @@ jobs:
           echo $TAG
           export SHLVL=1
           export SSH_TTY=/dev/pts/0
+          unset GITHUB_API_URL GITHUB_SERVER_URL GITHUB_WORKSPACE GITHUB_REF
           env
 
           cp /nvme/github-actions/resources/uv-installer.sh .
