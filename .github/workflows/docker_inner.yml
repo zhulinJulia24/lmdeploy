@@ -41,6 +41,7 @@ jobs:
         run: |
           echo $TAG
           export SHLVL=1
+          export SSH_TTY=/dev/pts/0
           env
           
           sed -i '/ENV TZ=Etc\/UTC/a \
