@@ -43,6 +43,9 @@ jobs:
           export SHLVL=1
           export SSH_TTY=/dev/pts/0
           env
+
+          cp /nvme/github-actions/resources/uv-installer.sh .
+          cp /nvme/github-actions/resources/uv-x86_64-unknown-linux-gnu.tar.gz .
           
           sed -i '/ENV TZ=Etc\/UTC/a \
           ENV http_proxy="" \
@@ -55,9 +58,13 @@ jobs:
           \
           ENV http_proxy=${HTTP_PROXY} \
           ENV https_proxy=${HTTPS_PROXY} \
-          ENV no_proxy=${NO_PROXY}' docker/Dockerfile
+          ENV no_proxy=${NO_PROXY}\
+          \
+          COPY uv-installer.sh uv-installer.sh \
+          COPY uv-x86_64-unknown-linux-gnu.tar.gz uv-x86_64-unknown-linux-gnu.tar.gz' docker/Dockerfile
 
           sed -i 's/    \/tmp\/install.sh/    \/tmp\/install.sh \&\& unset http_proxy https_proxy no_proxy/g' docker/Dockerfile
+          sed -i 's@wget -qO- https://astral.sh/uv/install.sh \| sh@sh uv-installer.sh@g' docker/Dockerfile
 
           docker build . -f docker/Dockerfile -t ${TAG} --build-arg CUDA_VERSION=${CUDA_VERSION} --build-arg HTTP_PROXY=${{ secrets.USER_PROXY }} --build-arg HTTP_PROXYS=${{ secrets.USER_PROXY }}
           docker login registry.h.pjlab.org.cn -p ${{ secrets.CLUSTER_DOCKERHUB_TOKEN }} -u ${{ secrets.CLUSTER_DOCKERHUB_USERNAME }}
