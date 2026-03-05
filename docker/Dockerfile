@@ -32,11 +32,8 @@ RUN --mount=type=cache,target=/root/.cache \
         libssl-dev pkg-config vim rapidjson-dev libgoogle-glog-dev gdb && \
     apt-get clean -y && \
     rm -rf /var/lib/apt/lists/* && \
-    wget -qO- https://astral.sh/uv/install.sh | sh
+    wget -qO- https://astral.sh/uv/install.sh | sh && \
     uv venv -p python${PYTHON_VERSION} --seed /opt/py3 && \
-
-RUN --mount=type=cache,target=/root/.cache \
-    --mount=type=cache,target=/opt/py3/.cache/pip \
     pip install --upgrade pip build
 
 FROM dev AS builder
