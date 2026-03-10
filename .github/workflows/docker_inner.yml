@@ -1,0 +1,69 @@
+name: publish-docker-inner
+
+on:
+  workflow_dispatch:
+    inputs:
+      repo_org:
+        required: false
+        description: 'Tested repository organization name. Default is InternLM'
+        type: string
+        default: 'InternLM/lmdeploy'
+      repo_ref:
+        required: false
+        description: 'Set branch or tag or commit id. Default is ""'
+        type: string
+        default: 'main'
+      image_tag:
+        required: true
+        description: 'Set docker image tag. Default is "latest"'
+        type: string
+        default: latest
+  schedule:
+    - cron:  '00 14 * * *'
+
+jobs:
+  publish_docker_image:
+    runs-on: [docker-inner]
+    env:
+      CUDA_VERSION: cu12.8
+      TAG: "registry.h.pjlab.org.cn/ailab-puyu-puyu_gpu/lmdeploy:${{github.event.inputs.image_tag}}-cu12.8"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ github.event.inputs.repo_org}}
+          ref: ${{github.event.inputs.repo_ref}}
+      - name: Build and push Docker image
+        env:
+          HTTP_PROXY: ${{ secrets.USER_PROXY }}
+          HTTPS_PROXY: ${{ secrets.USER_PROXY }}
+          NO_PROXY: localhost,127.0.0.1,host.docker.internal
+        run: |
+          echo $TAG
+          export SHLVL=1
+          export SSH_TTY=/dev/pts/0
+          unset GITHUB_API_URL GITHUB_SERVER_URL GITHUB_WORKSPACE GITHUB_REF no_proxy NO_PROXY
+          env
+          cp /nvme/github-actions/resources/uv-installer.sh .
+          cp /nvme/github-actions/resources/uv-x86_64-unknown-linux-gnu.tar.gz .
+          
+          sed -i '/ENV TZ=Etc\/UTC/a \
+          ENV http_proxy="" \
+          ENV https_proxy="" \
+          ENV no_proxy="localhost,127.0.0.1,host.docker.internal" \
+          \
+          ARG HTTP_PROXY="" \
+          ARG HTTPS_PROXY="" \
+          ARG NO_PROXY="localhost,127.0.0.1,host.docker.internal" \
+          \
+          ENV http_proxy=${HTTP_PROXY} \
+          ENV https_proxy=${HTTPS_PROXY} \
+          ENV no_proxy=${NO_PROXY}\
+          \
+          COPY uv-installer.sh uv-installer.sh \
+          COPY uv-x86_64-unknown-linux-gnu.tar.gz uv-x86_64-unknown-linux-gnu.tar.gz' docker/Dockerfile
+          sed -i 's/    \/tmp\/install.sh/    \/tmp\/install.sh \&\& unset http_proxy https_proxy no_proxy/g' docker/Dockerfile
+          sed -i 's@wget -qO- https://astral.sh/uv/install.sh \| sh@sh uv-installer.sh@g' docker/Dockerfile
+          docker build . -f docker/Dockerfile -t ${TAG} --build-arg CUDA_VERSION=${CUDA_VERSION} --build-arg HTTP_PROXY=${{ secrets.USER_PROXY }} --build-arg HTTP_PROXYS=${{ secrets.USER_PROXY }}
+          docker login registry.h.pjlab.org.cn -p ${{ secrets.CLUSTER_DOCKERHUB_TOKEN }} -u ${{ secrets.CLUSTER_DOCKERHUB_USERNAME }}
+          docker push $TAG
