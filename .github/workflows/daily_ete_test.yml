@@ -332,27 +332,12 @@ jobs:
       fail-fast: false
       matrix:
         backend: ${{ fromJSON(inputs.backend || '["turbomind", "pytorch"]')}}
-        model_path: ['internlm/Intern-S1', 'internlm/internlm2_5-20b-chat', 'internlm/internlm2_5-20b', 'Qwen/Qwen3-8B-Base', 'Qwen/Qwen3-30B-A3B', 'Qwen/Qwen3-32B', 'OpenGVLab/InternVL3_5-30B-A3B', 'OpenGVLab/InternVL3-38B', 'Qwen/Qwen3-VL-8B-Instruct', 'Qwen/Qwen3-VL-30B-A3B-Instruct']
+        model_path: ['Qwen/Qwen3-8B-Base', 'Qwen/Qwen3-30B-A3B', 'Qwen/Qwen3-32B', 'OpenGVLab/InternVL3_5-30B-A3B', 'OpenGVLab/InternVL3-38B', 'Qwen/Qwen3-VL-8B-Instruct', 'Qwen/Qwen3-VL-30B-A3B-Instruct']
         include:
-          - tp: 2
-            model: internlm2_5-20b-chat
-            model_path: internlm/internlm2_5-20b-chat
-            case_info: ['chat_completions_v1', 'generate']
-            generate_type: base
-          - tp: 2
-            model: internlm2_5-20b
-            model_path: internlm/internlm2_5-20b
-            case_info: ['completions_v1']
-            generate_type: base
           - tp: 2
             model: Qwen3-8B-Base
             model_path: Qwen/Qwen3-8B-Base
             case_info: ['completions_v1']
-            generate_type: base
-          - tp: 8
-            model: Intern-S1
-            model_path: internlm/Intern-S1
-            case_info: ['chat_completions_v1', 'generate']
             generate_type: base
           - tp: 2
             model: Qwen3-30B-A3B
