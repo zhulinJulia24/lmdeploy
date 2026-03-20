@@ -17,6 +17,8 @@ env:
 jobs:
   publish_docker_image:
     runs-on: ubuntu-latest
+    env:
+      OFFLINE_REQUIREMENTS: ${{ vars.OFFLINE_REQUIREMENTS }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -48,15 +50,13 @@ jobs:
         run: |
           echo ${{ env.TAG }}
           mkdir -p docker
-          cp /nvme/qa_test_models/offline_pkg/requirements.txt docker/offline-requirements.txt
           cat > docker/Dockerfile.nightly-extended << 'EOF'
           ARG BASE_IMAGE
           FROM ${BASE_IMAGE}
-          COPY docker/offline-requirements.txt /tmp/offline-requirements.txt
           RUN python3 -m pip install --no-cache-dir auto_gptq matplotlib attrdict && \
               python3 -m pip install --no-cache-dir -r requirements/lite.txt && \
               python3 -m pip install --no-cache-dir -r requirements/test.txt && \
-              pip install --no-cache-dir -r /tmp/offline-requirements.txt
+              pip install --no-cache-dir ${{ env.OFFLINE_REQUIREMENTS }}
           EOF
           docker build . -f docker/Dockerfile.nightly-extended \
             --build-arg BASE_IMAGE=openmmlab/lmdeploy:nightly-cu12.8 \
