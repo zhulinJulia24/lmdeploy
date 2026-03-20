@@ -17,6 +17,8 @@ env:
 jobs:
   publish_docker_image:
     runs-on: ubuntu-latest
+    env:
+      OFFLINE_REQUIREMENTS: /nvme/qa_test_models/offline_pkg/requirements.txt
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -47,28 +49,9 @@ jobs:
       - name: Build and push Docker image
         run: |
           echo ${{ env.TAG }}
-          docker build . -f docker/Dockerfile -t ${{ env.TAG }} --build-arg CUDA_VERSION=cu12.8
-          docker push ${{ env.TAG }}
-
-  publish_inner_docker_image:
-    runs-on: image-sync-inner
-    needs: publish_docker_image
-    env:
-      INNER_REGISTRY: ${{ secrets.INNER_DOCKER_REGISTRY }}
-      INNER_TAG: "${{ secrets.INNER_DOCKER_REGISTRY }}/ailab-puyu-puyu_gpu/lmdeploy:nightly-cu12.8"
-      OFFLINE_REQUIREMENTS: /nvme/qa_test_models/offline_pkg/requirements.txt
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ github.event.inputs.repo_ref || 'main' }}
-      - name: Build derived nightly image for inner
-        run: |
-          docker pull ${{ env.TAG }}
           mkdir -p docker
-          : > docker/offline-requirements.txt
           cp "${{ env.OFFLINE_REQUIREMENTS }}" docker/offline-requirements.txt
-          cat > docker/Dockerfile.inner-nightly << 'EOF'
+          cat > docker/Dockerfile.nightly-extended << 'EOF'
           ARG BASE_IMAGE
           FROM ${BASE_IMAGE}
           COPY docker/offline-requirements.txt /tmp/offline-requirements.txt
@@ -77,10 +60,21 @@ jobs:
               python3 -m pip install --no-cache-dir -r requirements/test.txt && \
               pip install --no-cache-dir -r /tmp/offline-requirements.txt
           EOF
-          docker build . -f docker/Dockerfile.inner-nightly \
-            --build-arg BASE_IMAGE=${{ env.TAG }} \
-            -t ${{ env.INNER_TAG }}
-      - name: Push derived image to inner
+          docker build . -f docker/Dockerfile.nightly-extended \
+            --build-arg BASE_IMAGE=openmmlab/lmdeploy:nightly-cu12.8 \
+            -t ${{ env.TAG }}
+          docker push ${{ env.TAG }}
+
+  publish_inner_docker_image:
+    runs-on: image-sync-inner
+    needs: publish_docker_image
+    env:
+      INNER_REGISTRY: ${{ secrets.INNER_DOCKER_REGISTRY }}
+      INNER_TAG: "${{ secrets.INNER_DOCKER_REGISTRY }}/ailab-puyu-puyu_gpu/lmdeploy:nightly-cu12.8"
+    steps:
+      - name: Pull and push to inner
         run: |
+          docker pull ${{ env.TAG }}
           docker login ${{ env.INNER_REGISTRY }} -p ${{ secrets.CLUSTER_DOCKERHUB_TOKEN }} -u ${{ secrets.CLUSTER_DOCKERHUB_USERNAME }}
+          docker tag ${{ env.TAG }} ${{ env.INNER_TAG }}
           docker push ${{ env.INNER_TAG }}
