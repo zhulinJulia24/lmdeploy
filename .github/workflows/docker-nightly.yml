@@ -55,18 +55,18 @@ jobs:
           
           mkdir -p docker
           cat > docker/Dockerfile.nightly-extended << 'EOF'
-          ARG BASE_IMAGE
+          ARG BASE_IMAGE=${{ env.TAG }}
           FROM ${BASE_IMAGE}
+          COPY requirements /tmp/requirements
           RUN python3 -m pip install --no-cache-dir auto_gptq matplotlib attrdict && \
-              python3 -m pip install --no-cache-dir -r requirements/lite.txt && \
-              python3 -m pip install --no-cache-dir -r requirements/test.txt && \
+              python3 -m pip install --no-cache-dir -r /tmp/requirements/lite.txt && \
+              python3 -m pip install --no-cache-dir -r /tmp/requirements/test.txt && \
               pip install --no-cache-dir ${{ env.OFFLINE_REQUIREMENTS }}
           EOF
           docker build . -f docker/Dockerfile.nightly-extended \
             --build-arg BASE_IMAGE=${{ env.TAG }} \
             -t ${{ env.DEV_TAG }}
           docker push ${{ env.DEV_TAG }}
-
   publish_inner_docker_image:
     runs-on: image-sync-inner
     needs: publish_docker_image
