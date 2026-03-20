@@ -12,13 +12,11 @@ on:
     - cron:  '00 8 * * 0-4'
 
 env:
-  TAG: "openmmlab/lmdeploy:nightly-cu12.8"
+  TAG: "zhulinjulia/lmdeploy_test:nightly-cu12.8"
 
 jobs:
   publish_docker_image:
     runs-on: ubuntu-latest
-    env:
-      CUDA_VERSION: "cu12.8"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -49,18 +47,40 @@ jobs:
       - name: Build and push Docker image
         run: |
           echo ${{ env.TAG }}
-          docker build . -f docker/Dockerfile -t ${{ env.TAG }} --build-arg CUDA_VERSION=${{ env.CUDA_VERSION }}
+          docker build . -f docker/Dockerfile -t ${{ env.TAG }} --build-arg CUDA_VERSION=cu12.8
           docker push ${{ env.TAG }}
 
   publish_inner_docker_image:
     runs-on: image-sync-inner
     needs: publish_docker_image
     env:
-      INNER_TAG: "registry.h.pjlab.org.cn/ailab-puyu-puyu_gpu/lmdeploy:nightly-cu12.8"
+      INNER_REGISTRY: ${{ secrets.INNER_DOCKER_REGISTRY }}
+      INNER_TAG: "${{ secrets.INNER_DOCKER_REGISTRY }}/ailab-puyu-puyu_gpu/lmdeploy:nightly-cu12.8"
+      OFFLINE_REQUIREMENTS: /nvme/qa_test_models/offline_pkg/requirements.txt
     steps:
-      - name: Pull and push to inner
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.inputs.repo_ref || 'main' }}
+      - name: Build derived nightly image for inner
         run: |
           docker pull ${{ env.TAG }}
-          docker login registry.h.pjlab.org.cn -p ${{ secrets.CLUSTER_DOCKERHUB_TOKEN }} -u ${{ secrets.CLUSTER_DOCKERHUB_USERNAME }}
-          docker tag ${{ env.TAG }} ${{ env.INNER_TAG }}
+          mkdir -p docker
+          : > docker/offline-requirements.txt
+          cp "${{ env.OFFLINE_REQUIREMENTS }}" docker/offline-requirements.txt
+          cat > docker/Dockerfile.inner-nightly << 'EOF'
+          ARG BASE_IMAGE
+          FROM ${BASE_IMAGE}
+          COPY docker/offline-requirements.txt /tmp/offline-requirements.txt
+          RUN python3 -m pip install --no-cache-dir auto_gptq matplotlib attrdict && \
+              python3 -m pip install --no-cache-dir -r requirements/lite.txt && \
+              python3 -m pip install --no-cache-dir -r requirements/test.txt && \
+              pip install --no-cache-dir -r /tmp/offline-requirements.txt
+          EOF
+          docker build . -f docker/Dockerfile.inner-nightly \
+            --build-arg BASE_IMAGE=${{ env.TAG }} \
+            -t ${{ env.INNER_TAG }}
+      - name: Push derived image to inner
+        run: |
+          docker login ${{ env.INNER_REGISTRY }} -p ${{ secrets.CLUSTER_DOCKERHUB_TOKEN }} -u ${{ secrets.CLUSTER_DOCKERHUB_USERNAME }}
           docker push ${{ env.INNER_TAG }}
