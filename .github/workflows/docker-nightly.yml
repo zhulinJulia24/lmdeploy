@@ -67,6 +67,7 @@ jobs:
             --build-arg BASE_IMAGE=${{ env.TAG }} \
             -t ${{ env.DEV_TAG }}
           docker push ${{ env.DEV_TAG }}
+          
   publish_inner_docker_image:
     runs-on: image-sync-inner
     needs: publish_docker_image
@@ -76,6 +77,7 @@ jobs:
     steps:
       - name: Pull and push to inner
         run: |
+          docker login zhulinjulia/lmdeploy_test -p ${{ secrets.DOCKERHUB_TOKEN }} -u ${{ secrets.DOCKERHUB_USERNAME }}
           docker pull ${{ env.DEV_TAG }}
           docker login ${{ env.INNER_REGISTRY }} -p ${{ secrets.CLUSTER_DOCKERHUB_TOKEN }} -u ${{ secrets.CLUSTER_DOCKERHUB_USERNAME }}
           docker tag ${{ env.DEV_TAG }} ${{ env.INNER_TAG }}
