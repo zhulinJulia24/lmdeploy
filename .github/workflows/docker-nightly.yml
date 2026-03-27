@@ -13,7 +13,7 @@ on:
 
 env:
   TAG: "zhulinjulia/lmdeploy_test:nightly-cu12.8"
-  DEV_TAG: "zhulinjulia/lmdeploy_test:nightly-dev-cu12.8"
+  DEV_TAG: "openmmlab/lmdeploy:nightly-test-cu12.8"
 
 jobs:
   publish_docker_image:
@@ -22,7 +22,7 @@ jobs:
       OFFLINE_REQUIREMENTS: ${{ vars.OFFLINE_REQUIREMENTS }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.event.inputs.repo_ref || 'main' }}
       - name: Free disk space
@@ -52,14 +52,17 @@ jobs:
           echo ${{ env.TAG }}
           docker build . -f docker/Dockerfile -t ${{ env.TAG }} --build-arg CUDA_VERSION=cu12.8
           docker push ${{ env.TAG }}
-          
+
           mkdir -p docker
           cat > docker/Dockerfile.nightly-extended << 'EOF'
           ARG BASE_IMAGE=${{ env.TAG }}
           FROM ${BASE_IMAGE}
           COPY requirements /tmp/requirements
-          RUN python3 -m pip install --no-cache-dir auto_gptq matplotlib attrdict && \
-              python3 -m pip install --no-cache-dir -r /tmp/requirements/lite.txt && \
+          RUN apt-get update -y && \
+              apt-get install -y --no-install-recommends libgl1 libglib2.0-0 && \
+              apt-get clean -y && \
+              rm -rf /var/lib/apt/lists/*
+          RUN python3 -m pip install --no-cache-dir -r /tmp/requirements/lite.txt && \
               python3 -m pip install --no-cache-dir -r /tmp/requirements/test.txt && \
               pip install --no-cache-dir ${{ env.OFFLINE_REQUIREMENTS }}
           EOF
@@ -67,7 +70,7 @@ jobs:
             --build-arg BASE_IMAGE=${{ env.TAG }} \
             -t ${{ env.DEV_TAG }}
           docker push ${{ env.DEV_TAG }}
-          
+
   publish_inner_docker_image:
     runs-on: image-sync-inner
     needs: publish_docker_image
