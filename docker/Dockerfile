@@ -20,7 +20,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Etc/UTC
 
 RUN --mount=type=cache,target=/root/.cache \
-    sed -i 's|http://archive.ubuntu.com|http://azure.archive.ubuntu.com|g' /etc/apt/sources.list && \
+    sed -i "s@https://mirrors.aliyun.com@http://mirrors.i.h.pjlab.org.cn/repository/apt-noble-proxy@g" /etc/apt/sources.list &&\
     apt-get update -y && \
     apt-get install -y --no-install-recommends \
         tzdata wget curl openssh-server ssh sudo git-core \
@@ -40,7 +40,7 @@ ENV PYTHON_VERSION=${PYTHON_VERSION}
 COPY requirements/runtime_cuda.txt /tmp/runtime_cuda.txt
 
 RUN --mount=type=cache,target=/root/.cache \
-    pip install -r /tmp/runtime_cuda.txt --extra-index-url https://download.pytorch.org/whl/${CUDA_VERSION_SHORT}
+    pip install -r /tmp/runtime_cuda.txt -f https://mirrors.aliyun.com/pytorch-wheels/${CUDA_VERSION_SHORT}
 
 RUN mkdir -p /wheels
 
@@ -50,6 +50,7 @@ FROM runtime-deps-pip AS thirdparty-wheels
 COPY docker/prepare_3rdparty_wheel.sh /tmp/prepare_3rdparty_wheel.sh
 
 RUN --mount=type=cache,target=/root/.cache \
+    --mount=type=cache,target=/opt/py3/.cache/pip \
     bash /tmp/prepare_3rdparty_wheel.sh
 
 # Full tree for local package build
@@ -59,6 +60,7 @@ COPY . /opt/lmdeploy
 WORKDIR /opt/lmdeploy
 
 RUN --mount=type=cache,target=/root/.cache \
+    --mount=type=cache,target=/opt/py3/.cache/pip \
     docker/build.sh
 
 FROM runtime-deps-pip AS wheels
@@ -85,6 +87,7 @@ COPY requirements/serve.txt /tmp/requirements/serve.txt
 COPY docker/install.sh /tmp/install.sh
 RUN --mount=type=cache,target=/root/.cache \
     --mount=type=cache,target=/wheels,from=wheels,source=/wheels \
+    --mount=type=cache,target=/opt/py3/.cache/pip \
     /tmp/install.sh
 
 # explicitly set ptxas path for triton
