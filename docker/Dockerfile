@@ -40,6 +40,7 @@ ENV PYTHON_VERSION=${PYTHON_VERSION}
 COPY requirements/runtime_cuda.txt /tmp/runtime_cuda.txt
 
 RUN --mount=type=cache,target=/root/.cache \
+    --mount=type=cache,target=/opt/py3/.cache/pip \
     pip install -r /tmp/runtime_cuda.txt -f https://mirrors.aliyun.com/pytorch-wheels/${CUDA_VERSION_SHORT}
 
 RUN mkdir -p /wheels
