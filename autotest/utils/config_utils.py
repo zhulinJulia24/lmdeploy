@@ -65,7 +65,7 @@ def get_func_config_list(backend: str,
 
     for communicator in _get_communicator_list(config, backend, parallel_config):
         for model in base_case_list:
-            for quant_policy in [0, 4, 8]:
+            for quant_policy in [0, 4, 8, 42]:
                 # temp remove testcase because of issue 3434
                 if 'turbomind' == backend and communicator == 'cuda-ipc' and parallel_config.get(
                         'tp', 1) > 1 and ('InternVL3' in model or 'InternVL2_5' in model or 'MiniCPM-V-2_6' in model
@@ -325,10 +325,13 @@ def _is_kvint_model(config: dict[str, Any], backend: str, model: str, quant_poli
     always return True."""
     if quant_policy == 0:
         return True
-    no_kvint_black_list = config.get(f'{backend}_quantization', {}).get(f'no_kvint{quant_policy}', [])
+    if quant_policy in [4, 8]:
+        no_kvint_black_list = config.get(f'{backend}_quantization', {}).get(f'no_kvint{quant_policy}', [])
+        return _base_model_name(model) not in no_kvint_black_list
 
-    return _base_model_name(model) not in no_kvint_black_list
-
+    if quant_policy == 42:
+        kv42_list = config.get(f'{backend}_quantization', {}).get('kvint42', [])
+        return _base_model_name(model) in kv42_list
 
 def _base_model_name(model: str) -> str:
     """Simplify model name by removing quantization suffix for config
