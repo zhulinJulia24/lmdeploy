@@ -202,9 +202,6 @@ def eval_test(model_path,
                     for key, value in kwargs.items():
                         model_cfg[key] = value
 
-                cfg.NUM_WORKERS = extra_config.get('max-num-workers', 8)
-                cfg.infer['partitioner']['num_worker'] = extra_config.get('max-num-workers', 8)
-
                 cfg.dump(temp_config_path)
                 print(f'Modified config saved to: {temp_config_path}')
             elif test_type == 'eval':
