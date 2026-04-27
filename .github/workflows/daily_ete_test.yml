@@ -352,7 +352,7 @@ jobs:
       fail-fast: false
       matrix:
         backend: ${{ fromJSON(inputs.backend || '["turbomind", "pytorch"]')}}
-        model_path: ['Qwen/Qwen3-8B-Base', 'Qwen/Qwen3-30B-A3B', 'Qwen/Qwen3-32B', 'OpenGVLab/InternVL3_5-30B-A3B', 'OpenGVLab/InternVL3-38B', 'Qwen/Qwen3-VL-8B-Instruct', 'Qwen/Qwen3-VL-30B-A3B-Instruct']
+        model_path: ['Qwen/Qwen3.5-35B-A3B', 'Qwen/Qwen3.5-27B', 'Qwen/Qwen3.5-35B-A3B-Base', 'Qwen/Qwen3.5-2B-Base', 'Qwen/Qwen3-8B-Base', 'Qwen/Qwen3-30B-A3B', 'Qwen/Qwen3-32B', 'OpenGVLab/InternVL3_5-30B-A3B', 'OpenGVLab/InternVL3-38B', 'Qwen/Qwen3-VL-8B-Instruct', 'Qwen/Qwen3-VL-30B-A3B-Instruct']
         include:
           - tp: 2
             model: Qwen3.5-35B-A3B
