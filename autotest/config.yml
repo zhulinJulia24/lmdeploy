@@ -108,7 +108,7 @@ pytorch_vl_model:
         - Qwen/Qwen3-VL-30B-A3B-Instruct
         - THUDM/cogvlm-chat-hf
         - THUDM/cogvlm2-llama3-chinese-chat-19B
-        - THUDM/glm-4v-9b
+        # - THUDM/glm-4v-9b
         - microsoft/Phi-3-vision-128k-instruct
         - microsoft/Phi-3.5-vision-instruct
 
