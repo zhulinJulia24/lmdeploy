@@ -13,8 +13,6 @@ on:
         description: 'Set Docker tag. Default is "cu12.8"'
         type: string
         default: 'cu12.8'
-  schedule:
-    - cron:  '00 8 * * 0-4'
 
 env:
   TAG: "openmmlab/lmdeploy:nightly-${{inputs.docker_tag || 'cu12.8'}}"
