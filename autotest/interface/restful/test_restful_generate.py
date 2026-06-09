@@ -9,7 +9,8 @@ from typing import Any
 import pytest
 import requests
 from transformers import AutoTokenizer
-from utils.constant import BACKEND_LIST, DEFAULT_SERVER, RESTFUL_MODEL_LIST
+from utils.constant import DEFAULT_SERVER
+from utils.interface_utils import parametrize_interface
 from utils.toolkit import encode_text, parse_sse_stream
 
 from lmdeploy.serve.openai.api_client import APIClient
@@ -19,8 +20,7 @@ DEFAULT_PORT = 23333
 BASE_URL = ':'.join([BASE_HTTP_URL, str(DEFAULT_PORT)])
 
 
-@pytest.mark.parametrize('backend', BACKEND_LIST)
-@pytest.mark.parametrize('model_name', RESTFUL_MODEL_LIST)
+@parametrize_interface('generate')
 class TestGenerateComprehensive:
 
     @pytest.fixture(autouse=True)
@@ -435,7 +435,7 @@ class TestGenerateComprehensive:
                 print(f'  Unexpected error: {e}')
                 raise
 
-    @pytest.mark.logprob
+    @pytest.mark.generate_logprob
     def test_input_ids_with_logprob(self, config):
         print(f'\n[Model: {self.model_name}] Running input_ids with logprob test')
         model_path = os.path.join(config.get('model_path'), self.model_name)
@@ -623,7 +623,7 @@ class TestGenerateComprehensive:
         print(f"  Final assembled text: '{full_text_from_delta}'")
         print(f'  Total events received: {event_count}')
 
-    @pytest.mark.logprob
+    @pytest.mark.generate_logprob
     def test_return_logprob(self):
         print(f'\n[Model: {self.model_name}] Running return_logprob test')
 
@@ -1166,7 +1166,7 @@ class TestGenerateComprehensive:
             if generated_text[i] in special_patterns and generated_text[i + 1] not in [' ', '\n']:
                 assert False, f'Expected space after special token {generated_text[i]} but found none.'
 
-    @pytest.mark.experts
+    @pytest.mark.generate_experts
     @pytest.mark.not_turbomind
     def test_request_returns_experts(self):
         print(f'\n[Model: {self.model_name}] Running request with experts test')

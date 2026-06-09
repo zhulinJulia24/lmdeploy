@@ -23,6 +23,21 @@ h:
   engine_config:
     tp: 16
     extra:
+      tool-call-parser: qwen3coder
+  backends:
+  - name: pytorch
+    communicators:
+    - nccl
+  test_coverage:
+  - interface
+  interface:
+  - tool_parser
+  deps:
+    transformers: 4.57.6
+- model_type: chat
+  engine_config:
+    tp: 16
+    extra:
       session-len: 65536
   backends:
   - name: pytorch
@@ -33,5 +48,20 @@ h:
   - func
   gen_config:
     temperature: 0.6
+  deps:
+    transformers: 4.57.6
+- model_type: chat
+  engine_config:
+    tp: 16
+    extra:
+      tool-call-parser: qwen3coder
+  backends:
+  - name: pytorch
+    communicators:
+    - nccl
+  test_coverage:
+  - interface
+  interface:
+  - tool_parser
   deps:
     transformers: 4.57.6

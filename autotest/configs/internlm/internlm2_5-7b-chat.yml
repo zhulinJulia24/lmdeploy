@@ -1,26 +1,11 @@
-# HF model id: Qwen/Qwen3.5-2B-Base
+# HF model id: internlm/internlm2_5-7b-chat
 
 a100:
-- model_type: base
+- model_type: chat
   engine_config:
     tp: 1
-  backends:
-  - name: turbomind
-    communicators:
-    - nccl
-  - name: pytorch
-    communicators:
-    - nccl
-  test_coverage:
-  - func
-  quantization:
-    turbomind:
-    - kvint8
-    pytorch:
-    - kvint8
-- model_type: base
-  engine_config:
-    tp: 1
+    extra:
+      tool-call-parser: internlm2
   backends:
   - name: turbomind
     communicators:
@@ -31,11 +16,13 @@ a100:
   test_coverage:
   - interface
   interface:
-  - completions_v1
+  - tool_parser
 h:
-- model_type: base
+- model_type: chat
   engine_config:
     tp: 1
+    extra:
+      tool-call-parser: internlm2
   backends:
   - name: turbomind
     communicators:
@@ -46,4 +33,4 @@ h:
   test_coverage:
   - interface
   interface:
-  - completions_v1
+  - tool_parser

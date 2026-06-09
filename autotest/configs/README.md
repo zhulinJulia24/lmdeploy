@@ -94,12 +94,44 @@ Available keys:
 - `longtext_evaluate`
 - `mllm_evaluate`
 - `mtp_evaluate`
+- `interface` — RESTful OpenAI API tests (`autotest/interface/restful/`)
 - `prefix_cache`
 - `quantization`
 
 Rules:
 
-- Keep `mtp_evaluate` on its own row.
+- Keep `mtp_evaluate` and `interface` on their own rows.
+- Mirror `interface` rows under both `a100` and `h` when a model runs on A/H cards.
+- `interface` rows list API suites directly:
+
+```yaml
+test_coverage: [interface]
+interface: [chat_completions_v1, generate_logprob, generate_experts]  # or generate / completions_v1 / …
+```
+
+Generate API subsets:
+
+| `interface` entry  | Runs in `test_restful_generate.py`                                               |
+| ------------------ | -------------------------------------------------------------------------------- |
+| `generate`         | base tests only                                                                  |
+| `generate_logprob` | base + `@pytest.mark.generate_logprob`                                           |
+| `generate_experts` | base + `@pytest.mark.generate_experts` (use with `enable-return-routed-experts`) |
+
+A row may list both `generate_logprob` and `generate_experts` when the server enables both features.
+
+Put launch flags (`logprobs-mode`, `enable-return-routed-experts`, `reasoning-parser`,
+`tool-call-parser`, …) in `engine_config.extra`.
+
+| Suite                                                | Test path                                | Typical `engine_config.extra`                   |
+| ---------------------------------------------------- | ---------------------------------------- | ----------------------------------------------- |
+| `chat_completions_v1`                                | `test_restful_chat_completions_v1.py`    | `logprobs-mode`, …                              |
+| `completions_v1`                                     | `test_restful_completions_v1.py`         | —                                               |
+| `generate` / `generate_logprob` / `generate_experts` | `test_restful_generate.py`               | `logprobs-mode`, `enable-return-routed-experts` |
+| `reasoning_parser`                                   | `reasoning_parser/test_reasoning_api.py` | `reasoning-parser`                              |
+| `tool_parser`                                        | `tool_parser/test_tool_call_*.py`        | `tool-call-parser`                              |
+
+Chat/completions interface tests include generic `test_encode`.
+
 - Use `prefix_cache` in `test_coverage`; do not add `enable-prefix-caching` manually to `engine_config.extra`.
 - Use `quantization` in `test_coverage` only for runtime weight-quant rows (`awq`, `gptq`, `w8a8`).
 

@@ -241,7 +241,7 @@ def setup_log_file(config, test_name, category):
     return os.path.join(log_dir, f'{safe_test_name}.log')
 
 
-def make_logged_client(log_file):
+def make_logged_client(log_file, base_url=None):
     """Return ``(client, model_name)`` with transparent logging.
 
     Every ``chat.completions.create`` call is intercepted to:
@@ -250,7 +250,7 @@ def make_logged_client(log_file):
     2. For streaming calls, wrap the iterator with :class:`StreamTee`.
     3. For non-streaming calls, append ``repr(response)`` to *log_file*.
     """
-    client, model_name = get_client_and_model()
+    client, model_name = get_client_and_model(base_url=base_url)
     _original_create = client.chat.completions.create
 
     def _logged_create(*args, **kwargs):

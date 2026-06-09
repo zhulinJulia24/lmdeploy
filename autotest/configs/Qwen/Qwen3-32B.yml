@@ -21,6 +21,23 @@ a100:
     - kvint8
     pytorch:
     - kvint8
+- model_type: chat
+  engine_config:
+    tp: 2
+    extra:
+      logprobs-mode: raw_logprobs
+  backends:
+  - name: turbomind
+    communicators:
+    - nccl
+  - name: pytorch
+    communicators:
+    - nccl
+  test_coverage:
+  - interface
+  interface:
+  - chat_completions_v1
+  - generate_logprob
 ascend:
 - model_type: chat
   engine_config:
@@ -33,3 +50,21 @@ ascend:
   - benchmark
   - func
   - prefix_cache
+h:
+- model_type: chat
+  engine_config:
+    tp: 2
+    extra:
+      logprobs-mode: raw_logprobs
+  backends:
+  - name: turbomind
+    communicators:
+    - nccl
+  - name: pytorch
+    communicators:
+    - nccl
+  test_coverage:
+  - interface
+  interface:
+  - chat_completions_v1
+  - generate_logprob

@@ -16,6 +16,40 @@ a100:
   quantization:
     pytorch:
     - kvint8
+- model_type:
+  - chat
+  - vl
+  engine_config:
+    tp: 1
+    extra:
+      logprobs-mode: raw_logprobs
+      enable-return-routed-experts: true
+  backends:
+  - name: pytorch
+    communicators:
+    - nccl
+  test_coverage:
+  - interface
+  interface:
+  - chat_completions_v1
+  - generate_logprob
+  - generate_experts
+- model_type:
+  - chat
+  - vl
+  engine_config:
+    tp: 1
+    extra:
+      logprobs-mode: raw_logprobs
+  backends:
+  - name: turbomind
+    communicators:
+    - nccl
+  test_coverage:
+  - interface
+  interface:
+  - chat_completions_v1
+  - generate_logprob
 h:
 - model_type:
   - chat
@@ -31,6 +65,40 @@ h:
   quantization:
     pytorch:
     - kvint8
+- model_type:
+  - chat
+  - vl
+  engine_config:
+    tp: 1
+    extra:
+      logprobs-mode: raw_logprobs
+      enable-return-routed-experts: true
+  backends:
+  - name: pytorch
+    communicators:
+    - nccl
+  test_coverage:
+  - interface
+  interface:
+  - chat_completions_v1
+  - generate_logprob
+  - generate_experts
+- model_type:
+  - chat
+  - vl
+  engine_config:
+    tp: 1
+    extra:
+      logprobs-mode: raw_logprobs
+  backends:
+  - name: turbomind
+    communicators:
+    - nccl
+  test_coverage:
+  - interface
+  interface:
+  - chat_completions_v1
+  - generate_logprob
 ascend:
 - model_type: vl
   engine_config:

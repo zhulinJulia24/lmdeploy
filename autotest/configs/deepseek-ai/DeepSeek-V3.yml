@@ -1,0 +1,32 @@
+# HF model id: deepseek-ai/DeepSeek-V3
+
+a100:
+- model_type: chat
+  engine_config:
+    tp: 8
+    extra:
+      reasoning-parser: deepseek-v3
+      max-batch-size: 128
+  backends:
+  - name: pytorch
+    communicators:
+    - nccl
+  test_coverage:
+  - interface
+  interface:
+  - reasoning_parser
+h:
+- model_type: chat
+  engine_config:
+    tp: 8
+    extra:
+      reasoning-parser: deepseek-v3
+      max-batch-size: 128
+  backends:
+  - name: pytorch
+    communicators:
+    - nccl
+  test_coverage:
+  - interface
+  interface:
+  - reasoning_parser

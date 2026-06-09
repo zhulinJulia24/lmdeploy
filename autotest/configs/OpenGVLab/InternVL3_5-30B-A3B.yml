@@ -24,6 +24,40 @@ a100:
     temperature: 0.7
   deps:
     transformers: 5.6.0
+- model_type:
+  - chat
+  - vl
+  engine_config:
+    tp: 2
+    extra:
+      logprobs-mode: raw_logprobs
+      enable-return-routed-experts: true
+  backends:
+  - name: pytorch
+    communicators:
+    - nccl
+  test_coverage:
+  - interface
+  interface:
+  - chat_completions_v1
+  - generate_logprob
+  - generate_experts
+- model_type:
+  - chat
+  - vl
+  engine_config:
+    tp: 2
+    extra:
+      logprobs-mode: raw_logprobs
+  backends:
+  - name: turbomind
+    communicators:
+    - nccl
+  test_coverage:
+  - interface
+  interface:
+  - chat_completions_v1
+  - generate_logprob
 h:
 - model_type:
   - chat
@@ -42,3 +76,37 @@ h:
   - func
   deps:
     transformers: 5.6.0
+- model_type:
+  - chat
+  - vl
+  engine_config:
+    tp: 2
+    extra:
+      logprobs-mode: raw_logprobs
+      enable-return-routed-experts: true
+  backends:
+  - name: pytorch
+    communicators:
+    - nccl
+  test_coverage:
+  - interface
+  interface:
+  - chat_completions_v1
+  - generate_logprob
+  - generate_experts
+- model_type:
+  - chat
+  - vl
+  engine_config:
+    tp: 2
+    extra:
+      logprobs-mode: raw_logprobs
+  backends:
+  - name: turbomind
+    communicators:
+    - nccl
+  test_coverage:
+  - interface
+  interface:
+  - chat_completions_v1
+  - generate_logprob

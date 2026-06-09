@@ -1,5 +1,27 @@
 # HF model id: Qwen/Qwen3.5-35B-A3B-FP8
 
+a100:
+- model_type: chat
+  engine_config:
+    tp: 1
+    extra:
+      reasoning-parser: qwen-qwq
+      tool-call-parser: qwen3coder
+  backends:
+  - name: turbomind
+    communicators:
+    - nccl
+  - name: pytorch
+    communicators:
+    - nccl
+  test_coverage:
+  - interface
+  interface:
+  - reasoning_parser
+  - tool_parser
+  gen_config:
+    chat-template-kwargs:
+      enable_thinking: true
 h:
 - model_type: chat
   engine_config:
@@ -87,5 +109,26 @@ h:
     top-k: 20
     repetition-penalty: 1.0
     top-p: 0.95
+    chat-template-kwargs:
+      enable_thinking: true
+- model_type: chat
+  engine_config:
+    tp: 1
+    extra:
+      reasoning-parser: qwen-qwq
+      tool-call-parser: qwen3coder
+  backends:
+  - name: turbomind
+    communicators:
+    - nccl
+  - name: pytorch
+    communicators:
+    - nccl
+  test_coverage:
+  - interface
+  interface:
+  - reasoning_parser
+  - tool_parser
+  gen_config:
     chat-template-kwargs:
       enable_thinking: true

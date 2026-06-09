@@ -23,8 +23,8 @@ from .conftest import (
     MESSAGES_NO_TOOL_NEEDED,
     MESSAGES_PARALLEL_MIXED,
     MESSAGES_PARALLEL_WEATHER,
-    _apply_marks,
     _ToolCallTestBase,
+    tool_suite_marks,
 )
 
 # ===========================================================================
@@ -32,7 +32,7 @@ from .conftest import (
 # ===========================================================================
 
 
-@_apply_marks
+@tool_suite_marks
 class TestToolCallMultipleTools(_ToolCallTestBase):
     """Model should pick the right tool from a multi-tool list."""
 
@@ -161,7 +161,7 @@ class TestToolCallMultipleTools(_ToolCallTestBase):
 # ===========================================================================
 
 
-@_apply_marks
+@tool_suite_marks
 class TestToolCallParallel(_ToolCallTestBase):
     """Parallel tool calls in a single response."""
 
@@ -258,7 +258,7 @@ class TestToolCallParallel(_ToolCallTestBase):
 # ===========================================================================
 
 
-@_apply_marks
+@tool_suite_marks
 class TestToolCallWithResults(_ToolCallTestBase):
     """Feed tool results back; model should reply with text."""
 
@@ -312,7 +312,7 @@ class TestToolCallWithResults(_ToolCallTestBase):
 # ===========================================================================
 
 
-@_apply_marks
+@tool_suite_marks
 class TestToolCallMultilingual(_ToolCallTestBase):
 
     def test_chinese_description(self, backend, model_case):
@@ -436,7 +436,7 @@ class TestToolCallMultilingual(_ToolCallTestBase):
 # ===========================================================================
 
 
-@_apply_marks
+@tool_suite_marks
 class TestToolCallComplexParams(_ToolCallTestBase):
     """Nested objects, arrays, enum constraints, all-optional params."""
 
@@ -526,7 +526,7 @@ class TestToolCallComplexParams(_ToolCallTestBase):
 # ===========================================================================
 
 
-@_apply_marks
+@tool_suite_marks
 class TestToolCallResponseValidation(_ToolCallTestBase):
     """Validate response-level fields when tool calls are returned."""
 
@@ -628,7 +628,7 @@ class TestToolCallResponseValidation(_ToolCallTestBase):
 # ===========================================================================
 
 
-@_apply_marks
+@tool_suite_marks
 class TestToolCallEdgeCases(_ToolCallTestBase):
     """Edge cases and robustness tests."""
 

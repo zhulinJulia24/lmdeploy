@@ -22,6 +22,17 @@ PATHS_YML = ENV_PATHS_YML  # alias for error messages / imports
 PARALLEL_LAYOUT_KEYS = ('tp', 'dp', 'ep', 'cp')
 ENGINE_CONFIG_KEY = 'engine_config'
 TEST_COVERAGE_KEY = 'test_coverage'
+INTERFACE_KEY = 'interface'
+INTERFACE_SUITE_NAMES = frozenset({
+    'chat_completions_v1',
+    'completions_v1',
+    'generate',
+    'generate_logprob',
+    'generate_experts',
+    'reasoning_parser',
+    'tool_parser',
+})
+GENERATE_INTERFACE_SUITES = frozenset({'generate', 'generate_logprob', 'generate_experts'})
 
 
 def _entry_engine_config(entry: dict[str, Any]) -> dict[str, Any]:
@@ -442,6 +453,9 @@ def _build_run_config_entry(
         run_config['extra_params']['device'] = device
     if entry.get('gen_config'):
         run_config['gen_config'] = copy.deepcopy(entry['gen_config'])
+    iface_suites = _entry_interface_suites(entry)
+    if iface_suites:
+        run_config[INTERFACE_KEY] = iface_suites
     deps = _entry_deps_dict(entry)
     if deps:
         run_config['deps'] = deps
@@ -507,6 +521,78 @@ def _get_func_config_list_per_model(
                             func_type,
                             extra,
                         ))
+    return run_configs
+
+
+def _entry_interface_suites(entry: dict[str, Any]) -> list[str]:
+    raw = entry.get(INTERFACE_KEY)
+    if isinstance(raw, list):
+        return [s for s in raw if s in INTERFACE_SUITE_NAMES]
+    if isinstance(raw, dict):
+        return [s for s in (raw.get('suites') or []) if s in INTERFACE_SUITE_NAMES]
+    return []
+
+
+def _entry_matches_interface_suite(entry: dict[str, Any], suite: str) -> bool:
+    """Whether *entry* should run tests for *suite*."""
+    suites = set(_entry_interface_suites(entry))
+    if suite == 'generate':
+        return bool(suites & GENERATE_INTERFACE_SUITES)
+    return suite in suites
+
+
+def _interface_profiles(entry: dict[str, Any], suite: str) -> list[str]:
+    profiles = _normalize_profiles(entry.get('model_type', 'chat'))
+    if suite == 'completions_v1':
+        return ['base'] if 'base' in profiles else profiles
+    return [p for p in profiles if p != 'base'] or list(profiles)
+
+
+def get_interface_config_list(
+    suite: str,
+    *,
+    backend: str | None = None,
+    parallel_config: dict[str, int] | None = None,
+) -> list[dict[str, Any]]:
+    """Expand ``test_coverage: interface`` rows for one RESTful API test
+    suite."""
+    config = get_config()
+    env_key = _model_matrix_env_key(config)
+    deps_profile = get_deps_profile_selector()
+    run_configs: list[dict[str, Any]] = []
+    seen: set[tuple] = set()
+
+    for model_id, entry in _iter_per_model_entries(env_key, deps_profile):
+        if 'interface' not in (entry.get(TEST_COVERAGE_KEY) or []):
+            continue
+        if not _entry_matches_interface_suite(entry, suite):
+            continue
+        layout = _parallel_layout(_entry_engine_config(entry))
+        if parallel_config is not None and not _parallel_dicts_equal(layout, parallel_config):
+            continue
+        backend_map = _normalize_entry_backends(entry, config, layout)
+        if not _interface_profiles(entry, suite):
+            continue
+        for b, communicators in backend_map.items():
+            if backend is not None and b != backend:
+                continue
+            for communicator in communicators:
+                sig = (model_id, b, communicator, tuple(sorted(layout.items())))
+                if sig in seen:
+                    continue
+                seen.add(sig)
+                run_configs.append(
+                    _build_run_config_entry(
+                        model_id,
+                        entry,
+                        b,
+                        communicator,
+                        layout,
+                        0,
+                        config,
+                        'interface',
+                        None,
+                    ))
     return run_configs
 
 
@@ -657,8 +743,8 @@ def get_model_list(config: dict[str, Any],
     parallel_config = parallel_config or {'tp': 1}
     if extra and (extra.get('enable-prefix-caching') is not None or extra.get('enable_prefix_caching') is not None):
         return _model_ids_for_entries(config, backend, parallel_config, model_type, func_type, extra)
-    if func_type == 'func':
-        return _model_ids_for_entries(config, backend, parallel_config, model_type, 'func', extra)
+    if func_type in ('func', 'interface'):
+        return _model_ids_for_entries(config, backend, parallel_config, model_type, func_type, extra)
 
     chat_models = _model_ids_for_entries(config, backend, parallel_config, model_type, 'func', None)
     typed_models = _model_ids_for_entries(config, backend, parallel_config, model_type, func_type, extra)

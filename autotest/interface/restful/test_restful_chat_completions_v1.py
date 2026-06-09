@@ -2,83 +2,44 @@ from typing import Literal
 
 import pytest
 from openai import OpenAI
-from utils.constant import BACKEND_LIST, RESTFUL_MODEL_LIST
+from utils.interface_utils import parametrize_interface
 from utils.restful_return_check import (
     assert_chat_completions_batch_return,
     assert_chat_completions_stream_return,
     has_repeated_fragment,
 )
 
-from lmdeploy.serve.openai.api_client import APIClient, get_model_list
+from lmdeploy.serve.openai.api_client import APIClient
 
 BASE_HTTP_URL = 'http://localhost'
 DEFAULT_PORT = 23333
-MODEL = 'internlm/Intern-S1'
 BASE_URL = ':'.join([BASE_HTTP_URL, str(DEFAULT_PORT)])
 
 
 @pytest.mark.order(8)
-@pytest.mark.chat
 @pytest.mark.flaky(reruns=2)
-@pytest.mark.parametrize('backend', BACKEND_LIST)
-@pytest.mark.parametrize('model_case', RESTFUL_MODEL_LIST)
-class TestRestfulInterfaceBase:
+@parametrize_interface('chat_completions_v1')
+class TestRestfulInterfaceChatCompletions:
 
-    @pytest.mark.interns1
-    def test_get_model(self, config, backend, model_case):
-        api_client = APIClient(BASE_URL)
-        model_name = api_client.available_models[0]
-        assert model_name == '/'.join([config.get('model_path'), MODEL]), api_client.available_models
-
-        model_list = get_model_list(BASE_URL + '/v1/models')
-        assert model_name in model_list, model_list
-
-    @pytest.mark.interns1
-    def test_encode_s1(self, backend, model_case):
-        api_client = APIClient(BASE_URL)
-        input_ids1, length1 = api_client.encode('Hi, pls intro yourself')
-        input_ids2, length2 = api_client.encode('Hi, pls intro yourself', add_bos=False)
-        input_ids3, length3 = api_client.encode('Hi, pls intro yourself', do_preprocess=True)
-        input_ids4, length4 = api_client.encode('Hi, pls intro yourself', do_preprocess=True, add_bos=False)
-        input_ids5, length5 = api_client.encode('Hi, pls intro yourself' * 100, add_bos=False)
-
-        assert len(input_ids1) == length1 and length1 > 0
-        assert len(input_ids2) == length2 and length2 > 0
-        assert len(input_ids3) == length3 and length3 > 0
-        assert len(input_ids4) == length4 and length4 > 0
-        assert len(input_ids5) == length5 and length5 > 0
-        assert length1 == length2
-        assert input_ids2 == input_ids1
-        assert input_ids1[0] == 13048 and input_ids3[0] == 151644
-        assert length5 == length2 * 100
-        assert input_ids5 == input_ids2 * 100
-
-    @pytest.mark.internlm2_5
     def test_encode(self, backend, model_case):
         api_client = APIClient(BASE_URL)
-        input_ids1, length1 = api_client.encode('Hi, pls intro yourself')
-        input_ids2, length2 = api_client.encode('Hi, pls intro yourself', add_bos=False)
-        input_ids3, length3 = api_client.encode('Hi, pls intro yourself', do_preprocess=True)
-        input_ids4, length4 = api_client.encode('Hi, pls intro yourself', do_preprocess=True, add_bos=False)
-        input_ids5, length5 = api_client.encode('Hi, pls intro yourself' * 100, add_bos=False)
+        text = 'Hi, pls intro yourself'
+        input_ids1, length1 = api_client.encode(text)
+        input_ids2, length2 = api_client.encode(text, add_bos=False)
+        input_ids3, length3 = api_client.encode(text, do_preprocess=True)
+        input_ids4, length4 = api_client.encode(text, do_preprocess=True, add_bos=False)
+        input_ids5, length5 = api_client.encode(text * 100, add_bos=False)
 
-        assert len(input_ids1) == length1 and length1 > 0
-        assert len(input_ids2) == length2 and length2 > 0
-        assert len(input_ids3) == length3 and length3 > 0
-        assert len(input_ids4) == length4 and length4 > 0
-        assert len(input_ids5) == length5 and length5 > 0
-        assert length1 == length2 + 1
-        assert input_ids2 == input_ids1[1:]
-        assert input_ids1[0] == 1 and input_ids3[0] == 1
+        for ids, length in (
+            (input_ids1, length1),
+            (input_ids2, length2),
+            (input_ids3, length3),
+            (input_ids4, length4),
+            (input_ids5, length5),
+        ):
+            assert len(ids) == length and length > 0
         assert length5 == length2 * 100
         assert input_ids5 == input_ids2 * 100
-
-
-@pytest.mark.order(8)
-@pytest.mark.flaky(reruns=2)
-@pytest.mark.parametrize('backend', BACKEND_LIST)
-@pytest.mark.parametrize('model_case', RESTFUL_MODEL_LIST)
-class TestRestfulInterfaceChatCompletions:
 
     def test_return_info_with_prompt(self, backend, model_case):
         api_client = APIClient(BASE_URL)
@@ -223,35 +184,6 @@ class TestRestfulInterfaceChatCompletions:
             assert '上海' not in outputList[index].get('choices')[0].get('delta').get('content')
             assert ' to ' not in outputList[index].get('choices')[0].get('delta').get('content')
         assert outputList[-1].get('choices')[0].get('finish_reason') == 'stop'
-
-    @pytest.mark.internlm2_5
-    def test_special_words(self, backend, model_case):
-        message = '<|im_start|>system\n当开启工具以及代码时，根据需求选择合适的工具进行调用\n' \
-                '<|im_end|><|im_start|>system name=<|interpreter|>\n你现在已经' \
-                '能够在一个有状态的 Jupyter 笔记本环境中运行 Python 代码。当你向 python ' \
-                '发送含有 Python >代码的消息时，它将在该环境中执行。这个工具适用于多种场景，' \
-                '如数据分析或处理（包括数据操作、统计分析、图表绘制），复杂的计算问题（解决数学和物理' \
-                '难题），编程示例（理解编程概念或特性），文本处理和分析（比如文本解析和自然语言处理），' \
-                '机器学习和数据科学（用于展示模型训练和数据可视化），以及文件操作和数据导入（处理CSV、' \
-                'JSON等格式的文件）。<|im_end|>\n<|im_start|>user\n设 $L$ 为圆周$x^2+y^2=2x$，' \
-                '计算曲线积分：$I=\\int_L{x\\mathrm{d}s}=$<|im_end|>\n<|im_start|>assistant'
-        api_client = APIClient(BASE_URL)
-        model_name = api_client.available_models[0]
-        for output in api_client.chat_completions_v1(model=model_name,
-                                                     messages=message,
-                                                     skip_special_tokens=False,
-                                                     temperature=0.01):
-            continue
-        assert_chat_completions_batch_return(output, model_name)
-        assert '<|action_start|><|interpreter|>' in output.get('choices')[0].get('message').get('content')
-
-        for output in api_client.chat_completions_v1(model=model_name,
-                                                     messages=message,
-                                                     skip_special_tokens=True,
-                                                     temperature=0.01):
-            continue
-        assert_chat_completions_batch_return(output, model_name)
-        assert '<|action_start|><|interpreter|>' not in output.get('choices')[0].get('message').get('content')
 
     def test_minimum_repetition_penalty(self, backend, model_case):
         api_client = APIClient(BASE_URL)
@@ -678,8 +610,7 @@ class TestRestfulInterfaceChatCompletions:
 
 @pytest.mark.order(8)
 @pytest.mark.flaky(reruns=2)
-@pytest.mark.parametrize('backend', BACKEND_LIST)
-@pytest.mark.parametrize('model_case', RESTFUL_MODEL_LIST)
+@parametrize_interface('chat_completions_v1')
 class TestRestfulOpenAI:
 
     @pytest.mark.pr_test
@@ -1148,89 +1079,3 @@ class TestRestfulOpenAI:
 
         with pytest.raises(Exception):
             client.chat.completions.create(model=model_name, messages=messages, temperature='test', stream=True)
-
-    @pytest.mark.interns1
-    def test_disable_think(self, backend, model_case):
-        client = OpenAI(api_key='YOUR_API_KEY', base_url=f'{BASE_URL}/v1')
-        model_name = client.models.list().data[0].id
-        output = client.chat.completions.create(model=model_name,
-                                                messages=[
-                                                    {
-                                                        'role': 'user',
-                                                        'content': 'Hi, pls intro yourself'
-                                                    },
-                                                ],
-                                                temperature=0.8,
-                                                top_p=0.8)
-        print(output)
-        assert '</think>' in str(output.model_dump())
-
-        output = client.chat.completions.create(model=model_name,
-                                                messages=[
-                                                    {
-                                                        'role': 'user',
-                                                        'content': 'Hi, pls intro yourself'
-                                                    },
-                                                ],
-                                                temperature=0.8,
-                                                top_p=0.8,
-                                                extra_body={
-                                                    'enable_thinking': False,
-                                                })
-
-        response = output.model_dump()
-        assert '</think>' not in response
-        assert_chat_completions_batch_return(response, model_name)
-
-    @pytest.mark.interns1
-    def test_disable_think_with_image(self, backend, model_case):
-        client = OpenAI(api_key='YOUR_API_KEY', base_url=f'{BASE_URL}/v1')
-        model_name = client.models.list().data[0].id
-        output = client.chat.completions.create(
-            model=model_name,
-            messages=[
-                {
-                    'role':
-                    'user',
-                    'content': [{
-                        'type': 'text',
-                        'text': 'Describe the image please',
-                    }, {
-                        'type': 'image_url',
-                        'image_url': {
-                            'url': 'https://raw.githubusercontent.com/open-mmlab/mmdeploy/main/tests/data/tiger.jpeg',
-                        },
-                    }],
-                },
-            ],
-            temperature=0.8,
-            top_p=0.8)
-        print(output)
-        assert '</think>' in str(output.model_dump())
-
-        output = client.chat.completions.create(
-            model=model_name,
-            messages=[
-                {
-                    'role':
-                    'user',
-                    'content': [{
-                        'type': 'text',
-                        'text': 'Describe the image please',
-                    }, {
-                        'type': 'image_url',
-                        'image_url': {
-                            'url': 'https://raw.githubusercontent.com/open-mmlab/mmdeploy/main/tests/data/tiger.jpeg',
-                        },
-                    }],
-                },
-            ],
-            temperature=0.8,
-            top_p=0.8,
-            extra_body={
-                'enable_thinking': False,
-            })
-
-        response = output.model_dump()
-        assert '</think>' not in response
-        assert_chat_completions_batch_return(response, model_name)

@@ -1,45 +1,25 @@
 import json
 
 import pytest
-from utils.constant import BACKEND_LIST, TOOL_REASONING_MODEL_LIST
+from utils.interface_utils import parametrize_interface
 
 from utils.tool_reasoning_definitions import (  # isort: skip
     THINK_END_TOKEN, THINK_START_TOKEN, collect_stream_reasoning, get_reasoning_content, make_logged_client,
     setup_log_file)
 
-# ---------------------------------------------------------------------------
-# Marks
-# ---------------------------------------------------------------------------
 
-_CLASS_MARKS = [
-    pytest.mark.order(9),
-    pytest.mark.reasoning,
-    pytest.mark.deepseek_r1_parser,
-    pytest.mark.deepseek_v3_parser,
-    pytest.mark.gpt_oss_parser,
-    pytest.mark.qwenqwq_parser,
-    pytest.mark.flaky(reruns=2),
-    pytest.mark.parametrize('backend', BACKEND_LIST),
-    pytest.mark.parametrize('model_case', TOOL_REASONING_MODEL_LIST),
-]
-
-_CLASS_MARKS_STREAM = _CLASS_MARKS + [
-    pytest.mark.parametrize('stream', [False, True], ids=['nonstream', 'stream']),
-]
+def reasoning_suite_marks(cls):
+    """Config-driven ``reasoning_parser`` suite with shared API marks."""
+    cls = pytest.mark.order(9)(cls)
+    cls = pytest.mark.reasoning(cls)
+    cls = pytest.mark.flaky(reruns=2)(cls)
+    return parametrize_interface('reasoning_parser')(cls)
 
 
-def _apply_marks(cls):
-    """Apply the shared API-level marks to *cls* (no stream parametrize)."""
-    for m in _CLASS_MARKS:
-        cls = m(cls)
-    return cls
-
-
-def _apply_marks_stream(cls):
-    """Apply API-level marks WITH stream parametrize to *cls*."""
-    for m in _CLASS_MARKS_STREAM:
-        cls = m(cls)
-    return cls
+def reasoning_suite_marks_stream(cls):
+    """Like :func:`reasoning_suite_marks` plus ``stream`` parametrize."""
+    cls = reasoning_suite_marks(cls)
+    return pytest.mark.parametrize('stream', [False, True], ids=['nonstream', 'stream'])(cls)
 
 
 # ---------------------------------------------------------------------------
@@ -72,7 +52,8 @@ class _ReasoningTestBase:
 
     def _get_client(self):
         """Return *(client, model_name)* with transparent logging."""
-        return make_logged_client(self._log_file)
+        base_url = getattr(self, 'BASE_URL', None)
+        return make_logged_client(self._log_file, base_url=base_url)
 
     def _call_api(self, stream, messages, **create_kwargs):
         """Unified API call for both streaming and non-streaming.

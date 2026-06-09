@@ -25,11 +25,11 @@ from .conftest import (
     MESSAGES_REASONING_SEARCH_TOOL,
     MESSAGES_REASONING_SIMPLE,
     MESSAGES_REASONING_WEATHER_TOOL,
-    _apply_marks,
-    _apply_marks_stream,
     _assert_no_tag_leakage,
     _build_search_roundtrip_messages,
     _ReasoningTestBase,
+    reasoning_suite_marks,
+    reasoning_suite_marks_stream,
 )
 
 _EXTRA_BODY_THINKING_OFF = {
@@ -41,7 +41,7 @@ _EXTRA_BODY_THINKING_OFF = {
 # ===========================================================================
 
 
-@_apply_marks_stream
+@reasoning_suite_marks_stream
 class TestReasoningBasic(_ReasoningTestBase):
     """Basic reasoning_content presence, quality, and content separation."""
 
@@ -74,7 +74,7 @@ class TestReasoningBasic(_ReasoningTestBase):
 # ===========================================================================
 
 
-@_apply_marks
+@reasoning_suite_marks
 class TestReasoningStreamConsistency(_ReasoningTestBase):
     """Both modes must produce reasoning AND content with correct
     separation."""
@@ -112,7 +112,7 @@ class TestReasoningStreamConsistency(_ReasoningTestBase):
 # ===========================================================================
 
 
-@_apply_marks_stream
+@reasoning_suite_marks_stream
 class TestReasoningWithTools(_ReasoningTestBase):
     """Reasoning with tool calls under different tool_choice settings."""
 
@@ -179,7 +179,7 @@ class TestReasoningWithTools(_ReasoningTestBase):
 # ===========================================================================
 
 
-@_apply_marks_stream
+@reasoning_suite_marks_stream
 class TestReasoningParallelToolCalls(_ReasoningTestBase):
     """Reasoning model calling multiple tools in parallel."""
 
@@ -208,7 +208,7 @@ class TestReasoningParallelToolCalls(_ReasoningTestBase):
 # ===========================================================================
 
 
-@_apply_marks_stream
+@reasoning_suite_marks_stream
 class TestReasoningToolRoundTrip(_ReasoningTestBase):
     """Multi-turn: reason → tool → result → reasoning → answer."""
 
@@ -231,7 +231,7 @@ class TestReasoningToolRoundTrip(_ReasoningTestBase):
 # ===========================================================================
 
 
-@_apply_marks
+@reasoning_suite_marks
 class TestReasoningToolCallConsistency(_ReasoningTestBase):
     """Compare streaming vs non-streaming tool-call results."""
 
@@ -317,7 +317,7 @@ class TestReasoningToolCallConsistency(_ReasoningTestBase):
 # ===========================================================================
 
 
-@_apply_marks
+@reasoning_suite_marks
 class TestReasoningToolResultConsistency(_ReasoningTestBase):
     """After providing tool results, streaming content must match non-
     streaming."""
@@ -396,7 +396,7 @@ class TestReasoningToolResultConsistency(_ReasoningTestBase):
 # ===========================================================================
 
 
-@_apply_marks_stream
+@reasoning_suite_marks_stream
 class TestReasoningWebSearchTool(_ReasoningTestBase):
     """Tests for web_search tool call — forced, auto, and round-trip."""
 
@@ -452,7 +452,7 @@ class TestReasoningWebSearchTool(_ReasoningTestBase):
 # ===========================================================================
 
 
-@_apply_marks
+@reasoning_suite_marks
 class TestReasoningTokenAccounting(_ReasoningTestBase):
     """Verify token usage includes reasoning tokens when available."""
 
@@ -535,7 +535,7 @@ class TestReasoningTokenAccounting(_ReasoningTestBase):
 # ===========================================================================
 
 
-@_apply_marks_stream
+@reasoning_suite_marks_stream
 class TestReasoningMultilingual(_ReasoningTestBase):
     """Reasoning with Chinese / multilingual prompts."""
 
@@ -574,7 +574,7 @@ class TestReasoningMultilingual(_ReasoningTestBase):
 # ===========================================================================
 
 
-@_apply_marks_stream
+@reasoning_suite_marks_stream
 class TestReasoningMultiTurn(_ReasoningTestBase):
     """Multi-turn conversations where reasoning persists."""
 
@@ -593,7 +593,7 @@ class TestReasoningMultiTurn(_ReasoningTestBase):
 # ===========================================================================
 
 
-@_apply_marks
+@reasoning_suite_marks
 class TestReasoningResponseValidation(_ReasoningTestBase):
     """Validate response-level fields in reasoning mode."""
 
@@ -653,7 +653,7 @@ class TestReasoningResponseValidation(_ReasoningTestBase):
 # ===========================================================================
 
 
-@_apply_marks_stream
+@reasoning_suite_marks_stream
 class TestReasoningEdgeCases(_ReasoningTestBase):
     """Edge cases for reasoning functionality."""
 
@@ -719,7 +719,7 @@ class TestReasoningEdgeCases(_ReasoningTestBase):
 # ===========================================================================
 
 
-@_apply_marks_stream
+@reasoning_suite_marks_stream
 class TestReasoningDisableThinking(_ReasoningTestBase):
     """Tests with enable_thinking=False — non-think mode."""
 

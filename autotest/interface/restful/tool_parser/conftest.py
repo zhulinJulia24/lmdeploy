@@ -1,25 +1,14 @@
 import pytest
-from utils.constant import BACKEND_LIST, TOOL_REASONING_MODEL_LIST
+from utils.interface_utils import parametrize_interface
 from utils.tool_reasoning_definitions import make_logged_client, setup_log_file
 
-# ---------------------------------------------------------------------------
-# Marks
-# ---------------------------------------------------------------------------
 
-_CLASS_MARKS = [
-    pytest.mark.order(8),
-    pytest.mark.tool_call,
-    pytest.mark.flaky(reruns=2),
-    pytest.mark.parametrize('backend', BACKEND_LIST),
-    pytest.mark.parametrize('model_case', TOOL_REASONING_MODEL_LIST),
-]
-
-
-def _apply_marks(cls):
-    """Apply the shared set of marks to *cls* and return it."""
-    for m in _CLASS_MARKS:
-        cls = m(cls)
-    return cls
+def tool_suite_marks(cls):
+    """Config-driven ``tool_parser`` suite with shared API marks."""
+    cls = pytest.mark.order(8)(cls)
+    cls = pytest.mark.tool_call(cls)
+    cls = pytest.mark.flaky(reruns=2)(cls)
+    return parametrize_interface('tool_parser')(cls)
 
 
 # ---------------------------------------------------------------------------
@@ -38,7 +27,8 @@ class _ToolCallTestBase:
 
     def _get_client(self):
         """Return *(client, model_name)* with transparent logging."""
-        return make_logged_client(self._log_file)
+        base_url = getattr(self, 'BASE_URL', None)
+        return make_logged_client(self._log_file, base_url=base_url)
 
 
 # ---------------------------------------------------------------------------

@@ -10,14 +10,14 @@ from utils.tool_reasoning_definitions import (
     collect_stream_tool_call,
 )
 
-from .conftest import MESSAGES_ASKING_FOR_SEARCH, MESSAGES_ASKING_FOR_WEATHER, _apply_marks, _ToolCallTestBase
+from .conftest import MESSAGES_ASKING_FOR_SEARCH, MESSAGES_ASKING_FOR_WEATHER, _ToolCallTestBase, tool_suite_marks
 
 # ===========================================================================
 # Basic tool call: response structure, finish_reason, field validation
 # ===========================================================================
 
 
-@_apply_marks
+@tool_suite_marks
 class TestToolCallBasic(_ToolCallTestBase):
     """Basic tool call: response structure, finish_reason, field validation."""
 
@@ -94,7 +94,7 @@ class TestToolCallBasic(_ToolCallTestBase):
 # ===========================================================================
 
 
-@_apply_marks
+@tool_suite_marks
 class TestToolCallStreamConsistency(_ToolCallTestBase):
     """Streaming and non-streaming tool call results must match."""
 
@@ -139,7 +139,7 @@ class TestToolCallStreamConsistency(_ToolCallTestBase):
 # ===========================================================================
 
 
-@_apply_marks
+@tool_suite_marks
 class TestToolCallChoice(_ToolCallTestBase):
     """Test all tool_choice variants."""
 
@@ -293,7 +293,7 @@ class TestToolCallChoice(_ToolCallTestBase):
 # ===========================================================================
 
 
-@_apply_marks
+@tool_suite_marks
 class TestToolCallArgumentsParsing(_ToolCallTestBase):
     """Validate that arguments are parseable and contain expected keys."""
 

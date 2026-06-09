@@ -20,6 +20,20 @@ a100:
     - kvint8
     pytorch:
     - kvint8
+- model_type: base
+  engine_config:
+    tp: 2
+  backends:
+  - name: turbomind
+    communicators:
+    - nccl
+  - name: pytorch
+    communicators:
+    - nccl
+  test_coverage:
+  - interface
+  interface:
+  - completions_v1
 h:
 - model_type: base
   engine_config:
@@ -40,3 +54,17 @@ h:
     - kvint8
     pytorch:
     - kvint8
+- model_type: base
+  engine_config:
+    tp: 2
+  backends:
+  - name: turbomind
+    communicators:
+    - nccl
+  - name: pytorch
+    communicators:
+    - nccl
+  test_coverage:
+  - interface
+  interface:
+  - completions_v1
