@@ -5,14 +5,14 @@ on:
     inputs:
       repo_org:
         required: false
-        description: 'Tested repository organization name. Default is InternLM'
+        description: "Tested repository organization name. Default is InternLM"
         type: string
-        default: 'InternLM/lmdeploy'
+        default: "InternLM/lmdeploy"
       repo_ref:
         required: false
         description: 'Set branch or tag or commit id. Default is "main"'
         type: string
-        default: 'main'
+        default: "main"
       backend:
         required: true
         description: 'Set backend filter. Default is "["turbomind", "pytorch"]"'
@@ -20,31 +20,31 @@ on:
         default: "['turbomind', 'pytorch']"
       model:
         required: true
-        description: 'Set testcase module filter: llm, mllm. Default contains all models'
+        description: "Set testcase module filter: llm, mllm. Default contains all models"
         type: string
         default: "['llm','mllm']"
       function:
         required: true
-        description: 'Set testcase function filter: chat, restful, pipeline. Default contains all functions'
+        description: "Set testcase function filter: chat, restful, pipeline. Default contains all functions"
         type: string
         default: '["pipeline", "restful", "chat"]'
       offline_mode:
         required: true
-        description: 'Whether start a offline mode, if true, you should prepare code and whl package by yourself'
+        description: "Whether start a offline mode, if true, you should prepare code and whl package by yourself"
         type: boolean
         default: false
       regression_func:
         required: true
-        description: 'regression functions'
+        description: "regression functions"
         type: string
         default: "['quant', 'tools','restful','pipeline','benchmark','evaluation']"
       docker_tag:
         required: true
-        description: 'Docker tag'
+        description: "Docker tag"
         type: string
-        default: 'nightly-test-cu12.8'
+        default: "nightly-test-cu12.8"
   schedule:
-    - cron:  '00 14 * * 0-4'
+    - cron: "00 14 * * 0-4"
 
 env:
   HOST_PIP_CACHE_DIR: /nvme/github-actions/pip-cache
@@ -107,14 +107,13 @@ jobs:
           retention-days: 1
           name: my-artifact-${{ github.run_id }}-${{ matrix.pyver }}
 
-
   download_pkgs:
     needs: linux-build
     if: ${{!cancelled()}}
     runs-on: [self-hosted, linux-a100]
     timeout-minutes: 50
     container:
-      image: openmmlab/lmdeploy:${{ inputs.docker_tag || 'nightly-test-cu12.8' }}
+      image: registry.h.pjlab.org.cn/ailab-puyu-puyu_gpu/lmdeploy-dev:${{ inputs.docker_tag || 'nightly-test-cu12.8' }}
       options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip -e NVIDIA_DISABLE_REQUIRE=1 --pull never"
       volumes:
         - /nvme/qa_test_models:/nvme/qa_test_models
@@ -160,7 +159,7 @@ jobs:
     timeout-minutes: 150
     strategy:
       matrix:
-        deps_profile: ['', 'transformers==4.57.6']
+        deps_profile: ["", "transformers==4.57.6"]
     env:
       PYTHONPATH: /nvme/qa_test_models/offline_pkg/LLaVA
       MODELSCOPE_CACHE: /nvme/qa_test_models/modelscope_hub
@@ -168,7 +167,7 @@ jobs:
       TEST_ENV: a100
       DEPS_PROFILE: ${{ matrix.deps_profile }}
     container:
-      image: openmmlab/lmdeploy:${{ inputs.docker_tag || 'nightly-test-cu12.8' }}
+      image: registry.h.pjlab.org.cn/ailab-puyu-puyu_gpu/lmdeploy-dev:${{ inputs.docker_tag || 'nightly-test-cu12.8' }}
       options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip -e NVIDIA_DISABLE_REQUIRE=1 --pull never"
       volumes:
         - /nvme/github-actions/pip-cache:/root/.cache/pip
@@ -238,7 +237,7 @@ jobs:
       matrix:
         backend: ${{ fromJSON(inputs.backend || '["turbomind", "pytorch"]')}}
         model: ${{ fromJSON(inputs.model || '["llm", "mllm"]')}}
-        deps_profile: ['', 'transformers==4.57.6', 'transformers==5.6.0']
+        deps_profile: ["", "transformers==4.57.6", "transformers==5.6.0"]
         function: ${{ fromJSON(inputs.function || '["pipeline","restful","chat"]')}}
         exclude:
           - backend: turbomind
@@ -258,7 +257,7 @@ jobs:
       TEST_ENV: a100
       DEPS_PROFILE: ${{ matrix.deps_profile }}
     container:
-      image: openmmlab/lmdeploy:${{ inputs.docker_tag || 'nightly-test-cu12.8' }}
+      image: registry.h.pjlab.org.cn/ailab-puyu-puyu_gpu/lmdeploy-dev:${{ inputs.docker_tag || 'nightly-test-cu12.8' }}
       options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip -e NVIDIA_DISABLE_REQUIRE=1 --pull never"
       volumes:
         - /nvme/github-actions/pip-cache:/root/.cache/pip
@@ -355,114 +354,126 @@ jobs:
       fail-fast: false
       matrix:
         backend: ${{ fromJSON(inputs.backend || '["turbomind", "pytorch"]')}}
-        model_path: ['Qwen/Qwen3.5-35B-A3B', 'Qwen/Qwen3.5-27B', 'Qwen/Qwen3.5-35B-A3B-Base', 'Qwen/Qwen3.5-2B-Base', 'Qwen/Qwen3-8B-Base', 'Qwen/Qwen3-30B-A3B', 'Qwen/Qwen3-32B', 'OpenGVLab/InternVL3_5-30B-A3B', 'Qwen/Qwen3-VL-8B-Instruct', 'Qwen/Qwen3-VL-30B-A3B-Instruct']
+        model_path:
+          [
+            "Qwen/Qwen3.5-35B-A3B",
+            "Qwen/Qwen3.5-27B",
+            "Qwen/Qwen3.5-35B-A3B-Base",
+            "Qwen/Qwen3.5-2B-Base",
+            "Qwen/Qwen3-8B-Base",
+            "Qwen/Qwen3-30B-A3B",
+            "Qwen/Qwen3-32B",
+            "OpenGVLab/InternVL3_5-30B-A3B",
+            "Qwen/Qwen3-VL-8B-Instruct",
+            "Qwen/Qwen3-VL-30B-A3B-Instruct",
+          ]
         include:
           - tp: 2
             model: Qwen3.5-35B-A3B
             model_path: Qwen/Qwen3.5-35B-A3B
-            case_info: ['chat_completions_v1', 'generate']
+            case_info: ["chat_completions_v1", "generate"]
             generate_type: all
-            extra: '--logprobs-mode raw_logprobs --enable-return-routed-experts'
+            extra: "--logprobs-mode raw_logprobs --enable-return-routed-experts"
             backend: pytorch
           - tp: 2
             model: Qwen3.5-35B-A3B
             model_path: Qwen/Qwen3.5-35B-A3B
-            case_info: ['chat_completions_v1', 'generate']
+            case_info: ["chat_completions_v1", "generate"]
             generate_type: logprob
-            extra: '--logprobs-mode raw_logprobs'
+            extra: "--logprobs-mode raw_logprobs"
             backend: turbomind
           - tp: 2
             model: Qwen3.5-27B
             model_path: Qwen/Qwen3.5-27B
-            case_info: ['chat_completions_v1', 'generate']
+            case_info: ["chat_completions_v1", "generate"]
             generate_type: logprob
-            extra: '--logprobs-mode raw_logprobs'
+            extra: "--logprobs-mode raw_logprobs"
           - tp: 2
             model: Qwen3.5-35B-A3B-Base
             model_path: Qwen/Qwen3.5-35B-A3B-Base
-            case_info: ['completions_v1']
+            case_info: ["completions_v1"]
             generate_type: base
           - tp: 1
             model: Qwen3.5-2B-Base
             model_path: Qwen/Qwen3.5-2B-Base
-            case_info: ['completions_v1']
+            case_info: ["completions_v1"]
             generate_type: base
           - tp: 2
             model: Qwen3-8B-Base
             model_path: Qwen/Qwen3-8B-Base
-            case_info: ['completions_v1']
+            case_info: ["completions_v1"]
             generate_type: base
           - tp: 2
             model: Qwen3-30B-A3B
             model_path: Qwen/Qwen3-30B-A3B
-            case_info: ['chat_completions_v1', 'generate']
+            case_info: ["chat_completions_v1", "generate"]
             generate_type: all
-            extra: '--logprobs-mode raw_logprobs --enable-return-routed-experts'
+            extra: "--logprobs-mode raw_logprobs --enable-return-routed-experts"
             backend: pytorch
           - tp: 2
             model: Qwen3-30B-A3B
             model_path: Qwen/Qwen3-30B-A3B
-            case_info: ['chat_completions_v1', 'generate']
+            case_info: ["chat_completions_v1", "generate"]
             generate_type: logprob
-            extra: '--logprobs-mode raw_logprobs'
+            extra: "--logprobs-mode raw_logprobs"
             backend: turbomind
           - tp: 2
             model: InternVL3_5-30B-A3B
             model_path: OpenGVLab/InternVL3_5-30B-A3B
-            case_info: ['chat_completions_v1', 'generate']
+            case_info: ["chat_completions_v1", "generate"]
             generate_type: logprob
-            extra: '--logprobs-mode raw_logprobs --enable-return-routed-experts'
+            extra: "--logprobs-mode raw_logprobs --enable-return-routed-experts"
             backend: pytorch
           - tp: 2
             model: InternVL3_5-30B-A3B
             model_path: OpenGVLab/InternVL3_5-30B-A3B
-            case_info: ['chat_completions_v1', 'generate']
+            case_info: ["chat_completions_v1", "generate"]
             generate_type: logprob
-            extra: '--logprobs-mode raw_logprobs'
+            extra: "--logprobs-mode raw_logprobs"
             backend: turbomind
           - tp: 2
             model: Qwen3-VL-30B-A3B-Instruct
             model_path: Qwen/Qwen3-VL-30B-A3B-Instruct
-            case_info: ['chat_completions_v1', 'generate']
+            case_info: ["chat_completions_v1", "generate"]
             generate_type: logprob
-            extra: '--logprobs-mode raw_logprobs --enable-return-routed-experts'
+            extra: "--logprobs-mode raw_logprobs --enable-return-routed-experts"
             backend: pytorch
           - tp: 2
             model: Qwen3-VL-30B-A3B-Instruct
             model_path: Qwen/Qwen3-VL-30B-A3B-Instruct
-            case_info: ['chat_completions_v1', 'generate']
+            case_info: ["chat_completions_v1", "generate"]
             generate_type: logprob
-            extra: '--logprobs-mode raw_logprobs'
+            extra: "--logprobs-mode raw_logprobs"
             backend: turbomind
           - tp: 2
             model: Qwen3-32B
             model_path: Qwen/Qwen3-32B
-            case_info: ['chat_completions_v1', 'generate']
+            case_info: ["chat_completions_v1", "generate"]
             generate_type: logprob
-            extra: '--logprobs-mode raw_logprobs'
+            extra: "--logprobs-mode raw_logprobs"
           - tp: 1
             model: Qwen3-VL-8B-Instruct
             model_path: Qwen/Qwen3-VL-8B-Instruct
-            case_info: ['chat_completions_v1', 'generate']
+            case_info: ["chat_completions_v1", "generate"]
             generate_type: logprob
-            extra: '--logprobs-mode raw_logprobs --enable-return-routed-experts'
+            extra: "--logprobs-mode raw_logprobs --enable-return-routed-experts"
             backend: pytorch
           - tp: 1
             model: Qwen3-VL-8B-Instruct
             model_path: Qwen/Qwen3-VL-8B-Instruct
-            case_info: ['chat_completions_v1', 'generate']
+            case_info: ["chat_completions_v1", "generate"]
             generate_type: logprob
-            extra: '--logprobs-mode raw_logprobs'
+            extra: "--logprobs-mode raw_logprobs"
             backend: turbomind
           - tp: 2
             model: InternVL3-38B
             model_path: OpenGVLab/InternVL3-38B
-            case_info: ['chat_completions_v1', 'generate']
+            case_info: ["chat_completions_v1", "generate"]
             generate_type: logprob
-            extra: '--logprobs-mode raw_logprobs'
+            extra: "--logprobs-mode raw_logprobs"
     timeout-minutes: 60
     container:
-      image: openmmlab/lmdeploy:${{ inputs.docker_tag || 'nightly-test-cu12.8' }}
+      image: registry.h.pjlab.org.cn/ailab-puyu-puyu_gpu/lmdeploy-dev:${{ inputs.docker_tag || 'nightly-test-cu12.8' }}
       options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip -e NVIDIA_DISABLE_REQUIRE=1 --pull never"
       volumes:
         - /nvme/github-actions/pip-cache:/root/.cache/pip
@@ -478,7 +489,7 @@ jobs:
       MODELSCOPE_CACHE: /nvme/qa_test_models/modelscope_hub
       MODELSCOPE_MODULES_CACHE: /nvme/qa_test_models/modelscope_modules
       TEST_ENV: a100
-      DEPS_PROFILE: ''
+      DEPS_PROFILE: ""
     steps:
       - name: Copy repository and Artifacts
         run: |
@@ -519,7 +530,7 @@ jobs:
           curl -f -s http://127.0.0.1:23333/terminate > /dev/null 2>&1
           exit 1
       - name: Test lmdeploy - chat_completions_v1
-        if:  matrix.model != 'internlm2_5-20b-chat' && matrix.model != 'Intern-S1' && contains(matrix.case_info, 'chat_completions_v1')
+        if: matrix.model != 'internlm2_5-20b-chat' && matrix.model != 'Intern-S1' && contains(matrix.case_info, 'chat_completions_v1')
         timeout-minutes: 60
         run: |
           pytest autotest/interface/restful/test_restful_chat_completions_v1.py -n 20 -k '${{matrix.model_path}} and ${{matrix.backend}}' -m 'not not_${{matrix.backend}} and not internlm2_5 and not interns1' --alluredir=${{env.REPORT_DIR}} ${{env.COV_PARAM}} || true
@@ -531,7 +542,7 @@ jobs:
           pytest autotest/interface/restful/test_restful_chat_completions_v1.py -n 20 -k '${{matrix.model_path}} and ${{matrix.backend}}' -m 'not not_${{matrix.backend}} and not internlm2_5' --alluredir=${{env.REPORT_DIR}} ${{env.COV_PARAM}} || true
           mv .coverage ${{env.REPORT_DIR}}/.coverage.$(date +'%Y%m%d%H%M%S')
       - name: Test lmdeploy - chat_completions_v1 - internlm2_5-20b-chat
-        if:  matrix.model == 'internlm2_5-20b-chat' && contains(matrix.case_info, 'chat_completions_v1')
+        if: matrix.model == 'internlm2_5-20b-chat' && contains(matrix.case_info, 'chat_completions_v1')
         timeout-minutes: 60
         run: |
           pytest autotest/interface/restful/test_restful_chat_completions_v1.py -n 20 -k '${{matrix.model_path}} and ${{matrix.backend}}' -m 'not not_${{matrix.backend}} and not interns1' --alluredir=${{env.REPORT_DIR}} ${{env.COV_PARAM}} || true
@@ -549,19 +560,19 @@ jobs:
           pytest autotest/interface/restful/test_restful_completions_v1.py -n 20 -k '${{matrix.model_path}} and ${{matrix.backend}} and not internlm2_5' --alluredir=${{env.REPORT_DIR}} ${{env.COV_PARAM}} || true
           mv .coverage ${{env.REPORT_DIR}}/.coverage.$(date +'%Y%m%d%H%M%S')
       - name: Test generate - base
-        if:  matrix.generate_type == 'base' && contains(matrix.case_info, 'generate')
+        if: matrix.generate_type == 'base' && contains(matrix.case_info, 'generate')
         timeout-minutes: 60
         run: |
           pytest autotest/interface/restful/test_restful_generate.py -n 20 -k '${{matrix.model_path}} and ${{matrix.backend}}' -m 'not not_${{matrix.backend}} and not logprob and not experts' --alluredir=${{env.REPORT_DIR}} ${{env.COV_PARAM}} || true
           mv .coverage ${{env.REPORT_DIR}}/.coverage.$(date +'%Y%m%d%H%M%S')
       - name: Test generate - logprob
-        if:  matrix.generate_type == 'logprob' && contains(matrix.case_info, 'generate')
+        if: matrix.generate_type == 'logprob' && contains(matrix.case_info, 'generate')
         timeout-minutes: 60
         run: |
           pytest autotest/interface/restful/test_restful_generate.py -n 20 -k '${{matrix.model_path}} and ${{matrix.backend}}' -m 'not not_${{matrix.backend}} and not experts' --alluredir=${{env.REPORT_DIR}} ${{env.COV_PARAM}} || true
           mv .coverage ${{env.REPORT_DIR}}/.coverage.$(date +'%Y%m%d%H%M%S')
       - name: Test generate - all
-        if:  matrix.generate_type == 'all' && contains(matrix.case_info, 'generate')
+        if: matrix.generate_type == 'all' && contains(matrix.case_info, 'generate')
         timeout-minutes: 60
         run: |
           pytest autotest/interface/restful/test_restful_generate.py -n 20 -k '${{matrix.model_path}} and ${{matrix.backend}}' -m 'not not_${{matrix.backend}}' --alluredir=${{env.REPORT_DIR}} ${{env.COV_PARAM}} || true
@@ -590,9 +601,9 @@ jobs:
       MODELSCOPE_CACHE: /nvme/qa_test_models/modelscope_hub
       MODELSCOPE_MODULES_CACHE: /nvme/qa_test_models/modelscope_modules
       TEST_ENV: a100
-      DEPS_PROFILE: ''
+      DEPS_PROFILE: ""
     container:
-      image: openmmlab/lmdeploy:${{ inputs.docker_tag || 'nightly-test-cu12.8' }}
+      image: registry.h.pjlab.org.cn/ailab-puyu-puyu_gpu/lmdeploy-dev:${{ inputs.docker_tag || 'nightly-test-cu12.8' }}
       options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip -e NVIDIA_DISABLE_REQUIRE=1 --pull never"
       volumes:
         - /nvme/github-actions/pip-cache:/root/.cache/pip
@@ -648,7 +659,6 @@ jobs:
           mkdir $workdir
           chmod -R 777 $workdir
 
-
   test_benchmark:
     if: ${{!cancelled() && (github.event_name == 'schedule' || contains(fromJSON(github.event.inputs.regression_func), 'benchmark'))}}
     runs-on: [self-hosted, linux-a100]
@@ -659,9 +669,9 @@ jobs:
       MODELSCOPE_CACHE: /nvme/qa_test_models/modelscope_hub
       MODELSCOPE_MODULES_CACHE: /nvme/qa_test_models/modelscope_modules
       TEST_ENV: a100
-      DEPS_PROFILE: ''
+      DEPS_PROFILE: ""
     container:
-      image: openmmlab/lmdeploy:${{ inputs.docker_tag || 'nightly-test-cu12.8' }}
+      image: registry.h.pjlab.org.cn/ailab-puyu-puyu_gpu/lmdeploy-dev:${{ inputs.docker_tag || 'nightly-test-cu12.8' }}
       options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip -e NVIDIA_DISABLE_REQUIRE=1 --pull never"
       volumes:
         - /nvme/github-actions/pip-cache:/root/.cache/pip
@@ -715,7 +725,7 @@ jobs:
     needs: [test_tools, test_restful, test_pipeline, test_benchmark]
     timeout-minutes: 5
     container:
-      image: openmmlab/lmdeploy:${{ inputs.docker_tag || 'nightly-test-cu12.8' }}
+      image: registry.h.pjlab.org.cn/ailab-puyu-puyu_gpu/lmdeploy-dev:${{ inputs.docker_tag || 'nightly-test-cu12.8' }}
       options: "--gpus=all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip -e NVIDIA_DISABLE_REQUIRE=1 --pull never"
       volumes:
         - /nvme/github-actions/pip-cache:/root/.cache/pip
