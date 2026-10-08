@@ -11,4 +11,5 @@ a100:
   test_coverage:
   - func
   deps:
+    datasets: 5.0.1
     transformers: 4.57.6

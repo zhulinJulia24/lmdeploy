@@ -15,4 +15,5 @@ a100:
     turbomind:
     - awq
   deps:
+    datasets: 5.0.1
     transformers: 4.57.6

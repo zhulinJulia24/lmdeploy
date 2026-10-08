@@ -23,4 +23,5 @@ a100:
     - awq
     - w8a8
   deps:
+    datasets: 5.0.1
     transformers: 4.57.6

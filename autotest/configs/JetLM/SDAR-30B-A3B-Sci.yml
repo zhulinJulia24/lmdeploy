@@ -21,4 +21,5 @@ h:
     top-p: 1.0
     top-k: 0
   deps:
+    datasets: 5.0.1
     transformers: 4.57.6
