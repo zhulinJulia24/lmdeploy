@@ -15,6 +15,7 @@ a100:
     - nccl
   test_coverage:
   - func
+  - lagent
   quantization:
     turbomind:
     - kvint8
