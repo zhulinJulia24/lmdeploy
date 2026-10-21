@@ -156,10 +156,11 @@ class CacheConfig:
     """Config of key value cache."""
 
     max_batches: int
-    block_size: int
+    block_size: int  # Physical tokens per rank; logical block size is block_size * dcp.
     num_cpu_blocks: int
     num_gpu_blocks: int
     kernel_block_size: int = -1
+    dcp: int = 1
     window_size: int = -1
     cache_max_entry_count: float = 0.8
     max_prefill_token_num: int = 8192
@@ -170,6 +171,11 @@ class CacheConfig:
     num_state_caches: int = None
     prefix_cache_state_budget: int = 0
     prefix_cache_decode_state_interval: int = 0
+    prefill_save_alignment: int = 8192
+    mooncake_state_save_slots: int = 8
+    # Model-owned checkpoint validity constraint, independent of prefill chunking.
+    prefix_cache_block_aligned: bool = False
+    prefix_cache_token_lookahead: int = 0
     states_shapes: list[tuple] = field(default_factory=list)
 
     # reserved blocks for dummy inputs, init to 0 for unit test.
@@ -182,8 +188,13 @@ class CacheConfig:
 
     def __post_init__(self):
         """Post init."""
+        assert self.dcp >= 1, 'invalid dcp'
         assert self.prefix_cache_state_budget >= 0, 'invalid prefix_cache_state_budget'
         assert self.prefix_cache_decode_state_interval >= 0, 'invalid prefix_cache_decode_state_interval'
+        assert self.prefill_save_alignment > 0, 'invalid prefill_save_alignment'
+        assert self.mooncake_state_save_slots > 0, 'invalid mooncake_state_save_slots'
+        if self.use_mooncake_store and self.prefix_cache_decode_state_interval > 0:
+            raise ValueError('Mooncake Store and prefix_cache_decode_state_interval cannot be enabled together')
         if self.window_size > 1 and self.enable_prefix_caching:
             logger.warning('Prefix caching is not available for window attention.')
             self.enable_prefix_caching = False
@@ -194,6 +205,26 @@ class CacheConfig:
                 'prefix_cache_decode_state_interval must be a multiple of block_size')
         self.cudagraph_capture_batch_sizes = normalize_cudagraph_capture_batch_sizes(
             self.cudagraph_capture_batch_sizes, self.max_batches)
+
+    @property
+    def use_mooncake_store(self) -> bool:
+        """Whether this engine uses the Mooncake Store connector."""
+        config = self.kv_transfer_config
+        return (config is not None and config.is_kv_transfer_instance
+                and config.kv_connector == 'MooncakeStoreConnector')
+
+    @property
+    def num_store_state_caches(self) -> int:
+        """Reserved tail slots, excluded from runtime and local APC
+        allocation."""
+        if self.states_shapes and self.use_mooncake_store and self.kv_transfer_config.is_kv_producer:
+            return self.mooncake_state_save_slots
+        return 0
+
+    @property
+    def needs_prefix_cache_identity(self) -> bool:
+        """Local APC and Mooncake Store need stable multimodal identities."""
+        return self.enable_prefix_caching or self.use_mooncake_store
 
 
 class TPMode(enum.Enum):
@@ -213,6 +244,7 @@ class DistConfig:
 
     # tp
     tp: int = 1  # default tp, equal to attn_tp
+    dcp: int = 1  # decode context parallelism inside attention tp
     attn_tp: int = None  # tp for attention
     mlp_tp: int = None  # tp for mlp
     moe_tp: int = None  # tp for moe
@@ -225,6 +257,9 @@ class DistConfig:
         """Post init."""
         assert self.dp_rank < self.dp
         assert self.dp >= 1
+        assert self.dcp >= 1
+        if self.dcp > 1:
+            assert self.dp == 1 and self.ep == 1, 'DCP currently requires dp=1 and ep=1'
 
         dp = self.dp
         tp = self.tp
@@ -253,6 +288,8 @@ class DistConfig:
         # attn tp
         self.attn_tp = self.attn_tp or self.world_size // dp
         self.tp = self.attn_tp
+        assert self.attn_tp % self.dcp == 0, (
+            f'attn_tp {self.attn_tp} must be divisible by dcp {self.dcp}')
         if self.mlp_tp > 1:
             assert (self.mlp_tp >= self.attn_tp
                     and self.mlp_tp % self.attn_tp == 0), (f'mlp_tp {self.mlp_tp}, attn_tp {self.attn_tp}')
@@ -290,6 +327,7 @@ class DistConfig:
             enable_microbatch=engine_config.enable_microbatch,
             enable_eplb=engine_config.enable_eplb,
             tp=engine_config.tp,
+            dcp=engine_config.dcp,
             attn_tp=engine_config.attn_tp_size,
             mlp_tp=engine_config.mlp_tp_size,
             moe_tp=engine_config.moe_tp_size,
@@ -415,6 +453,10 @@ class StateCacheSpec:
     dtype: torch.dtype
     layer_ids: list[int] | None = None
     alignment: int = 256
+    store_cacheable: bool = True
+    # False only when resuming at every supported prefix boundary needs no
+    # prior contents. Runtime allocation and speculative rollback are unchanged.
+    prefix_checkpoint: bool = True
 
 
 @dataclass
@@ -443,6 +485,8 @@ class ModelConfig:
     use_flash_mla: bool = False
     mla_kv_cache_dtype: str | None = None
     mla_index_topk: int | None = None
+    # Custom sparse indexers also need score memory without selecting NSA.
+    reserve_dsa_score_workspace: bool = False
 
     # dllm
     model_paradigm: str = 'ar'
@@ -459,6 +503,12 @@ class ModelConfig:
     # Named state-cache specs for models that need layered sequence state.
     state_cache_specs: list[StateCacheSpec] = field(default_factory=list)
     use_standard_kv_cache: bool = True
+
+    # A model can reject generic prefix-cache reuse when its auxiliary state
+    # cannot be restored at scheduler block boundaries.  ``None`` keeps the
+    # default supported behavior; a non-empty reason is surfaced before model
+    # weights are built.
+    prefix_caching_unsupported_reason: str | None = None
 
     # check env for model-device combination
     check_env_func: Callable = _default_check_env
@@ -610,6 +660,13 @@ class ModelConfig:
             assert tp % model_config.num_key_value_heads == 0
         model_config.dist_config = dist_config
 
+        if dist_config.dcp > 1:
+            assert model_config.use_flash_mla, 'DCP requires FlashMLA attention'
+            assert model_config.sliding_window < 0, 'DCP does not support sliding-window attention'
+            if model_config.mla_index_topk is not None:
+                from lmdeploy.pytorch import envs
+                assert envs.sparse_mla_backend != 'tilelang', 'DCP does not support TileLang attention'
+
         # should after setting `hf_config` and `model_arch` attributes
         model_config = _update_torch_dtype(model_config, dtype, device_type=device_type)
 
@@ -702,6 +759,7 @@ class SpecDecodeConfig:
     dist_config: DistConfig = field(default_factory=DistConfig)
     target_layer_ids: tuple[int, ...] | None = None
     mask_token_id: int | None = None
+    disable_prefix_cache_block_drop: bool = False
 
     @classmethod
     def from_config(
@@ -716,6 +774,7 @@ class SpecDecodeConfig:
         model_format: str = None,
         hf_overrides: dict[str, Any] = None,
         dist_config: DistConfig = None,
+        disable_prefix_cache_block_drop: bool = False,
     ):
         draft_model = model or target_model
         dist_config = dist_config or DistConfig()
@@ -771,6 +830,7 @@ class SpecDecodeConfig:
         no_caches = ['medusa']
         if method not in no_caches:
             cache_config = CacheConfig(max_batches=target_cache_cfg.max_batches,
+                                       dcp=dist_config.dcp,
                                        block_size=target_cache_cfg.block_size,
                                        kernel_block_size=target_cache_cfg.kernel_block_size,
                                        num_cpu_blocks=target_cache_cfg.num_cpu_blocks,
@@ -790,6 +850,7 @@ class SpecDecodeConfig:
             num_speculative_tokens=num_speculative_tokens,
             target_layer_ids=target_layer_ids,
             mask_token_id=mask_token_id,
+            disable_prefix_cache_block_drop=disable_prefix_cache_block_drop,
         )
         return obj
 

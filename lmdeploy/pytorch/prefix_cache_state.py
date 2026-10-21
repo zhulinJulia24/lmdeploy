@@ -27,11 +27,16 @@ class MultimodalSpan(NamedTuple):
     content_hash: str
 
 
-# The block index stores the same immutable span objects as
-# ``multimodal_spans``. The generic identity name leaves room for other
-# non-token cache identity if another producer needs it later.
-PrefixCacheExtraIdentity: TypeAlias = tuple[MultimodalSpan, ...]
-PrefixCacheBlockExtraIdentity: TypeAlias = dict[int, PrefixCacheExtraIdentity]
+class TokenLookahead(NamedTuple):
+    """Canonical draft KV at position t depends on target h[t] and x[t+1]."""
+
+    position: int
+    token_ids: tuple[int, ...]
+
+
+PrefixCacheExtraIdentity: TypeAlias = tuple[MultimodalSpan | TokenLookahead, ...]
+# The block index stores multimodal spans; lookahead depends on the queried boundary.
+PrefixCacheBlockExtraIdentity: TypeAlias = dict[int, tuple[MultimodalSpan, ...]]
 
 
 @dataclass
