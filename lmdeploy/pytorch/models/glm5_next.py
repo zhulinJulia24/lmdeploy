@@ -13,6 +13,7 @@ import torch.nn.functional as F
 from torch import distributed as dist
 from torch import nn
 
+from lmdeploy.pytorch import envs
 from lmdeploy.pytorch.backends.cuda.attention.sparse_mla import FlashMLASparseImpl
 from lmdeploy.pytorch.backends.cuda.kpool import (
     CudaKPoolAttention,
@@ -22,6 +23,7 @@ from lmdeploy.pytorch.backends.cuda.kpool import (
     kpool_expand_groups_cuda,
     kpool_gather_token_tail_cuda,
     kpool_prefill_metadata,
+    kpool_prefill_metadata_cuda,
     kpool_prefill_update_cuda,
     kpool_raw_decode_update_cuda,
     kpool_rotate_query_cuda,
@@ -53,7 +55,7 @@ from lmdeploy.pytorch.nn import (
     ParallelLMHead,
     RMSNorm,
 )
-from lmdeploy.pytorch.nn.gated_delta import GatedDeltaMeta, GatedDeltaMetaBuilder, build_rmsnorm_gated
+from lmdeploy.pytorch.nn.gated_delta import GatedDeltaMeta, GatedDeltaMetaBuilder
 from lmdeploy.pytorch.nn.kpool import (
     kpool_expand_selected_groups,
     kpool_pooled_block_offsets,
@@ -68,6 +70,7 @@ from lmdeploy.pytorch.nn.linear import (
     build_qkv_proj,
     build_rowwise_linear,
 )
+from lmdeploy.pytorch.nn.norm import RMSNormGated
 from lmdeploy.pytorch.weight_loader.model_weight_loader import load_weight
 from lmdeploy.vl.constants import Modality
 
@@ -700,7 +703,7 @@ class Glm5NextLinearAttention(nn.Module):
         self.A_log.weight_loader = _load_vector_shard
         self.dt_bias.weight_loader = _load_vector_shard
 
-        self.o_norm = build_rmsnorm_gated(
+        self.o_norm = RMSNormGated(
             self.head_dim,
             eps=config.rms_norm_eps,
             activation='sigmoid',
@@ -816,6 +819,7 @@ class Glm5NextSparseAttention(DeepseekV32Attention):
         dense_mla_impl = self.attn_fwd.impl
         self.decode_attn_fwd = FlashMLASparseImpl(
             mla_index_topk=self.index_topk,
+            mla_index_tail=self.index_kpool - 1,
             num_heads=dense_mla_impl.num_heads,
             head_size=dense_mla_impl.head_size,
             scale=dense_mla_impl.scale,
@@ -992,8 +996,12 @@ class Glm5NextSparseAttention(DeepseekV32Attention):
         if is_owner:
             query = self.indexer.project_query(q_lora)[0]
             rotate = kpool_rotate_query_cuda if query.is_cuda else kpool_rotate_query
-            query = rotate(query)
-            query_fp8, query_scale = self.indexer.quantize_fp8(query)
+            if self.indexer.cache_dtype == torch.bfloat16:
+                query_fp8 = query.to(self.indexer.cache_dtype)
+                query_scale = torch.ones((*query.shape[:-1], 1), device=query.device, dtype=torch.float32)
+            else:
+                query = rotate(query)
+                query_fp8, query_scale = self.indexer.quantize_fp8(query)
             head_gate = self.indexer.project_head_gate(hidden_states)[0]
             query_weight = (head_gate * query_scale.squeeze(-1)
                             * self.indexer.softmax_scale)
@@ -1025,6 +1033,7 @@ class Glm5NextSparseAttention(DeepseekV32Attention):
                     indexer_k_cache,
                     attn_metadata,
                     return_groups=broadcast_groups,
+                    kpool_metadata=kpool_metadata,
                 )
         else:
             logical_indices = torch.empty(
@@ -1040,9 +1049,13 @@ class Glm5NextSparseAttention(DeepseekV32Attention):
             dist.broadcast(logical_indices, src=source_rank, group=group)
         if broadcast_groups:
             if not attn_metadata.is_decoding:
-                _, _, seq_lens, group_lengths, _, _ = kpool_prefill_metadata(
-                    attn_metadata.q_seqlens, attn_metadata.kv_seqlens,
-                    total_rows, self.index_kpool)
+                if kpool_metadata is not None:
+                    seq_lens = kpool_metadata.seq_lens
+                    group_lengths = kpool_metadata.group_lengths
+                else:
+                    _, _, seq_lens, group_lengths, _, _ = kpool_prefill_metadata(
+                        attn_metadata.q_seqlens, attn_metadata.kv_seqlens,
+                        total_rows, self.index_kpool)
             expand = kpool_expand_groups_cuda if logical_indices.is_cuda else kpool_expand_selected_groups
             logical_indices = expand(logical_indices, group_lengths,
                                      self.index_kpool, self.index_topk, seq_lens=seq_lens)
@@ -1056,6 +1069,7 @@ class Glm5NextSparseAttention(DeepseekV32Attention):
         attn_metadata: Any,
         *,
         return_groups: bool = False,
+        kpool_metadata: Any = None,
     ) -> torch.Tensor:
         """Select request-local pooled history for chunked prefill."""
         if query_fp8.is_cuda:
@@ -1063,7 +1077,7 @@ class Glm5NextSparseAttention(DeepseekV32Attention):
                 query_fp8, query_weight, indexer_k_cache,
                 attn_metadata.q_seqlens, attn_metadata.kv_seqlens,
                 attn_metadata.block_offsets, attn_metadata.kv_flatten_size,
-                self.index_kpool, self.index_topk, return_groups=return_groups)
+                self.index_kpool, self.index_topk, return_groups=return_groups, metadata=kpool_metadata)
         q_seqlens = attn_metadata.q_seqlens.tolist()
         kv_seqlens = attn_metadata.kv_seqlens.tolist()
         logical_parts = []
@@ -1093,6 +1107,7 @@ class Glm5NextSparseAttention(DeepseekV32Attention):
                 attn_metadata.block_offsets[batch_idx],
                 num_groups,
                 self.index_kpool,
+                head_dim=self.indexer.head_dim,
             )
             logits = kpool_score_contiguous_cuda(
                 query_slice,
@@ -1230,7 +1245,8 @@ class Glm5NextSparseAttention(DeepseekV32Attention):
         nope_size = self.kv_lora_rank
         kpool_tail_state = None if tail_k is None else (tail_k, tail_score)
         if not attn_metadata.is_decoding:
-            use_sparse = int(attn_metadata.max_kv_seqlen) > self.index_topk
+            use_sparse = (envs.mla_disable_dense_prefill
+                          or int(attn_metadata.max_kv_seqlen) > self.index_topk)
             logical_indices = self._kpool_indices(
                 hidden_states,
                 q_lora,
@@ -1379,12 +1395,30 @@ class Glm5NextDecoderLayer(nn.Module):
                                                      dtype=torch.float32,
                                                      device=device),
                                          requires_grad=False)
+        self.register_buffer('hc_attn_projection', None, persistent=False)
+        self.register_buffer('hc_ffn_projection', None, persistent=False)
+
+    def update_weights(self):
+        # Keep these derived layouts out of checkpoints. Updating them in place
+        # preserves pointers already referenced by captured CUDA graphs.
+        for kind in ('attn', 'ffn'):
+            name = f'hc_{kind}_projection'
+            prepared = self.hc_prepost.prepare_projection_weight(getattr(self, f'hc_{kind}_fn'))
+            current = getattr(self, name)
+            if (current is not None and prepared is not None
+                    and current.shape == prepared.shape and current.dtype == prepared.dtype
+                    and current.device == prepared.device):
+                current.copy_(prepared)
+            else:
+                setattr(self, name, prepared)
 
     def _hc_pre(self, hidden_states: torch.Tensor, fn: torch.Tensor,
                 scale: torch.Tensor, base: torch.Tensor, norm: RMSNorm,
-                x_fp32: torch.Tensor | None = None):
+                x_fp32: torch.Tensor | None = None,
+                projection_weight: torch.Tensor | None = None):
         return self.hc_prepost.pre(
-            hidden_states, fn, scale, base, norm.eps, norm_weight=norm.weight, x_fp32=x_fp32)
+            hidden_states, fn, scale, base, norm.eps, norm_weight=norm.weight, x_fp32=x_fp32,
+            projection_weight=projection_weight)
 
     def _hc_post(self, hidden_states: torch.Tensor, residual: torch.Tensor,
                  post: torch.Tensor, comb: torch.Tensor, prepare_fp32: bool):
@@ -1409,6 +1443,7 @@ class Glm5NextDecoderLayer(nn.Module):
             self.hc_attn_base,
             self.input_layernorm,
             x_fp32=hc_input_fp32,
+            projection_weight=self.hc_attn_projection,
         )
         if self.is_linear_attention:
             hidden_states = self.self_attn(hidden_states,
@@ -1432,6 +1467,7 @@ class Glm5NextDecoderLayer(nn.Module):
             self.hc_ffn_base,
             self.post_attention_layernorm,
             x_fp32=hc_input_fp32,
+            projection_weight=self.hc_ffn_projection,
         )
         if isinstance(self.mlp, Glm5NextMoE):
             hidden_states = self.mlp(hidden_states, all_routed_experts=all_routed_experts)
@@ -1492,12 +1528,19 @@ class Glm5NextModel(nn.Module):
                 f'GLM-5.3 expects {len(self.layers)} layer caches, got {len(past_key_values)}.'
             )
         kpool_metadata = None
-        if hidden_states.is_cuda and attn_metadata.is_decoding:
+        if hidden_states.is_cuda and (attn_metadata.is_decoding
+                                      or attn_metadata.max_kv_seqlen > self.config.index_topk):
             first_full_layer = next(layer for layer in self.layers if not layer.is_linear_attention)
             page_size = first_full_layer.self_attn.indexer.get_block_cache().size(1)
-            kpool_metadata = kpool_decode_metadata_cuda(
-                attn_metadata, hidden_states.size(1), self.config.index_kpool,
-                get_tp_world_rank('attn')[1] == 0, page_size=page_size)
+            if attn_metadata.is_decoding:
+                kpool_metadata = kpool_decode_metadata_cuda(
+                    attn_metadata, hidden_states.size(1), self.config.index_kpool,
+                    get_tp_world_rank('attn')[1] == 0, page_size=page_size)
+            else:
+                kpool_metadata = kpool_prefill_metadata_cuda(
+                    attn_metadata.q_seqlens, attn_metadata.kv_seqlens,
+                    attn_metadata.block_offsets, hidden_states.size(1),
+                    self.config.index_kpool, page_size=page_size)
         hc_input_fp32 = None
         prepare_hc_fp32 = hidden_states.is_cuda and hidden_states.size(0) * hidden_states.size(1) <= 32
         for layer, past_key_value in zip(self.layers, past_key_values):

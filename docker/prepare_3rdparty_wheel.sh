@@ -51,8 +51,13 @@ pip download --no-deps --only-binary=:all: -d /wheels \
     "flash-attn-3==3.0.0" \
     --index-url "https://download.pytorch.org/whl/${FA3_CUDA_VERSION}"
 
-wget -q -O /wheels/lmdeploy_router-0.0.5-py3-none-linux_x86_64.whl \
-    "https://github.com/caikun-pjlab/router/releases/download/v0.0.5/lmdeploy_router-0.0.5-py3-none-linux_x86_64.whl"
+# Pin the stable router wheel so builds can download it without a release API lookup.
+ROUTER_VERSION=0.0.9
+ROUTER_WHEEL="lmdeploy_router-${ROUTER_VERSION}-py3-none-linux_x86_64.whl"
+curl -fsSL --retry 3 -o "/wheels/${ROUTER_WHEEL}" \
+    "https://github.com/DeepLink-org/router/releases/download/v${ROUTER_VERSION}/${ROUTER_WHEEL}" || exit 1
+echo "e51426a546e655e26651537fe1c0ac77955f5a7bfad27cb6b2256d37c846fd56  /wheels/${ROUTER_WHEEL}" \
+    | sha256sum --check - || exit 1
 
 # GDRCopy debs
 apt-get update -y \
