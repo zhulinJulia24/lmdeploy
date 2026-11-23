@@ -33,23 +33,23 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # tp2 shard: gw base 3 → CUDA 6,7 (3×2); tp1 base unused (defaults in config_utils).
           - shard: gpu67
             runner: linux-a100-pr-gpu67
             pr_test_worker_base_tp2: "3"
-            pr_test_worker_base_tp1: "6"
             pr_test_serve_cuda_devices: "6,7"
             pr_test_quant_cuda_device: "6"
+          # tp1 shard: gw base 4 → CUDA 4,5 (gw4/gw5×1); tp2 base unused.
           - shard: gpu45
             runner: linux-a100-pr-gpu45
-            pr_test_worker_base_tp2: "2"
             pr_test_worker_base_tp1: "4"
     runs-on: [self-hosted, ${{ matrix.runner }}]
     timeout-minutes: 120
     env:
-      PR_TEST_WORKER_BASE_TP2: ${{ matrix.pr_test_worker_base_tp2 }}
-      PR_TEST_WORKER_BASE_TP1: ${{ matrix.pr_test_worker_base_tp1 }}
-      PR_TEST_SERVE_CUDA_DEVICES: ${{ matrix.pr_test_serve_cuda_devices }}
-      PR_TEST_QUANT_CUDA_DEVICE: ${{ matrix.pr_test_quant_cuda_device }}
+      PR_TEST_WORKER_BASE_TP2: ${{ matrix.pr_test_worker_base_tp2 || '' }}
+      PR_TEST_WORKER_BASE_TP1: ${{ matrix.pr_test_worker_base_tp1 || '' }}
+      PR_TEST_SERVE_CUDA_DEVICES: ${{ matrix.pr_test_serve_cuda_devices || '' }}
+      PR_TEST_QUANT_CUDA_DEVICE: ${{ matrix.pr_test_quant_cuda_device || '' }}
       REPORT_DIR: /nvme/qa_test_models/test-reports/${{ github.head_ref }}_${{ github.run_id }}_${{ matrix.shard }}
       SERVER_LOG: /nvme/qa_test_models/server_log/${{ github.head_ref }}_${{ github.run_id }}_${{ matrix.shard }}
     container:
