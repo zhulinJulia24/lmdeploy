@@ -8,6 +8,7 @@ from utils.config_utils import (
     SUFFIX_INNER_W8A8,
     get_cuda_prefix_by_workerid,
     get_quantization_model_list,
+    pr_test_quant_cuda_prefix,
 )
 from utils.pytest_layout_utils import layout_mark
 from utils.quantization_utils import quantization
@@ -52,7 +53,7 @@ def test_quantization(config, model, quantization_type, quantization_model_name,
 @pytest.mark.parametrize('model', ['Qwen/Qwen3-0.6B'])
 def test_quantization_awq_pr(config, model):
     quantization_type = 'awq'
-    quantization_all(config, model + SUFFIX_INNER_AWQ, model, quantization_type, cuda_prefix='CUDA_VISIBLE_DEVICES=6')
+    quantization_all(config, model + SUFFIX_INNER_AWQ, model, quantization_type, cuda_prefix=pr_test_quant_cuda_prefix())
 
 
 def quantization_all(config, quantization_model_name, origin_model_name, quantization_type, cuda_prefix: str = ''):

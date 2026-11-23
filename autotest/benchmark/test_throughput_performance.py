@@ -1,6 +1,6 @@
 import pytest
 from utils.benchmark_utils import throughput_test
-from utils.config_utils import get_case_str_by_config, get_func_config_list, get_workerid
+from utils.config_utils import get_case_str_by_config, get_func_config_list, pr_test_worker_gw
 from utils.pytest_layout_utils import LOCAL_TP_LAYOUTS, layout_mark
 
 TURBOMIND_LAYOUTS = LOCAL_TP_LAYOUTS[:4]
@@ -87,6 +87,6 @@ def test_throughput_func_tp2(config, run_config, worker_id):
 @layout_mark({'tp': 1})
 @pytest.mark.parametrize('run_config', _PR_SMOKE_CONFIGS)
 def test_throughput_prtest_tp1(config, run_config, worker_id):
-    worker_id = 'gw' + str(6 + get_workerid(worker_id))
+    worker_id = pr_test_worker_gw(worker_id, 1)
     result, msg = throughput_test(config, run_config, worker_id=worker_id, is_smoke=True)
     assert result, msg

@@ -1584,6 +1584,32 @@ def get_workerid(worker_id: str | None) -> int:
     return int(worker_id.replace('gw', ''))
 
 
+def _pr_test_worker_base(layout_tp: int) -> int:
+    """First logical ``gw`` slot for pr_test on this runner (see ``PR_TEST_WORKER_BASE_*``)."""
+    env_key = 'PR_TEST_WORKER_BASE_TP2' if layout_tp == 2 else 'PR_TEST_WORKER_BASE_TP1'
+    default = '3' if layout_tp == 2 else '6'
+    try:
+        return int(os.environ.get(env_key, default))
+    except ValueError:
+        return 3 if layout_tp == 2 else 6
+
+
+def pr_test_worker_gw(worker_id: str | None, layout_tp: int) -> str:
+    """Map pytest-xdist ``gwN`` to the gw index used for ``get_cuda_id_by_workerid``."""
+    return f'gw{_pr_test_worker_base(layout_tp) + get_workerid(worker_id)}'
+
+
+def pr_test_quant_cuda_prefix() -> str:
+    """Single-GPU ``CUDA_VISIBLE_DEVICES`` prefix for pr quantization (env ``PR_TEST_QUANT_CUDA_DEVICE``)."""
+    device = (os.environ.get('PR_TEST_QUANT_CUDA_DEVICE') or '6').strip()
+    return f'CUDA_VISIBLE_DEVICES={device}'
+
+
+def pr_test_serve_cuda_devices() -> str:
+    """``CUDA_VISIBLE_DEVICES`` value for ``lmdeploy serve`` on a 2-GPU pr runner pair."""
+    return (os.environ.get('PR_TEST_SERVE_CUDA_DEVICES') or '6,7').strip()
+
+
 def is_quantization_model(model: str) -> bool:
     """Check if model name contains quantization related keywords."""
     lower_name = model.lower()

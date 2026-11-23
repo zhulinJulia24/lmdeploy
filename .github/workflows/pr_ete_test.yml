@@ -29,11 +29,29 @@ env:
 
 jobs:
   pr_functions_test:
-    runs-on: [self-hosted, linux-a100-pr]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard: gpu67
+            runner: linux-a100-pr-gpu67
+            pr_test_worker_base_tp2: "3"
+            pr_test_worker_base_tp1: "6"
+            pr_test_serve_cuda_devices: "6,7"
+            pr_test_quant_cuda_device: "6"
+          - shard: gpu45
+            runner: linux-a100-pr-gpu45
+            pr_test_worker_base_tp2: "2"
+            pr_test_worker_base_tp1: "4"
+    runs-on: [self-hosted, ${{ matrix.runner }}]
     timeout-minutes: 120
     env:
-      REPORT_DIR: /nvme/qa_test_models/test-reports/${{ github.head_ref }}_${{ github.run_id }}
-      SERVER_LOG: /nvme/qa_test_models/server_log/${{ github.head_ref }}_${{ github.run_id }}
+      PR_TEST_WORKER_BASE_TP2: ${{ matrix.pr_test_worker_base_tp2 }}
+      PR_TEST_WORKER_BASE_TP1: ${{ matrix.pr_test_worker_base_tp1 }}
+      PR_TEST_SERVE_CUDA_DEVICES: ${{ matrix.pr_test_serve_cuda_devices }}
+      PR_TEST_QUANT_CUDA_DEVICE: ${{ matrix.pr_test_quant_cuda_device }}
+      REPORT_DIR: /nvme/qa_test_models/test-reports/${{ github.head_ref }}_${{ github.run_id }}_${{ matrix.shard }}
+      SERVER_LOG: /nvme/qa_test_models/server_log/${{ github.head_ref }}_${{ github.run_id }}_${{ matrix.shard }}
     container:
       image: openmmlab/lmdeploy:dev-cu12.8
       options: --gpus all --ipc=host --user root -e PIP_CACHE_DIR=/root/.cache/pip --pull never
@@ -60,13 +78,18 @@ jobs:
           mkdir ${{env.REPORT_DIR}} -p
           mkdir ${{env.SERVER_LOG}} -p
           echo "starttime=$(date +%s)" > ${{env.REPORT_DIR}}/status.txt
-      - name: Test lmdeploy - func
+      - name: Test lmdeploy - func (tp2, gpu 6/7)
+        if: matrix.shard == 'gpu67'
         run: |
           pytest autotest -m 'pr_test and tp2' -x --alluredir=${{env.REPORT_DIR}} --clean-alluredir
-          pytest autotest -m 'pr_test and tp1' -n 2 -x --alluredir=${{env.REPORT_DIR}}
-      - name: Test restful server - pytorch Qwen3.5-35B-A3B
+      - name: Test lmdeploy - func (tp1, gpu 4/5)
+        if: matrix.shard == 'gpu45'
         run: |
-          CUDA_VISIBLE_DEVICES=6,7 lmdeploy serve api_server /nvme/qa_test_models/Qwen/Qwen3.5-35B-A3B --tp 2 --backend pytorch --logprobs-mode raw_logprobs --enable-return-routed-experts --reasoning-parser qwen-qwq --tool-call-parser qwen3coder --speculative-algorithm qwen3_5_mtp --speculative-num-draft-tokens 4 --max-batch-size 256 --allow-terminate-by-client > ${{env.SERVER_LOG}}/pytorch_Qwen3.5-35B-A3B_start_restful.log 2>&1 &
+          pytest autotest -m 'pr_test and tp1' -n 2 -x --alluredir=${{env.REPORT_DIR}} --clean-alluredir
+      - name: Test restful server - pytorch Qwen3.5-35B-A3B
+        if: matrix.shard == 'gpu67'
+        run: |
+          CUDA_VISIBLE_DEVICES=${{ env.PR_TEST_SERVE_CUDA_DEVICES }} lmdeploy serve api_server /nvme/qa_test_models/Qwen/Qwen3.5-35B-A3B --tp 2 --backend pytorch --logprobs-mode raw_logprobs --enable-return-routed-experts --reasoning-parser qwen-qwq --tool-call-parser qwen3coder --speculative-algorithm qwen3_5_mtp --speculative-num-draft-tokens 4 --max-batch-size 256 --allow-terminate-by-client > ${{env.SERVER_LOG}}/pytorch_Qwen3.5-35B-A3B_start_restful.log 2>&1 &
           echo "restful_pid=$!"
           for i in $(seq 1 180)
           do
@@ -86,8 +109,9 @@ jobs:
           cat ${{env.SERVER_LOG}}/pytorch_Qwen3.5-35B-A3B_start_restful.log
           exit 1
       - name: Test restful server - turbomind Qwen3-32B
+        if: matrix.shard == 'gpu67'
         run: |
-          CUDA_VISIBLE_DEVICES=6,7 lmdeploy serve api_server /nvme/qa_test_models/Qwen/Qwen3-32B --tp 2 --backend turbomind --logprobs-mode raw_logprobs --allow-terminate-by-client > ${{env.SERVER_LOG}}/turbomind_Qwen3-32B_start_restful.log 2>&1 &
+          CUDA_VISIBLE_DEVICES=${{ env.PR_TEST_SERVE_CUDA_DEVICES }} lmdeploy serve api_server /nvme/qa_test_models/Qwen/Qwen3-32B --tp 2 --backend turbomind --logprobs-mode raw_logprobs --allow-terminate-by-client > ${{env.SERVER_LOG}}/turbomind_Qwen3-32B_start_restful.log 2>&1 &
           echo "restful_pid=$!"
           for i in $(seq 1 180)
           do
@@ -106,8 +130,9 @@ jobs:
           cat ${{env.SERVER_LOG}}/turbomind_Qwen3-32B_start_restful.log
           exit 1
       - name: Test restful server - turbomind InternVL3-38B
+        if: matrix.shard == 'gpu67'
         run: |
-          CUDA_VISIBLE_DEVICES=6,7 lmdeploy serve api_server /nvme/qa_test_models/OpenGVLab/InternVL3-38B --tp 2 --backend turbomind --logprobs-mode raw_logprobs --allow-terminate-by-client --trust-remote-code > ${{env.SERVER_LOG}}/turbomind_InternVL3-38B_start_restful.log 2>&1 &
+          CUDA_VISIBLE_DEVICES=${{ env.PR_TEST_SERVE_CUDA_DEVICES }} lmdeploy serve api_server /nvme/qa_test_models/OpenGVLab/InternVL3-38B --tp 2 --backend turbomind --logprobs-mode raw_logprobs --allow-terminate-by-client --trust-remote-code > ${{env.SERVER_LOG}}/turbomind_InternVL3-38B_start_restful.log 2>&1 &
           echo "restful_pid=$!"
           for i in $(seq 1 180)
           do
@@ -126,8 +151,9 @@ jobs:
           cat ${{env.SERVER_LOG}}/turbomind_InternVL3-38B_start_restful.log
           exit 1
       - name: Test restful server - turbomind Qwen3-30B-A3B
+        if: matrix.shard == 'gpu67'
         run: |
-          CUDA_VISIBLE_DEVICES=6,7 lmdeploy serve api_server /nvme/qa_test_models/Qwen/Qwen3-30B-A3B --tp 2 --backend turbomind --logprobs-mode raw_logprobs  --allow-terminate-by-client> ${{env.SERVER_LOG}}/turbomind_Qwen3-30B-A3B_start_restful.log 2>&1 &
+          CUDA_VISIBLE_DEVICES=${{ env.PR_TEST_SERVE_CUDA_DEVICES }} lmdeploy serve api_server /nvme/qa_test_models/Qwen/Qwen3-30B-A3B --tp 2 --backend turbomind --logprobs-mode raw_logprobs  --allow-terminate-by-client> ${{env.SERVER_LOG}}/turbomind_Qwen3-30B-A3B_start_restful.log 2>&1 &
           echo "restful_pid=$!"
           for i in $(seq 1 180)
           do
@@ -146,8 +172,9 @@ jobs:
           cat ${{env.SERVER_LOG}}/turbomind_Qwen3-30B-A3B_start_restful.log
           exit 1
       - name: Test restful server - pytorch Qwen3-30B-A3B
+        if: matrix.shard == 'gpu67'
         run: |
-          CUDA_VISIBLE_DEVICES=6,7 lmdeploy serve api_server /nvme/qa_test_models/Qwen/Qwen3-30B-A3B --tp 2 --backend pytorch --logprobs-mode raw_logprobs --enable-return-routed-experts --allow-terminate-by-client > ${{env.SERVER_LOG}}/pytorch_Qwen3-30B-A3B_start_restful.log 2>&1 &
+          CUDA_VISIBLE_DEVICES=${{ env.PR_TEST_SERVE_CUDA_DEVICES }} lmdeploy serve api_server /nvme/qa_test_models/Qwen/Qwen3-30B-A3B --tp 2 --backend pytorch --logprobs-mode raw_logprobs --enable-return-routed-experts --allow-terminate-by-client > ${{env.SERVER_LOG}}/pytorch_Qwen3-30B-A3B_start_restful.log 2>&1 &
           echo "restful_pid=$!"
           for i in $(seq 1 180)
           do
@@ -166,8 +193,9 @@ jobs:
           cat ${{env.SERVER_LOG}}/pytorch_Qwen3-30B-A3B_start_restful.log
           exit 1
       - name: Test restful server - pytorch Qwen3-VL-30B-A3B-Instruct
+        if: matrix.shard == 'gpu67'
         run: |
-          CUDA_VISIBLE_DEVICES=6,7 lmdeploy serve api_server /nvme/qa_test_models/Qwen/Qwen3-VL-30B-A3B-Instruct --tp 2 --backend pytorch --logprobs-mode raw_logprobs --allow-terminate-by-client > ${{env.SERVER_LOG}}/pytorch_Qwen3-VL-30B-A3B-Instruct_start_restful.log 2>&1 &
+          CUDA_VISIBLE_DEVICES=${{ env.PR_TEST_SERVE_CUDA_DEVICES }} lmdeploy serve api_server /nvme/qa_test_models/Qwen/Qwen3-VL-30B-A3B-Instruct --tp 2 --backend pytorch --logprobs-mode raw_logprobs --allow-terminate-by-client > ${{env.SERVER_LOG}}/pytorch_Qwen3-VL-30B-A3B-Instruct_start_restful.log 2>&1 &
           echo "restful_pid=$!"
           for i in $(seq 1 180)
           do
@@ -186,8 +214,9 @@ jobs:
           cat ${{env.SERVER_LOG}}/pytorch_Qwen3-VL-30B-A3B-Instruct_start_restful.log
           exit 1
       - name: Test restful server - pytorch InternVL3_5-30B-A3B
+        if: matrix.shard == 'gpu67'
         run: |
-          CUDA_VISIBLE_DEVICES=6,7 lmdeploy serve api_server /nvme/qa_test_models/OpenGVLab/InternVL3_5-30B-A3B --tp 2 --backend pytorch --logprobs-mode raw_logprobs  --allow-terminate-by-client --trust-remote-code > ${{env.SERVER_LOG}}/pytorch_InternVL3_5-30B-A3B_start_restful.log 2>&1 &
+          CUDA_VISIBLE_DEVICES=${{ env.PR_TEST_SERVE_CUDA_DEVICES }} lmdeploy serve api_server /nvme/qa_test_models/OpenGVLab/InternVL3_5-30B-A3B --tp 2 --backend pytorch --logprobs-mode raw_logprobs  --allow-terminate-by-client --trust-remote-code > ${{env.SERVER_LOG}}/pytorch_InternVL3_5-30B-A3B_start_restful.log 2>&1 &
           echo "restful_pid=$!"
           for i in $(seq 1 180)
           do

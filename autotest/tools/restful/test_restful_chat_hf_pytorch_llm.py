@@ -7,7 +7,7 @@ from tools.common_case_config import (
     PYTORCH_PR_TEST_LLM_GPU1,
     PYTORCH_PR_TEST_LLM_GPU2,
 )
-from utils.config_utils import get_case_str_by_config, get_workerid
+from utils.config_utils import get_case_str_by_config, pr_test_worker_gw
 from utils.constant import PROXY_PORT
 from utils.proxy_distributed_utils import ApiServerPerTest, proxy_worker_node_wait
 from utils.pytest_layout_utils import (
@@ -156,7 +156,7 @@ def test_restful_chat_prefix_cache_proxy(
 @layout_mark({'tp': 2})
 @pytest.mark.parametrize('run_config', PYTORCH_PR_TEST_LLM_GPU2)
 def test_hf_pytorch_chat_pr_tp2(config, run_config, common_case_config, worker_id):
-    worker_id = 'gw' + str(3 + get_workerid(worker_id))
+    worker_id = pr_test_worker_gw(worker_id, 2)
     run_llm_test(config, run_config, common_case_config, worker_id)
 
 
@@ -165,7 +165,7 @@ def test_hf_pytorch_chat_pr_tp2(config, run_config, common_case_config, worker_i
 @layout_mark({'tp': 1})
 @pytest.mark.parametrize('run_config', PYTORCH_PR_TEST_LLM_GPU1)
 def test_hf_pytorch_chat_pr_tp1(config, run_config, common_case_config, worker_id):
-    worker_id = 'gw' + str(6 + get_workerid(worker_id))
+    worker_id = pr_test_worker_gw(worker_id, 1)
     run_llm_test(config, run_config, common_case_config, worker_id)
 
 

@@ -5,7 +5,7 @@ from tools.common_case_config import (
     PYTORCH_PR_TEST_LLM_GPU1,
     PYTORCH_PR_TEST_LLM_GPU2,
 )
-from utils.config_utils import get_workerid
+from utils.config_utils import pr_test_worker_gw
 from utils.pipeline_chat import run_pipeline_llm_test
 from utils.pytest_layout_utils import LOCAL_TP_LAYOUTS, build_layout_params, layout_mark
 
@@ -50,7 +50,7 @@ def test_pipeline_chat_prefix_cache(config, run_config, common_case_config, work
 @layout_mark({'tp': 2})
 @pytest.mark.parametrize('run_config', PYTORCH_PR_TEST_LLM_GPU2)
 def test_hf_pytorch_chat_pr_tp2(config, run_config, common_case_config, worker_id):
-    worker_id = 'gw' + str(3 + get_workerid(worker_id))
+    worker_id = pr_test_worker_gw(worker_id, 2)
     run_pipeline_llm_test(config, run_config, common_case_config, worker_id)
 
 
@@ -59,7 +59,7 @@ def test_hf_pytorch_chat_pr_tp2(config, run_config, common_case_config, worker_i
 @layout_mark({'tp': 1})
 @pytest.mark.parametrize('run_config', PYTORCH_PR_TEST_LLM_GPU1)
 def test_hf_pytorch_chat_pr_tp1(config, run_config, common_case_config, worker_id):
-    worker_id = 'gw' + str(6 + get_workerid(worker_id))
+    worker_id = pr_test_worker_gw(worker_id, 1)
     run_pipeline_llm_test(config, run_config, common_case_config, worker_id)
 
 

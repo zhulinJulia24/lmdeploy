@@ -4,7 +4,7 @@ from tools.common_case_config import (
     TURBOMIND_PR_TEST_MLLM_GPU1,
     TURBOMIND_PR_TEST_MLLM_GPU2,
 )
-from utils.config_utils import get_workerid
+from utils.config_utils import pr_test_worker_gw
 from utils.pipeline_chat import run_pipeline_mllm_test
 from utils.pytest_layout_utils import LOCAL_TP_LAYOUTS, build_layout_params, layout_mark
 
@@ -44,7 +44,7 @@ def test_pipeline_mllm_fallback_backend_tp1(config, run_config, worker_id):
 @layout_mark({'tp': 1})
 @pytest.mark.parametrize('run_config', TURBOMIND_PR_TEST_MLLM_GPU1)
 def test_pipeline_mllm_pr_tp1(config, run_config, worker_id):
-    worker_id = 'gw' + str(6 + get_workerid(worker_id))
+    worker_id = pr_test_worker_gw(worker_id, 1)
     run_pipeline_mllm_test(config, run_config, worker_id, is_smoke=True)
 
 
@@ -53,5 +53,5 @@ def test_pipeline_mllm_pr_tp1(config, run_config, worker_id):
 @layout_mark({'tp': 2})
 @pytest.mark.parametrize('run_config', TURBOMIND_PR_TEST_MLLM_GPU2)
 def test_pipeline_mllm_pr_tp2(config, run_config, worker_id):
-    worker_id = 'gw' + str(3 + get_workerid(worker_id))
+    worker_id = pr_test_worker_gw(worker_id, 2)
     run_pipeline_mllm_test(config, run_config, worker_id, is_smoke=True)
